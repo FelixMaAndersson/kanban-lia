@@ -24,10 +24,7 @@
 
         public void AdddRoot(Guid entityId)
         {
-            if (!_roots.Contains(entityId))
-            {
                 _roots.Add(entityId);
-            }
         }
 
         public void RemoveRoot(Guid entityId)
