@@ -5,16 +5,11 @@ using kanban_lia.Infrastructure.Database;
 
 namespace kanban_lia.Infrastructure.Repositories
 {
-    public class BoardRepository
+    public class BoardRepository(DbConnectionFactory connectionFactory)
     {
-        private readonly DbConnectionFactory _connectionFactory;
+        private readonly DbConnectionFactory _connectionFactory = connectionFactory;
 
-        public BoardRepository(DbConnectionFactory connectionFactory)
-        {
-            _connectionFactory = connectionFactory;
-        }
-
-        public async Task CreateBoardAsync(Board board)
+        public async Task CreateAsync(Board board)
         {
             using var connection = _connectionFactory.CreateConnection();
             await connection.ExecuteAsync(
@@ -25,7 +20,7 @@ namespace kanban_lia.Infrastructure.Repositories
             );
         }
 
-        public async Task<IEnumerable<Board>> GetAllBoardsAsync()
+        public async Task<IEnumerable<Board>> GetAllAsync()
         {
             using var connection = _connectionFactory.CreateConnection();
             var boards = await connection.QueryAsync<Board>(
@@ -35,7 +30,7 @@ namespace kanban_lia.Infrastructure.Repositories
             return boards;
         }
 
-        public async Task<Board?> GetBoardByIdAsync(Guid id)
+        public async Task<Board?> GetByIdAsync(Guid id)
         {
             using var connection = _connectionFactory.CreateConnection();
             var board = await connection.QuerySingleOrDefaultAsync<Board>(
@@ -47,7 +42,7 @@ namespace kanban_lia.Infrastructure.Repositories
             return board;
         }
 
-        public async Task UpdateBoardAsync(Board board)
+        public async Task UpdateAsync(Board board)
         {
             using var connection = _connectionFactory.CreateConnection();
             await connection.ExecuteAsync(
@@ -60,7 +55,7 @@ namespace kanban_lia.Infrastructure.Repositories
             );
         }
 
-        public async Task DeleteBoardAsync(Guid id)
+        public async Task DeleteAsync(Guid id)
         {
             using var connection = _connectionFactory.CreateConnection();
             await connection.ExecuteAsync(

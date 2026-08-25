@@ -3,20 +3,21 @@ using kanban_lia.Infrastructure.Repositories;
 
 namespace kanban_lia.Services
 {
-    public class PlacementService(PlacementRepository repo)
+    public class PlacementService(PlacementRepository repository) : IPlacementService
     {
-        private readonly PlacementRepository _repository = repo;
-        public async Task CreateAsync(CardPlacement placement)
+        private readonly PlacementRepository _repository = repository;
+
+        public async Task CreateAsync(Placement placement)
         {
-            await _repository.CreatePlacementAsync(placement);
+            await _repository.CreateAsync(placement);
         }
-        public async Task<IEnumerable<CardPlacement>> GetAllPlacementsAsync()
+        public async Task<IEnumerable<Placement>> GetAllAsync()
         {
-            return await _repository.GetAllPlacementsAsync();
+            return await _repository.GetAllAsync();
         }
-        public async Task<CardPlacement?> GetPlacementByIdAsync(Guid id)
+        public async Task<Placement?> GetByIdAsync(Guid id)
         {
-            return await _repository.GetPlacementByIdAsync(id);
+            return await _repository.GetByIdAsync(id);
         }
     }
 }

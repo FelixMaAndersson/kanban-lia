@@ -3,38 +3,38 @@ using kanban_lia.Infrastructure.Repositories;
 
 namespace kanban_lia.Services
 {
-    public class ColumnService(ColumnRepository repo)
+    public class ColumnService(ColumnRepository repository) : IColumnService
     {
-        private readonly ColumnRepository _repository = repo;
+        private readonly ColumnRepository _repository = repository;
 
         public async Task CreateAsync(Column column)
         {
-            await _repository.CreateColumnAsync(column);
+            await _repository.CreateAsync(column);
         }
 
-        public async Task<IEnumerable<Column>> GetAllColumnsAsync()
+        public async Task<IEnumerable<Column>> GetAllAsync()
         {
-            return await _repository.GetAllColumnsAsync();
+            return await _repository.GetAllAsync();
         }
 
-        public async Task<IEnumerable<Column>> GetColumnsByBoardIdAsync(Guid boardId)
+        public async Task<IEnumerable<Column>> GetByBoardIdAsync(Guid boardId)
         {
-            return await _repository.GetColumnsByBoardIdAsync(boardId);
+            return await _repository.GetByBoardIdAsync(boardId);
         }
 
-        public async Task<Column?> GetColumnByIdAsync(Guid id)
+        public async Task<Column?> GetByIdAsync(Guid id)
         {
-            return await _repository.GetColumnByIdAsync(id);
+            return await _repository.GetByIdAsync(id);
         }
 
-        public async Task UpdateColumnAsync(Column column)
+        public async Task UpdateAsync(Column column)
         {
-            await _repository.UpdateColumnAsync(column);
+            await _repository.UpdateAsync(column);
         }
 
-        public async Task DeleteColumnAsync(Guid id)
+        public async Task DeleteAsync(Guid id)
         {
-            await _repository.DeleteColumnAsync(id);
+            await _repository.DeleteAsync(id);
         }
     }
 }

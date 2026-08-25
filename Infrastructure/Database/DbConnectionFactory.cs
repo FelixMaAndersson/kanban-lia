@@ -3,17 +3,12 @@ using System.Data;
 
 namespace kanban_lia.Infrastructure.Database;
 
-public class DbConnectionFactory
+public class DbConnectionFactory(IConfiguration configuration)
 {
-    private readonly string _connectionString;
-
-    public DbConnectionFactory(IConfiguration configuration)
-    {
-        _connectionString =
+    private readonly string _connectionString =
             configuration.GetConnectionString("DefaultConnection")
             ?? throw new InvalidOperationException(
                 "Connection string not found.");
-    }
 
     public IDbConnection CreateConnection()
     {

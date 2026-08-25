@@ -5,16 +5,11 @@ using kanban_lia.Infrastructure.Database;
 
 namespace kanban_lia.Infrastructure.Repositories
 {
-    public class ColumnRepository
+    public class ColumnRepository(DbConnectionFactory connectionFactory)
     {
-        private readonly DbConnectionFactory _connectionFactory;
+        private readonly DbConnectionFactory _connectionFactory = connectionFactory;
 
-        public ColumnRepository(DbConnectionFactory connectionFactory)
-        {
-            _connectionFactory = connectionFactory;
-        }
-
-        public async Task CreateColumnAsync(Column column)
+        public async Task CreateAsync(Column column)
         {
             using var connection = _connectionFactory.CreateConnection();
             await connection.ExecuteAsync(
@@ -26,7 +21,7 @@ namespace kanban_lia.Infrastructure.Repositories
         }
 
         // Behöver vi lägga till en metod för att hämta alla kolumner, samt en metod för att hämta kolumner baserat på BoardId?
-        public async Task<IEnumerable<Column>> GetAllColumnsAsync()
+        public async Task<IEnumerable<Column>> GetAllAsync()
         {
             using var connection = _connectionFactory.CreateConnection();
             var columns = await connection.QueryAsync<Column>(
@@ -36,7 +31,7 @@ namespace kanban_lia.Infrastructure.Repositories
             return columns;
         }
 
-        public async Task<IEnumerable<Column>> GetColumnsByBoardIdAsync(Guid boardId)
+        public async Task<IEnumerable<Column>> GetByBoardIdAsync(Guid boardId)
         {
             using var connection = _connectionFactory.CreateConnection();
             var columns = await connection.QueryAsync<Column>(
@@ -49,7 +44,7 @@ namespace kanban_lia.Infrastructure.Repositories
             return columns;
         }
 
-        public async Task<Column?> GetColumnByIdAsync(Guid id)
+        public async Task<Column?> GetByIdAsync(Guid id)
         {
             using var connection = _connectionFactory.CreateConnection();
             var column = await connection.QuerySingleOrDefaultAsync<Column>(
@@ -62,7 +57,7 @@ namespace kanban_lia.Infrastructure.Repositories
             return column;
         }
 
-        public async Task UpdateColumnAsync(Column column)
+        public async Task UpdateAsync(Column column)
         {
             using var connection = _connectionFactory.CreateConnection();
             await connection.ExecuteAsync(
@@ -75,7 +70,7 @@ namespace kanban_lia.Infrastructure.Repositories
             );
         }
 
-        public async Task DeleteColumnAsync(Guid id)
+        public async Task DeleteAsync(Guid id)
         {
             using var connection = _connectionFactory.CreateConnection();
             await connection.ExecuteAsync(

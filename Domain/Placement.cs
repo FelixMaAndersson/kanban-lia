@@ -1,6 +1,6 @@
 ﻿namespace kanban_lia.Domain
 {
-    public class CardPlacement
+    public class Placement
     {
         public int EntityId { get; }
 

@@ -1,6 +1,7 @@
 
 using kanban_lia.Infrastructure.Database;
 using kanban_lia.Infrastructure.Repositories;
+using kanban_lia.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,6 +14,10 @@ builder.Services.AddSingleton<DbConnectionFactory>();
 builder.Services.AddScoped<BoardRepository>();
 builder.Services.AddScoped<ColumnRepository>();
 builder.Services.AddScoped<PlacementRepository>();
+
+builder.Services.AddScoped<IBoardService, BoardService>();
+builder.Services.AddScoped<IColumnService, ColumnService>();
+builder.Services.AddScoped<IPlacementService, PlacementService>();
 
 var app = builder.Build();
 

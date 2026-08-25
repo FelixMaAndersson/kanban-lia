@@ -5,16 +5,11 @@ using kanban_lia.Infrastructure.Database;
 
 namespace kanban_lia.Infrastructure.Repositories
 {
-    public class PlacementRepository
+    public class PlacementRepository(DbConnectionFactory connectionFactory)
     {
-        private readonly DbConnectionFactory _connectionFactory;
+        private readonly DbConnectionFactory _connectionFactory = connectionFactory;
 
-        public PlacementRepository(DbConnectionFactory connectionFactory)
-        {
-            _connectionFactory = connectionFactory;
-        }
-
-        public async Task CreatePlacementAsync(CardPlacement placement)
+        public async Task CreateAsync(Placement placement)
         {
             using var connection = _connectionFactory.CreateConnection();
             await connection.ExecuteAsync(
@@ -26,20 +21,20 @@ namespace kanban_lia.Infrastructure.Repositories
             );
         }
 
-        public async Task<IEnumerable<CardPlacement>> GetAllPlacementsAsync()
+        public async Task<IEnumerable<Placement>> GetAllAsync()
         {
             using var connection = _connectionFactory.CreateConnection();
-            var placements = await connection.QueryAsync<CardPlacement>(
+            var placements = await connection.QueryAsync<Placement>(
                 @"
                     SELECT * FROM Placements"
             );
             return placements;
         }
 
-        public async Task<CardPlacement?> GetPlacementByIdAsync(Guid id)
+        public async Task<Placement?> GetByIdAsync(Guid id)
         {
             using var connection = _connectionFactory.CreateConnection();
-            var placement = await connection.QuerySingleOrDefaultAsync<CardPlacement>(
+            var placement = await connection.QuerySingleOrDefaultAsync<Placement>(
                 @"
                     SELECT * FROM Placements 
                     WHERE Id = @Id",
