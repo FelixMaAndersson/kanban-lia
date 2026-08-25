@@ -2,14 +2,15 @@
 {
     public class CardPlacement
     {
-        int EntityId { get; set; }
+        //Kombinerad primary key på EntityId och ColumnId
+        public int EntityId { get; set; }
 
-        int ColumnId { get; set; }
+        public int ColumnId { get; set; }
 
-        int Position { get; set; }
+        public int Position { get; set; }
 
-        int Timestamp { get; set; } = 0;
-
+        // Timestamp för när kortet placerades i kolumnen
+        public DateTime Timestamp { get; set; } = DateTime.UtcNow;
 
     }
 }
