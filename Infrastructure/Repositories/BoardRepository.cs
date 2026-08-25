@@ -5,14 +5,9 @@ using kanban_lia.Infrastructure.Database;
 
 namespace kanban_lia.Infrastructure.Repositories
 {
-    public class BoardRepository
+    public class BoardRepository(DbConnectionFactory connectionFactory)
     {
-        private readonly DbConnectionFactory _connectionFactory;
-
-        public BoardRepository(DbConnectionFactory connectionFactory)
-        {
-            _connectionFactory = connectionFactory;
-        }
+        private readonly DbConnectionFactory _connectionFactory = connectionFactory;
 
         public async Task CreateAsync(Board board)
         {

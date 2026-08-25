@@ -3,14 +3,9 @@ using kanban_lia.Infrastructure.Repositories;
 
 namespace kanban_lia.Services
 {
-    public class BoardService : IBoardService
+    public class BoardService(BoardRepository repository) : IBoardService
     {
-        private readonly BoardRepository _repository;
-
-        public BoardService(BoardRepository repository)
-        {
-            _repository = repository;
-        }
+        private readonly BoardRepository _repository = repository;
 
         public async Task CreateAsync(Board board)
         {

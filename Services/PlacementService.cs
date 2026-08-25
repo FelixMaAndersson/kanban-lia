@@ -3,14 +3,10 @@ using kanban_lia.Infrastructure.Repositories;
 
 namespace kanban_lia.Services
 {
-    public class PlacementService: IPlacementService
+    public class PlacementService(PlacementRepository repository) : IPlacementService
     {
-        private readonly PlacementRepository _repository;
+        private readonly PlacementRepository _repository = repository;
 
-        public PlacementService(PlacementRepository repository)
-        {
-            _repository = repository;
-        }
         public async Task CreateAsync(Placement placement)
         {
             await _repository.CreateAsync(placement);
