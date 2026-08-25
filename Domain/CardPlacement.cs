@@ -2,7 +2,7 @@
 {
     public class CardPlacement
     {
-        //Kombinerad primary key på EntityId och ColumnId
+        public Guid Id { get; set; }
         public int EntityId { get; set; }
 
         public int ColumnId { get; set; }
