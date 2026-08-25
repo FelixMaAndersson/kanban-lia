@@ -22,7 +22,7 @@
             return new Board(new BoardId(Guid.NewGuid()), title);
         }
 
-        public void AdddRoot(Guid entityId)
+        public void AddRoot(Guid entityId)
         {
                 _roots.Add(entityId);
         }

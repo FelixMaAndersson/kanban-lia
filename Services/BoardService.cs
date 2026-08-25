@@ -5,31 +5,41 @@ namespace kanban_lia.Services
 {
     public class BoardService(BoardRepository repository) : IBoardService
     {
-        private readonly BoardRepository _repository = repository;
+        private readonly IBoardRepository _repository = repository;
 
-        public async Task CreateAsync(Board board)
+        public Task CreateAsync(Board board)
         {
-            await _repository.CreateAsync(board);
+            throw new NotImplementedException();
         }
 
-        public async Task<IEnumerable<Board>> GetAllAsync()
+        public Task DeleteAsync(BoardId id)
         {
-            return await _repository.GetAllAsync();
+            throw new NotImplementedException();
         }
 
-        public async Task<Board?> GetByIdAsync(Guid id)
+        public Task<Board?> GetByIdAsync(BoardId id)
         {
-            return await _repository.GetByIdAsync(id);
+            throw new NotImplementedException();
         }
 
-        public async Task UpdateAsync(Board board)
+        public async Task<Board> RenameAsync(BoardId id, string title)
         {
-            await _repository.UpdateAsync(board);
+            var existingBoard = await _repository.GetByIdAsync(id);
+            existingBoard.Rename(title);
+            _repository.Update(existingBoard);
+            return existingBoard;
+        }
+        public async Task<Board> AddRootAsync(BoardId id, Guid entityId)
+        {
+            var existingBoard = await _repository.GetByIdAsync(id);
+            existingBoard.AddRoot(entityId);
+            _repository.Update(existingBoard);
+            return existingBoard;
         }
 
-        public async Task DeleteAsync(Guid id)
+        public Task UpdateAsync(Board board)
         {
-            await _repository.DeleteAsync(id);
+            throw new NotImplementedException();
         }
     }
 }
