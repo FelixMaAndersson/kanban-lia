@@ -2,15 +2,27 @@
 {
     public class Placement
     {
-        public Guid Id { get; set; }
-        public int EntityId { get; set; }
+        public int EntityId { get; }
 
-        public int ColumnId { get; set; }
+        public ColumnId ColumnId { get; }
 
-        public int Position { get; set; }
+        public int Position { get; }
 
         // Timestamp för när kortet placerades i kolumnen
-        public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+        public DateTime Timestamp { get; }
+
+        private Placement(int entityId, ColumnId columnId, int position, DateTime timestamp)
+        {
+            EntityId = entityId;
+            ColumnId = columnId;
+            Position = position;
+            Timestamp = timestamp;
+        }
+
+        public static Placement Create(int entityId, ColumnId columnId, int position)
+        {
+            return new Placement(entityId, columnId, position, DateTime.UtcNow);
+        }
 
     }
 }

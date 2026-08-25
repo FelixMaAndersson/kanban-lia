@@ -1,12 +1,30 @@
 ﻿namespace kanban_lia.Domain
 {
+    public readonly record struct ColumnId(Guid value);
     public class Column
     {
-        // kanske ska vara en int istället för en guid. p.g.a. ett lågt maxantal
-        public Guid Id { get; set;  }
-        public string Title { get; set; } = string.Empty;
+        public ColumnId Id { get; }
+        public string Title { get; private set;} = string.Empty;
 
-        public int Position { get; set; }
-        public int BoardId { get; set; }
+        public int Position { get; }
+        public int BoardId { get; }
+
+        private Column(string title, int position, int boardId)
+        {
+            Id = new ColumnId(Guid.NewGuid());
+            Title = title;
+            Position = position;
+            BoardId = boardId;
+        }
+
+        public static Column Create(string title, int position, int boardId)
+        {
+            return new Column(title, position, boardId);
+        }
+
+        public void Rename(string title)
+        {
+            Title = title;
+        }
     }
 }
