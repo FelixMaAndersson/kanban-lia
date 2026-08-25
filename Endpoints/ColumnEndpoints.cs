@@ -20,7 +20,7 @@ public static class ColumnEndpoints
         app.MapGet("/api/columns", async (
             IColumnService columnService) =>
         {
-            var columns = await columnService.GetAllColumnsAsync();
+            var columns = await columnService.GetAllAsync();
 
             return Results.Ok(columns);
         });
@@ -29,7 +29,7 @@ public static class ColumnEndpoints
             Guid id,
             IColumnService columnService) =>
         {
-            var column = await columnService.GetColumnByIdAsync(id);
+            var column = await columnService.GetByIdAsync(id);
 
             if (column is null)
             {
@@ -44,7 +44,7 @@ public static class ColumnEndpoints
             Domain.Column updatedColumn,
             IColumnService columnService) =>
         {
-            var existingColumn = await columnService.GetColumnByIdAsync(id);
+            var existingColumn = await columnService.GetByIdAsync(id);
 
             if (existingColumn is null)
             {
@@ -62,7 +62,7 @@ public static class ColumnEndpoints
             Guid id,
             IColumnService columnService) =>
         {
-            var existingColumn = await columnService.GetColumnByIdAsync(id);
+            var existingColumn = await columnService.GetByIdAsync(id);
 
             if (existingColumn is null)
             {

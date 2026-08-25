@@ -14,27 +14,27 @@ namespace kanban_lia.Services
 
         public async Task CreateAsync(Board board)
         {
-            await _repository.CreateBoardAsync(board);
+            await _repository.CreateAsync(board);
         }
 
-        public async Task<IEnumerable<Board>> GetAllBoardsAsync()
+        public async Task<IEnumerable<Board>> GetAllAsync()
         {
-            return await _repository.GetAllBoardsAsync();
+            return await _repository.GetAllAsync();
         }
 
-        public async Task<Board?> GetBoardByIdAsync(Guid id)
+        public async Task<Board?> GetByIdAsync(Guid id)
         {
-            return await _repository.GetBoardByIdAsync(id);
+            return await _repository.GetByIdAsync(id);
         }
 
         public async Task UpdateAsync(Board board)
         {
-            await _repository.UpdateBoardAsync(board);
+            await _repository.UpdateAsync(board);
         }
 
         public async Task DeleteAsync(Guid id)
         {
-            await _repository.DeleteBoardAsync(id);
+            await _repository.DeleteAsync(id);
         }
     }
 }

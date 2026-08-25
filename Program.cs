@@ -13,11 +13,11 @@ builder.Services.AddSingleton<DbConnectionFactory>();
 
 builder.Services.AddScoped<BoardRepository>();
 builder.Services.AddScoped<ColumnRepository>();
-builder.Services.AddScoped<CardPlacementRepository>();
+builder.Services.AddScoped<PlacementRepository>();
 
 builder.Services.AddScoped<IBoardService, BoardService>();
 builder.Services.AddScoped<IColumnService, ColumnService>();
-builder.Services.AddScoped<ICardPlacementService, CardPlacementService>();
+builder.Services.AddScoped<IPlacementService, PlacementService>();
 
 var app = builder.Build();
 
