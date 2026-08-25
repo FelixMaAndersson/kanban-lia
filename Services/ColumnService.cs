@@ -3,14 +3,9 @@ using kanban_lia.Infrastructure.Repositories;
 
 namespace kanban_lia.Services
 {
-    public class ColumnService : IColumnService
+    public class ColumnService(ColumnRepository repository) : IColumnService
     {
-        private readonly ColumnRepository _repository;
-
-        public ColumnService(ColumnRepository repository)
-        {
-            _repository = repository;
-        }
+        private readonly ColumnRepository _repository = repository;
 
         public async Task CreateAsync(Column column)
         {
