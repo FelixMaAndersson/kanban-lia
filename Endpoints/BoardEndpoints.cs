@@ -21,7 +21,7 @@ public static class BoardEndpoints
             Guid id,
             IBoardService boardService) =>
         {
-            var board = await boardService.GetBoardByIdAsync(id);
+            var board = await boardService.GetByIdAsync(id);
 
             if (board is null)
             {
@@ -36,7 +36,7 @@ public static class BoardEndpoints
             Domain.Board updatedBoard,
             IBoardService boardService) =>
         {
-            var existingBoard = await boardService.GetBoardByIdAsync(id);
+            var existingBoard = await boardService.GetByIdAsync(id);
 
             if (existingBoard is null)
             {
@@ -54,7 +54,7 @@ public static class BoardEndpoints
             Guid id,
             IBoardService boardService) =>
         {
-            var existingBoard = await boardService.GetBoardByIdAsync(id);
+            var existingBoard = await boardService.GetByIdAsync(id);
 
             if (existingBoard is null)
             {
