@@ -3,9 +3,14 @@ using kanban_lia.Infrastructure.Repositories;
 
 namespace kanban_lia.Services
 {
-    public class PlacementService(PlacementRepository repo)
+    public class CardPlacementService: ICardPlacementService
     {
-        private readonly PlacementRepository _repository = repo;
+        private readonly CardPlacementRepository _repository;
+
+        public CardPlacementService(CardPlacementRepository repository)
+        {
+            _repository = repository;
+        }
         public async Task CreateAsync(CardPlacement placement)
         {
             await _repository.CreatePlacementAsync(placement);

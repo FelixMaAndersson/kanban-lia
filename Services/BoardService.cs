@@ -3,9 +3,14 @@ using kanban_lia.Infrastructure.Repositories;
 
 namespace kanban_lia.Services
 {
-    public class BoardService(BoardRepository repo)
+    public class BoardService : IBoardService
     {
-        private readonly BoardRepository _repository = repo;
+        private readonly BoardRepository _repository;
+
+        public BoardService(BoardRepository repository)
+        {
+            _repository = repository;
+        }
 
         public async Task CreateAsync(Board board)
         {
@@ -22,12 +27,12 @@ namespace kanban_lia.Services
             return await _repository.GetBoardByIdAsync(id);
         }
 
-        public async Task UpdateBoardAsync(Board board)
+        public async Task UpdateAsync(Board board)
         {
             await _repository.UpdateBoardAsync(board);
         }
 
-        public async Task DeleteBoardAsync(Guid id)
+        public async Task DeleteAsync(Guid id)
         {
             await _repository.DeleteBoardAsync(id);
         }
