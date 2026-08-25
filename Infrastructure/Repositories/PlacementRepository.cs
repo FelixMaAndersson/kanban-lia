@@ -1,4 +1,6 @@
 ﻿using Dapper;
+
+using kanban_lia.Domain;
 using kanban_lia.Infrastructure.Database;
 
 namespace kanban_lia.Infrastructure.Repositories
@@ -12,63 +14,38 @@ namespace kanban_lia.Infrastructure.Repositories
             _connectionFactory = connectionFactory;
         }
 
-        public async Task CreatePlacementAsync(Domain.CardPlacement placement)
+        public async Task CreatePlacementAsync(CardPlacement placement)
         {
             using var connection = _connectionFactory.CreateConnection();
             await connection.ExecuteAsync(
                 @"
                     INSERT INTO Placements 
-                    (Id, BoardId, ColumnId, Position) 
+                    (Id, ColumnId, Position) 
                     VALUES (@Id, @BoardId, @ColumnId, @Position)",
                 placement
             );
         }
 
-        public async Task<IEnumerable<Domain.CardPlacement>> GetAllPlacementsAsync()
+        public async Task<IEnumerable<CardPlacement>> GetAllPlacementsAsync()
         {
             using var connection = _connectionFactory.CreateConnection();
-            var placements = await connection.QueryAsync<Domain.CardPlacement>(
+            var placements = await connection.QueryAsync<CardPlacement>(
                 @"
                     SELECT * FROM Placements"
             );
             return placements;
         }
 
-        public async Task<Domain.CardPlacement?> GetPlacementByIdAsync(int id)
+        public async Task<CardPlacement?> GetPlacementByIdAsync(Guid id)
         {
             using var connection = _connectionFactory.CreateConnection();
-            var placement = await connection.QuerySingleOrDefaultAsync<Domain.CardPlacement>(
+            var placement = await connection.QuerySingleOrDefaultAsync<CardPlacement>(
                 @"
                     SELECT * FROM Placements 
                     WHERE Id = @Id",
                 new { Id = id }
             );
             return placement;
-        }
-
-        public async Task UpdatePlacementAsync(Domain.CardPlacement placement)
-        {
-            using var connection = _connectionFactory.CreateConnection();
-            await connection.ExecuteAsync(
-                @"
-                    UPDATE Placements 
-                    SET BoardId = @BoardId, 
-                    ColumnId = @ColumnId, 
-                    Position = @Position 
-                    WHERE Id = @Id",
-                placement
-            );
-        }
-
-        public async Task DeletePlacementAsync(int id)
-        {
-            using var connection = _connectionFactory.CreateConnection();
-            await connection.ExecuteAsync(
-                @"
-                    DELETE FROM Placements 
-                    WHERE Id = @Id",
-                new { Id = id }
-            );
         }
     }
 }

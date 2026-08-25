@@ -1,4 +1,6 @@
 ﻿using Dapper;
+
+using kanban_lia.Domain;
 using kanban_lia.Infrastructure.Database;
 
 namespace kanban_lia.Infrastructure.Repositories
@@ -12,7 +14,7 @@ namespace kanban_lia.Infrastructure.Repositories
             _connectionFactory = connectionFactory;
         }
 
-        public async Task CreateBoardAsync(Domain.Board board)
+        public async Task CreateBoardAsync(Board board)
         {
             using var connection = _connectionFactory.CreateConnection();
             await connection.ExecuteAsync(
@@ -23,20 +25,20 @@ namespace kanban_lia.Infrastructure.Repositories
             );
         }
 
-        public async Task<IEnumerable<Domain.Board>> GetAllBoardsAsync()
+        public async Task<IEnumerable<Board>> GetAllBoardsAsync()
         {
             using var connection = _connectionFactory.CreateConnection();
-            var boards = await connection.QueryAsync<Domain.Board>(
+            var boards = await connection.QueryAsync<Board>(
                 @"
                     SELECT * FROM Boards"
             );
             return boards;
         }
 
-        public async Task<Domain.Board?> GetBoardByIdAsync(Guid id)
+        public async Task<Board?> GetBoardByIdAsync(Guid id)
         {
             using var connection = _connectionFactory.CreateConnection();
-            var board = await connection.QuerySingleOrDefaultAsync<Domain.Board>(
+            var board = await connection.QuerySingleOrDefaultAsync<Board>(
                 @"
                     SELECT * FROM Boards 
                     WHERE Id = @Id",
@@ -45,7 +47,7 @@ namespace kanban_lia.Infrastructure.Repositories
             return board;
         }
 
-        public async Task UpdateBoardAsync(Domain.Board board)
+        public async Task UpdateBoardAsync(Board board)
         {
             using var connection = _connectionFactory.CreateConnection();
             await connection.ExecuteAsync(
