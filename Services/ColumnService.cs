@@ -3,9 +3,14 @@ using kanban_lia.Infrastructure.Repositories;
 
 namespace kanban_lia.Services
 {
-    public class ColumnService(ColumnRepository repo)
+    public class ColumnService : IColumnService
     {
-        private readonly ColumnRepository _repository = repo;
+        private readonly ColumnRepository _repository;
+
+        public ColumnService(ColumnRepository repository)
+        {
+            _repository = repository;
+        }
 
         public async Task CreateAsync(Column column)
         {
@@ -27,12 +32,12 @@ namespace kanban_lia.Services
             return await _repository.GetColumnByIdAsync(id);
         }
 
-        public async Task UpdateColumnAsync(Column column)
+        public async Task UpdateAsync(Column column)
         {
             await _repository.UpdateColumnAsync(column);
         }
 
-        public async Task DeleteColumnAsync(Guid id)
+        public async Task DeleteAsync(Guid id)
         {
             await _repository.DeleteColumnAsync(id);
         }

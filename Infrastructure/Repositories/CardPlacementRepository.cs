@@ -5,11 +5,11 @@ using kanban_lia.Infrastructure.Database;
 
 namespace kanban_lia.Infrastructure.Repositories
 {
-    public class PlacementRepository
+    public class CardPlacementRepository
     {
         private readonly DbConnectionFactory _connectionFactory;
 
-        public PlacementRepository(DbConnectionFactory connectionFactory)
+        public CardPlacementRepository(DbConnectionFactory connectionFactory)
         {
             _connectionFactory = connectionFactory;
         }
