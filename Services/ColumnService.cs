@@ -4,9 +4,9 @@ using kanban_lia.Services.DTOs;
 
 namespace kanban_lia.Services
 {
-    public class ColumnService(ColumnRepository repository) : IColumnService
+    public class ColumnService(IColumnRepository repository) : IColumnService
     {
-        private readonly ColumnRepository _repository = repository;
+        private readonly IColumnRepository _repository = repository;
 
         public async Task CreateAsync(CreateColumnDto dto)
         {

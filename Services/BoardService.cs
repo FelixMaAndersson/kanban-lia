@@ -4,9 +4,9 @@ using kanban_lia.Services.DTOs;
 
 namespace kanban_lia.Services
 {
-    public class BoardService(BoardRepository repository) : IBoardService
+    public class BoardService(IBoardRepository repository) : IBoardService
     {
-        private readonly BoardRepository _repository = repository;
+        private readonly IBoardRepository _repository = repository;
 
         public async Task CreateAsync(string title)
         {

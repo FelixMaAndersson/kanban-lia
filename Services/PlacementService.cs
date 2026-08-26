@@ -4,8 +4,10 @@ using kanban_lia.Services.DTOs;
 
 namespace kanban_lia.Services
 {
-    public class PlacementService(PlacementRepository repository) : IPlacementService
+    public class PlacementService(IPlacementRepository repository) : IPlacementService
     {
+        private readonly IPlacementRepository _repository = repository;
+
         public async Task CreateAsync(CreatePlacementDto dto)
         {
             var entityId = new EntityId(dto.EntityId);
@@ -13,12 +15,12 @@ namespace kanban_lia.Services
 
             var newPlacement = Placement.Create(entityId, columnId, dto.Position);
 
-            await repository.CreateAsync(newPlacement);
+            await _repository.CreateAsync(newPlacement);
         }
 
         public async Task<Placement?> GetByIdAsync(Guid id)
         {
-            return await repository.GetByIdAsync(id);
+            return await _repository.GetByIdAsync(id);
         }
     }
 }
