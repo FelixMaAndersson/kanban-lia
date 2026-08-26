@@ -8,6 +8,8 @@ namespace kanban_lia.Services
         Task CreateAsync(string title);
         Task<Board?> GetByIdAsync(BoardId id);
         Task RenameAsync(RenameBoardDto dto);
+        Task AddRootAsync(AddRootDto dto);
+        Task RemoveRootAsync(RemoveRootDto dto);
         Task DeleteAsync(BoardId id);
     }
 }

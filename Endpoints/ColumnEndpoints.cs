@@ -1,5 +1,7 @@
-﻿using kanban_lia.Models.Domain;
+﻿using kanban_lia.Endpoints.Requests.Column;
+using kanban_lia.Models.Domain;
 using kanban_lia.Services;
+using kanban_lia.Services.DTOs;
 
 // Lägg till BoardDto, ColumnDto och PlacementDto i Domain-mappen för att representera dataöverföringsobjekt (DTO) för respektive entitet.
 // Dessa DTO:er används för att skicka data mellan klienten och servern utan att exponera de interna domänmodellerna direkt.
@@ -10,15 +12,22 @@ public static class ColumnEndpoints
 {
     public static void MapColumnEndpoints(WebApplication app)
     {
-        app.MapPost("/api/columns", async (
-            Column column,
+        var group = app.MapGroup("/api/columns");
+
+        group.MapPost("/create", async (
+            CreateColumnRequest request,
             IColumnService columnService) =>
         {
-            await columnService.CreateAsync(column);
+            var dto = new CreateColumnDto(
+                request.Title,
+                request.Position,
+                request.BoardId);
+
+            var newColumn = await columnService.CreateAsync(dto);
 
             return Results.Created(
-                $"/api/columns/{column.Id}",
-                column);
+                $"/api/columns/{newColumn.Id}",
+                newColumn);
         });
 
         app.MapGet("/api/columns", async (

@@ -8,6 +8,7 @@ namespace kanban_lia.Services
     {
         private readonly IBoardRepository _repository = repository;
 
+
         public async Task CreateAsync(string title)
         {
             var newBoard = Board.Create(title);
@@ -23,6 +24,22 @@ namespace kanban_lia.Services
         public async Task<Board?> GetByIdAsync(BoardId id)
         {
             return await _repository.GetByIdAsync(id);
+        }
+
+        public async Task AddRoot(AddRootDto dto)
+        {
+            var boardId = new BoardId(dto.BoardId);
+            var entityId = new EntityId(dto.EntityId);
+
+            await _repository.AddRoot(boardId, entityId);
+        }
+
+        public async Task RemoveRoot(RemoveRootDto dto)
+        {
+            var boardId = new BoardId(dto.BoardId);
+            var entityId = new EntityId(dto.EntityId);
+
+            await _repository.RemoveRoot(boardId, entityId);
         }
 
         public async Task RenameAsync(RenameBoardDto dto)
