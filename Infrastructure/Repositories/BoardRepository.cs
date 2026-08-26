@@ -4,7 +4,7 @@ using kanban_lia.Models.Domain;
 
 namespace kanban_lia.Infrastructure.Repositories
 {
-    public class BoardRepository(DbConnectionFactory connectionFactory)
+    public class BoardRepository(DbConnectionFactory connectionFactory) : IBoardRepository
     {
         private readonly DbConnectionFactory _connectionFactory = connectionFactory;
 
@@ -17,16 +17,6 @@ namespace kanban_lia.Infrastructure.Repositories
                     VALUES (@Id, @Title, @Roots)",
                 board
             );
-        }
-
-        public async Task<IEnumerable<Board>> GetAllAsync()
-        {
-            using var connection = _connectionFactory.CreateConnection();
-            var boards = await connection.QueryAsync<Board>(
-                @"
-                    SELECT * FROM Boards"
-            );
-            return boards;
         }
 
         public async Task<Board?> GetByIdAsync(BoardId id)

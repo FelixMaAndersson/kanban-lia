@@ -4,7 +4,7 @@ using kanban_lia.Models.Domain;
 
 namespace kanban_lia.Infrastructure.Repositories
 {
-    public class ColumnRepository(DbConnectionFactory connectionFactory)
+    public class ColumnRepository(DbConnectionFactory connectionFactory) : IColumnRepository
     {
         private readonly DbConnectionFactory _connectionFactory = connectionFactory;
 

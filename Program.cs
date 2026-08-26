@@ -11,7 +11,7 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddSingleton<DbConnectionFactory>();
 
-builder.Services.AddScoped<BoardRepository>();
+builder.Services.AddScoped<IBoardRepository>();
 builder.Services.AddScoped<ColumnRepository>();
 builder.Services.AddScoped<PlacementRepository>();
 
