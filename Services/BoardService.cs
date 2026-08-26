@@ -17,7 +17,7 @@ namespace kanban_lia.Services
             throw new NotImplementedException();
         }
 
-        public Task<Board?> GetByIdAsync(BoardId id)
+        public async Task<Board?> GetByIdAsync(BoardId id)
         {
             throw new NotImplementedException();
         }
@@ -37,7 +37,7 @@ namespace kanban_lia.Services
             return existingBoard;
         }
 
-        public Task UpdateAsync(Board board)
+        public async Task DeleteAsync(BoardId id)
         {
             throw new NotImplementedException();
         }

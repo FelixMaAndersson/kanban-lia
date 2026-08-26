@@ -30,7 +30,7 @@ namespace kanban_lia.Infrastructure.Repositories
             return boards;
         }
 
-        public async Task<Board?> GetByIdAsync(Guid id)
+        public async Task<Board?> GetByIdAsync(BoardId id)
         {
             using var connection = _connectionFactory.CreateConnection();
             var board = await connection.QuerySingleOrDefaultAsync<Board>(
@@ -55,7 +55,7 @@ namespace kanban_lia.Infrastructure.Repositories
             );
         }
 
-        public async Task DeleteAsync(Guid id)
+        public async Task DeleteAsync(BoardId id)
         {
             using var connection = _connectionFactory.CreateConnection();
             await connection.ExecuteAsync(

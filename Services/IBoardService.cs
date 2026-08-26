@@ -8,7 +8,5 @@ namespace kanban_lia.Services
         Task<Board?> GetByIdAsync(BoardId id);
         Task UpdateAsync(Board board);
         Task DeleteAsync(BoardId id);
-        Task<Board> RenameAsync(BoardId id, string title);
-        Task<Board> AddRootAsync(BoardId id, Guid entityId);
     }
 }

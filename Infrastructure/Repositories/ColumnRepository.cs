@@ -31,7 +31,7 @@ namespace kanban_lia.Infrastructure.Repositories
             return columns;
         }
 
-        public async Task<IEnumerable<Column>> GetByBoardIdAsync(Guid boardId)
+        public async Task<IEnumerable<Column>> GetByBoardIdAsync(BoardId boardId)
         {
             using var connection = _connectionFactory.CreateConnection();
             var columns = await connection.QueryAsync<Column>(
@@ -44,7 +44,7 @@ namespace kanban_lia.Infrastructure.Repositories
             return columns;
         }
 
-        public async Task<Column?> GetByIdAsync(Guid id)
+        public async Task<Column?> GetByIdAsync(ColumnId id)
         {
             using var connection = _connectionFactory.CreateConnection();
             var column = await connection.QuerySingleOrDefaultAsync<Column>(
@@ -70,7 +70,7 @@ namespace kanban_lia.Infrastructure.Repositories
             );
         }
 
-        public async Task DeleteAsync(Guid id)
+        public async Task DeleteAsync(ColumnId id)
         {
             using var connection = _connectionFactory.CreateConnection();
             await connection.ExecuteAsync(

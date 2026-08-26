@@ -1,6 +1,5 @@
 ﻿namespace kanban_lia.Domain
 {
-
     public readonly record struct EntityId(Guid Value);
     public class Placement
     {
@@ -25,6 +24,5 @@
         {
             return new Placement(entityId, columnId, position, DateTime.UtcNow);
         }
-
     }
 }
