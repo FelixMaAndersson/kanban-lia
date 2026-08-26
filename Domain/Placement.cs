@@ -1,17 +1,18 @@
 ﻿namespace kanban_lia.Domain
 {
+    public readonly record struct EntityId(Guid Value);
     public class Placement
     {
-        public int EntityId { get; }
+        public EntityId EntityId { get; }
 
         public ColumnId ColumnId { get; }
 
-        public int Position { get; }
+        public string Position { get; }
 
         // Timestamp för när kortet placerades i kolumnen
         public DateTime Timestamp { get; }
 
-        private Placement(int entityId, ColumnId columnId, int position, DateTime timestamp)
+        private Placement(EntityId entityId, ColumnId columnId, string position, DateTime timestamp)
         {
             EntityId = entityId;
             ColumnId = columnId;
@@ -19,10 +20,9 @@
             Timestamp = timestamp;
         }
 
-        public static Placement Create(int entityId, ColumnId columnId, int position)
+        public static Placement Create(EntityId entityId, ColumnId columnId, string position)
         {
             return new Placement(entityId, columnId, position, DateTime.UtcNow);
         }
-
     }
 }

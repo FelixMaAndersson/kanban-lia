@@ -17,7 +17,7 @@ namespace kanban_lia.Services
             return await _repository.GetAllAsync();
         }
 
-        public async Task<Board?> GetByIdAsync(Guid id)
+        public async Task<Board?> GetByIdAsync(BoardId id)
         {
             return await _repository.GetByIdAsync(id);
         }
@@ -27,7 +27,7 @@ namespace kanban_lia.Services
             await _repository.UpdateAsync(board);
         }
 
-        public async Task DeleteAsync(Guid id)
+        public async Task DeleteAsync(BoardId id)
         {
             await _repository.DeleteAsync(id);
         }

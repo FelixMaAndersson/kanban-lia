@@ -17,12 +17,12 @@ namespace kanban_lia.Services
             return await _repository.GetAllAsync();
         }
 
-        public async Task<IEnumerable<Column>> GetByBoardIdAsync(Guid boardId)
+        public async Task<IEnumerable<Column>> GetByBoardIdAsync(BoardId boardId)
         {
             return await _repository.GetByBoardIdAsync(boardId);
         }
 
-        public async Task<Column?> GetByIdAsync(Guid id)
+        public async Task<Column?> GetByIdAsync(ColumnId id)
         {
             return await _repository.GetByIdAsync(id);
         }
@@ -32,7 +32,7 @@ namespace kanban_lia.Services
             await _repository.UpdateAsync(column);
         }
 
-        public async Task DeleteAsync(Guid id)
+        public async Task DeleteAsync(ColumnId id)
         {
             await _repository.DeleteAsync(id);
         }

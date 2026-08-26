@@ -6,9 +6,9 @@ namespace kanban_lia.Services
     {
         Task CreateAsync(Column column);
         Task<IEnumerable<Column>> GetAllAsync();
-        Task<IEnumerable<Column>> GetByBoardIdAsync(Guid boardId);
-        Task<Column?> GetByIdAsync(Guid id);
+        Task<IEnumerable<Column>> GetByBoardIdAsync(BoardId boardId);
+        Task<Column?> GetByIdAsync(ColumnId id);
         Task UpdateAsync(Column column);
-        Task DeleteAsync(Guid id);
+        Task DeleteAsync(ColumnId id);
     }
 }

@@ -1,14 +1,14 @@
 ﻿namespace kanban_lia.Domain
 {
-    public readonly record struct BoardId(Guid value);
+    public readonly record struct BoardId(Guid Value);
     public class Board
     {
-        private readonly HashSet<Guid> _roots = [];
+        private readonly HashSet<EntityId> _roots = [];
         public BoardId Id { get; }
         public string Title { get; private set; } = string.Empty;
 
-   
-        public IReadOnlyCollection<Guid> Roots => _roots;
+
+        public IReadOnlyCollection<EntityId> Roots => _roots;
 
         private Board(BoardId id, string title)
         {
@@ -22,12 +22,12 @@
             return new Board(new BoardId(Guid.NewGuid()), title);
         }
 
-        public void AdddRoot(Guid entityId)
+        public void AddRoot(EntityId entityId)
         {
-                _roots.Add(entityId);
+            _roots.Add(entityId);
         }
 
-        public void RemoveRoot(Guid entityId)
+        public void RemoveRoot(EntityId entityId)
         {
             _roots.Remove(entityId);
         }

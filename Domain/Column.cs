@@ -1,15 +1,15 @@
 ﻿namespace kanban_lia.Domain
 {
-    public readonly record struct ColumnId(Guid value);
+    public readonly record struct ColumnId(Guid Value);
     public class Column
     {
         public ColumnId Id { get; }
         public string Title { get; private set;} = string.Empty;
 
         public int Position { get; }
-        public int BoardId { get; }
+        public BoardId BoardId { get; }
 
-        private Column(string title, int position, int boardId)
+        private Column(string title, int position, BoardId boardId)
         {
             Id = new ColumnId(Guid.NewGuid());
             Title = title;
@@ -17,7 +17,7 @@
             BoardId = boardId;
         }
 
-        public static Column Create(string title, int position, int boardId)
+        public static Column Create(string title, int position, BoardId boardId)
         {
             return new Column(title, position, boardId);
         }
