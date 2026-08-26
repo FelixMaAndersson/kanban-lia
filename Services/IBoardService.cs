@@ -1,12 +1,13 @@
-﻿using kanban_lia.Domain;
+﻿using kanban_lia.Services.DTOs;
+using kanban_lia.Models.Domain;
 
 namespace kanban_lia.Services
 {
     public interface IBoardService
     {
-        Task CreateAsync(Board board);
+        Task CreateAsync(string title);
         Task<Board?> GetByIdAsync(BoardId id);
-        Task UpdateAsync(Board board);
+        Task RenameAsync(RenameBoardDto dto);
         Task DeleteAsync(BoardId id);
     }
 }

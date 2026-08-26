@@ -1,5 +1,6 @@
-﻿using kanban_lia.Domain;
-using kanban_lia.Infrastructure.Repositories;
+﻿using kanban_lia.Infrastructure.Repositories;
+using kanban_lia.Models.Domain;
+using kanban_lia.Services.DTOs;
 
 namespace kanban_lia.Services
 {
@@ -7,14 +8,18 @@ namespace kanban_lia.Services
     {
         private readonly ColumnRepository _repository = repository;
 
-        public async Task CreateAsync(Column column)
+        public async Task CreateAsync(CreateColumnDto dto)
         {
-            await _repository.CreateAsync(column);
+            var boardId = new BoardId(dto.BoardId);
+
+            var newColumn = Column.Create(dto.Title, dto.Position, boardId);
+
+            await _repository.CreateAsync(newColumn);
         }
 
-        public async Task<IEnumerable<Column>> GetAllAsync()
+        public async Task DeleteAsync(ColumnId id)
         {
-            return await _repository.GetAllAsync();
+            await _repository.DeleteAsync(id);
         }
 
         public async Task<IEnumerable<Column>> GetByBoardIdAsync(BoardId boardId)
@@ -27,14 +32,12 @@ namespace kanban_lia.Services
             return await _repository.GetByIdAsync(id);
         }
 
-        public async Task UpdateAsync(Column column)
+        public async Task RenameAsync(RenameColumnDto dto)
         {
-            await _repository.UpdateAsync(column);
-        }
+            var columnId = new ColumnId(dto.Id);
 
-        public async Task DeleteAsync(ColumnId id)
-        {
-            await _repository.DeleteAsync(id);
+            await _repository.RenameAsync(columnId, dto.NewTitle);
         }
     }
 }
+

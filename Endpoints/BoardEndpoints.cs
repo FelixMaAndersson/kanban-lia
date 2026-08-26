@@ -1,11 +1,11 @@
-﻿using kanban_lia.Domain;
-using kanban_lia.Endpoints.Board.Requests;
+﻿using kanban_lia.Endpoints.Requests;
+using kanban_lia.Models.Domain;
 using kanban_lia.Services;
 
 // Lägg till BoardDto, ColumnDto och PlacementDto i Domain-mappen för att representera dataöverföringsobjekt (DTO) för respektive entitet.
 // Dessa DTO:er används för att skicka data mellan klienten och servern utan att exponera de interna domänmodellerna direkt.
 
-namespace kanban_lia.Endpoints.Board;
+namespace kanban_lia.Endpoints;
 
 public static class BoardEndpoints
 {
@@ -14,8 +14,8 @@ public static class BoardEndpoints
 
         var group = app.MapGroup("/api/boards");
 
-        app.MapPost("/api/boards", async (
-            Domain.Board board,
+        group.MapPost("/create", async (
+            Board board,
             IBoardService boardService) =>
         {
             await boardService.CreateAsync(board);
@@ -50,14 +50,12 @@ public static class BoardEndpoints
             return Results.Ok(updatedBoard);
         });
 
-        //Alternativ 2.
-        group.MapPut("/{id:guid}/addroot", async (
-            Guid id,
-            Guid newRootId,
+        group.MapPut("/addroot", async (
+            AddRootRequest request,
             IBoardService boardService) =>
         {
-            var boardId = new BoardId(id);
-            var updatedBoard = await boardService.AddRootAsync(boardId, newRootId);
+            var boardId = new BoardId(request.Id);
+            var updatedBoard = await boardService.AddRootAsync(boardId, request.NewRootId);
 
             return Results.Ok(updatedBoard.Roots);
         });

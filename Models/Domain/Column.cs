@@ -1,4 +1,4 @@
-﻿namespace kanban_lia.Domain
+﻿namespace kanban_lia.Models.Domain
 {
     public readonly record struct ColumnId(Guid Value);
     public class Column
