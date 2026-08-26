@@ -14,7 +14,9 @@ namespace kanban_lia.Services
 
             var newColumn = Column.Create(dto.Title, dto.Position, boardId);
 
-            return await _repository.CreateAsync(newColumn);
+            await _repository.CreateAsync(newColumn);
+
+            return newColumn;
         }
 
         public async Task DeleteAsync(ColumnId id)

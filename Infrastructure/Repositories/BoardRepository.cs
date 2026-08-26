@@ -8,15 +8,22 @@ namespace kanban_lia.Infrastructure.Repositories
     {
         private readonly DbConnectionFactory _connectionFactory = connectionFactory;
 
-        public async Task CreateAsync(Board board)
+        public async Task<BoardId> CreateAsync(Board board)
         {
             using var connection = _connectionFactory.CreateConnection();
-            await connection.ExecuteAsync(
+
+            var id = await connection.ExecuteScalarAsync<Guid>(
                 @"
-                    INSERT INTO Boards (Id, Title, Roots) 
-                    VALUES (@Id, @Title, @Roots)",
-                board
+            INSERT INTO Boards (Title)
+            OUTPUT INSERTED.Id
+            VALUES (@Title)",
+                new
+                {
+                    board.Title
+                }
             );
+
+            return new BoardId(id);
         }
 
         public async Task<Board?> GetByIdAsync(BoardId id)
@@ -31,50 +38,63 @@ namespace kanban_lia.Infrastructure.Repositories
             return board;
         }
 
-        public async Task RenameAsync(BoardId id, string title)
+        public async Task<bool> RenameAsync(BoardId id, string title)
         {
             using var connection = _connectionFactory.CreateConnection();
-            await connection.ExecuteAsync(
-                @"
+            var rowsAffected = await connection.ExecuteAsync(
+                 @"
                     UPDATE Boards 
                     SET Title = @Title
                     WHERE Id = @Id",
-                new { Id = id, Title = title }
+                 new { Id = id, Title = title }
+             );
+
+            return rowsAffected > 0;
+        }
+        public async Task<bool> AddRootAsync(BoardId id, EntityId entityId)
+        {
+            using var connection = _connectionFactory.CreateConnection();
+
+            var rowsAffected = await connection.ExecuteAsync(
+                @"
+                    INSERT INTO BoardRoots (BoardId, EntityId) 
+                    VALUES (@BoardId, @EntityId)",
+                new { BoardId = id, EntityId = entityId }
             );
-        }
-        public Task AddRoot(BoardId id, EntityId entityId)
-        {
-            using var connection = _connectionFactory.CreateConnection();
-            return connection.ExecuteAsync(
-                @"
-                    UPDATE Boards 
-                    SET Roots = JSON_ARRAY_APPEND(Roots, '$', @EntityId)
-                    WHERE Id = @Id",
-                new { Id = id, EntityId = entityId }
-            ); // AI genererad (mock)
+
+
+            return rowsAffected > 0;
         }
 
-        public Task RemoveRoot(BoardId id, EntityId entityId)
+        public async Task<bool> RemoveRootAsync(BoardId boardId, EntityId entityId)
         {
             using var connection = _connectionFactory.CreateConnection();
-            return connection.ExecuteAsync(
-                @"
-                    UPDATE Boards 
-                    SET Roots = JSON_REMOVE(Roots, JSON_SEARCH(Roots, @EntityId))
-                    WHERE Id = @Id",
-                new { Id = id, EntityId = entityId }
-            ); // AI genererad (mock)
+
+            const string sql = @"
+                DELETE FROM BoardRoots
+                WHERE BoardId = @BoardId
+                AND EntityId = @EntityId;
+            ";
+
+            var rowsAffected = await connection.ExecuteAsync(sql, new
+            {
+                BoardId = boardId,
+                EntityId = entityId
+            });
+
+            return rowsAffected > 0;
         }
 
-        public async Task DeleteAsync(BoardId id)
+        public async Task<bool> DeleteAsync(BoardId id)
         {
             using var connection = _connectionFactory.CreateConnection();
-            await connection.ExecuteAsync(
+            var rowsAffected = await connection.ExecuteAsync(
                 @"
                     DELETE FROM Boards 
                     WHERE Id = @Id",
                 new { Id = id }
             );
+            return rowsAffected > 0;
         }
     }
 }

@@ -4,11 +4,11 @@ namespace kanban_lia.Infrastructure.Repositories
 {
     public interface IBoardRepository
     {
-        Task CreateAsync(Board board);
+        Task<BoardId> CreateAsync(Board board);
         Task<Board?> GetByIdAsync(BoardId id);
-        Task RenameAsync(BoardId id, string title);
-        Task AddRoot(BoardId id, EntityId entityId);
-        Task RemoveRoot(BoardId id, EntityId entityId);
-        Task DeleteAsync(BoardId id);
+        Task<bool> RenameAsync(BoardId id, string title);
+        Task<bool> AddRootAsync(BoardId id, EntityId entityId);
+        Task<bool> RemoveRootAsync(BoardId id, EntityId entityId);
+        Task<bool> DeleteAsync(BoardId id);
     }
 }

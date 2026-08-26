@@ -1,4 +1,5 @@
-﻿using kanban_lia.Endpoints.Requests.Column;
+﻿using AutoMapper;
+using kanban_lia.Endpoints.Requests.Column;
 using kanban_lia.Models.Domain;
 using kanban_lia.Services;
 using kanban_lia.Services.DTOs;
@@ -16,26 +17,14 @@ public static class ColumnEndpoints
 
         group.MapPost("/create", async (
             CreateColumnRequest request,
-            IColumnService columnService) =>
+            IColumnService columnService,
+            IMapper mapper) =>
         {
-            var dto = new CreateColumnDto(
-                request.Title,
-                request.Position,
-                request.BoardId);
+            var dto = mapper.Map<CreateColumnDto>(request);
 
-            var newColumn = await columnService.CreateAsync(dto);
+            var column = await columnService.CreateAsync(dto);
 
-            return Results.Created(
-                $"/api/columns/{newColumn.Id}",
-                newColumn);
-        });
-
-        app.MapGet("/api/columns", async (
-            IColumnService columnService) =>
-        {
-            var columns = await columnService.GetAllAsync();
-
-            return Results.Ok(columns);
+            return Results.Created($"/api/columns/create", column);
         });
 
         app.MapGet("/api/columns/{id:guid}", async (

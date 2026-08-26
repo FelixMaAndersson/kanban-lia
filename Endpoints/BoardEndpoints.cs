@@ -1,4 +1,5 @@
-﻿using kanban_lia.Endpoints.Requests.Board;
+﻿using AutoMapper;
+using kanban_lia.Endpoints.Requests.Board;
 using kanban_lia.Models.Domain;
 using kanban_lia.Services;
 using kanban_lia.Services.DTOs;
@@ -22,11 +23,9 @@ public static class BoardEndpoints
         {
             var newBoard = Board.Create(title);
 
-            await boardService.CreateAsync(newBoard.Title);
+            var board = await boardService.CreateAsync(newBoard.Title);
 
-            return Results.Created(
-                $"/api/boards/{newBoard.Id}",
-                newBoard);
+            return Results.Created($"/api/boards/create", board);
         });
 
         // Get a board by its ID
@@ -44,21 +43,23 @@ public static class BoardEndpoints
         // Rename a board
         group.MapPut("/rename", async (
             RenameBoardRequest request,
-            IBoardService boardService) =>
+            IBoardService boardService,
+            IMapper mapper) =>
         {
-            var requestDto = new RenameBoardDto(request.Id, request.NewTitle);
+            var requestDto = mapper.Map<RenameBoardDto>(request);
 
             await boardService.RenameAsync(requestDto);
 
-            return Results.Ok(requestDto);
+            return Results.NoContent();
         });
 
         // Add a new root to a board
         group.MapPut("/addroot", async (
             AddRootRequest request,
-            IBoardService boardService) =>
+            IBoardService boardService,
+            IMapper mapper) =>
         {
-            var requestDto = new AddRootDto(request.Id, request.NewEntityId);
+            var requestDto = mapper.Map<AddRootDto>(request);
 
             await boardService.AddRootAsync(requestDto);
 
@@ -68,9 +69,10 @@ public static class BoardEndpoints
         // Remove a root from a board
         group.MapDelete("/removeroot", async (
             RemoveRootRequest request,
-            IBoardService boardService) =>
+            IBoardService boardService,
+            IMapper mapper) =>
         {
-            var requestDto = new RemoveRootDto(request.Id, request.EntityId);
+            var requestDto = mapper.Map<RemoveRootDto>(request);
 
             await boardService.RemoveRootAsync(requestDto);
 

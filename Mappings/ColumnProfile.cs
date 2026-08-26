@@ -1,0 +1,21 @@
+﻿namespace kanban_lia.Mappings
+{
+    using AutoMapper;
+    using kanban_lia.Endpoints.Requests.Column;
+    using kanban_lia.Models.Domain;
+    using kanban_lia.Models.DTOs.Column;
+    using kanban_lia.Services.DTOs;
+
+    public class ColumnProfile : Profile
+    {
+        public ColumnProfile()
+        {
+            CreateMap<CreateColumnRequest, CreateColumnDto>();
+
+            CreateMap<Column, ColumnDto>()
+                .ForMember(
+                    dest => dest.Id,
+                    opt => opt.MapFrom(src => src.Id.Value));
+        }
+    }
+}
