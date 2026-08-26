@@ -1,6 +1,7 @@
 ﻿namespace kanban_lia.Domain
 {
-    public readonly record struct ColumnId(Guid value);
+    public readonly record struct ColumnId(Guid Value);
+
     public class Column
     {
         public ColumnId Id { get; }
