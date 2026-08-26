@@ -57,29 +57,30 @@ namespace kanban_lia.Infrastructure.Repositories
             return column;
         }
 
-        public async Task RenameAsync(ColumnId id, string title)
+        public async Task<bool> RenameAsync(ColumnId id, string title)
         {
             using var connection = _connectionFactory.CreateConnection();
-            await connection.ExecuteAsync(
+            var rowsAffected = await connection.ExecuteAsync(
                 @"
                     UPDATE Columns 
                     SET Title = @Title
                     WHERE Id = @Id",
                 new { Id = id, Title = title }
             );
+
+            return rowsAffected > 0;
         }
 
-        //Kanske ha en move method också??
-
-        public async Task DeleteAsync(ColumnId id)
+        public async Task<bool> DeleteAsync(ColumnId id)
         {
             using var connection = _connectionFactory.CreateConnection();
-            await connection.ExecuteAsync(
+            var rowsAffected = await connection.ExecuteAsync(
                 @"
                     DELETE FROM Columns 
                     WHERE Id = @Id",
                 new { Id = id }
             );
+            return rowsAffected > 0;
         }
     }
 }
