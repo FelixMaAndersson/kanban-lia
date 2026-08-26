@@ -1,7 +1,6 @@
 ﻿using Dapper;
-
-using kanban_lia.Domain;
 using kanban_lia.Infrastructure.Database;
+using kanban_lia.Models.Domain;
 
 namespace kanban_lia.Infrastructure.Repositories
 {
@@ -21,15 +20,15 @@ namespace kanban_lia.Infrastructure.Repositories
         }
 
         // Behöver vi lägga till en metod för att hämta alla kolumner, samt en metod för att hämta kolumner baserat på BoardId?
-        public async Task<IEnumerable<Column>> GetAllAsync()
-        {
-            using var connection = _connectionFactory.CreateConnection();
-            var columns = await connection.QueryAsync<Column>(
-                @"
-                    SELECT * FROM Columns"
-            );
-            return columns;
-        }
+        //public async Task<IEnumerable<Column>> GetAllAsync()
+        //{
+        //    using var connection = _connectionFactory.CreateConnection();
+        //    var columns = await connection.QueryAsync<Column>(
+        //        @"
+        //            SELECT * FROM Columns"
+        //    );
+        //    return columns;
+        //}
 
         public async Task<IEnumerable<Column>> GetByBoardIdAsync(BoardId boardId)
         {
@@ -57,18 +56,19 @@ namespace kanban_lia.Infrastructure.Repositories
             return column;
         }
 
-        public async Task UpdateAsync(Column column)
+        public async Task RenameAsync(ColumnId id, string title)
         {
             using var connection = _connectionFactory.CreateConnection();
             await connection.ExecuteAsync(
                 @"
                     UPDATE Columns 
-                    SET Title = @Title, 
-                    Position = @Position 
+                    SET Title = @Title
                     WHERE Id = @Id",
-                column
+                new { Id = id, Title = title }
             );
         }
+
+        //Kanske ha en move method också??
 
         public async Task DeleteAsync(ColumnId id)
         {

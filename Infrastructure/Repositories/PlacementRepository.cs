@@ -1,7 +1,6 @@
 ﻿using Dapper;
-
-using kanban_lia.Domain;
 using kanban_lia.Infrastructure.Database;
+using kanban_lia.Models.Domain;
 
 namespace kanban_lia.Infrastructure.Repositories
 {
@@ -19,16 +18,6 @@ namespace kanban_lia.Infrastructure.Repositories
                     VALUES (@Id, @BoardId, @ColumnId, @Position)",
                 placement
             );
-        }
-
-        public async Task<IEnumerable<Placement>> GetAllAsync()
-        {
-            using var connection = _connectionFactory.CreateConnection();
-            var placements = await connection.QueryAsync<Placement>(
-                @"
-                    SELECT * FROM Placements"
-            );
-            return placements;
         }
 
         public async Task<Placement?> GetByIdAsync(Guid id)

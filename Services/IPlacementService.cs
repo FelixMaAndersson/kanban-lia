@@ -1,12 +1,11 @@
-﻿using kanban_lia.Domain;
+﻿using kanban_lia.Models.Domain;
+using kanban_lia.Services.DTOs;
 
 namespace kanban_lia.Services
 {
     public interface IPlacementService
     {
-        Task CreateAsync(Placement placement);
-
-        Task<IEnumerable<Placement>> GetAllAsync();
+        Task CreateAsync(CreatePlacementDto dto);
 
         Task<Placement?> GetByIdAsync(Guid id);
     }

@@ -1,4 +1,4 @@
-﻿namespace kanban_lia.Domain
+﻿namespace kanban_lia.Models.Domain
 {
     public readonly record struct EntityId(Guid Value);
     public class Placement

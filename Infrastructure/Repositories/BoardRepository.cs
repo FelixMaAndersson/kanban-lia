@@ -1,7 +1,6 @@
 ﻿using Dapper;
-
-using kanban_lia.Domain;
 using kanban_lia.Infrastructure.Database;
+using kanban_lia.Models.Domain;
 
 namespace kanban_lia.Infrastructure.Repositories
 {
@@ -14,8 +13,8 @@ namespace kanban_lia.Infrastructure.Repositories
             using var connection = _connectionFactory.CreateConnection();
             await connection.ExecuteAsync(
                 @"
-                    INSERT INTO Boards (Id, Title, TrackedRoots) 
-                    VALUES (@Id, @Title, @TrackedRoots)",
+                    INSERT INTO Boards (Id, Title, Roots) 
+                    VALUES (@Id, @Title, @Roots)",
                 board
             );
         }
@@ -42,16 +41,15 @@ namespace kanban_lia.Infrastructure.Repositories
             return board;
         }
 
-        public async Task UpdateAsync(Board board)
+        public async Task RenameAsync(BoardId id, string title)
         {
             using var connection = _connectionFactory.CreateConnection();
             await connection.ExecuteAsync(
                 @"
                     UPDATE Boards 
-                    SET Title = @Title, 
-                    TrackedRoots = @TrackedRoots 
+                    SET Title = @Title
                     WHERE Id = @Id",
-                board
+                new { Id = id, Title = title }
             );
         }
 

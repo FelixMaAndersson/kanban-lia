@@ -1,45 +1,35 @@
-﻿using kanban_lia.Domain;
-using kanban_lia.Infrastructure.Repositories;
+﻿using kanban_lia.Infrastructure.Repositories;
+using kanban_lia.Models.Domain;
+using kanban_lia.Services.DTOs;
 
 namespace kanban_lia.Services
 {
     public class BoardService(BoardRepository repository) : IBoardService
     {
-        private readonly IBoardRepository _repository = repository;
+        private readonly BoardRepository _repository = repository;
 
-        public Task CreateAsync(Board board)
+        public async Task CreateAsync(string title)
         {
-            throw new NotImplementedException();
-        }
+            var newBoard = Board.Create(title);
 
-        public Task DeleteAsync(BoardId id)
-        {
-            throw new NotImplementedException();
-        }
-
-        public async Task<Board?> GetByIdAsync(BoardId id)
-        {
-            throw new NotImplementedException();
-        }
-
-        public async Task<Board> RenameAsync(BoardId id, string title)
-        {
-            var existingBoard = await _repository.GetByIdAsync(id);
-            existingBoard.Rename(title);
-            _repository.Update(existingBoard);
-            return existingBoard;
-        }
-        public async Task<Board> AddRootAsync(BoardId id, Guid entityId)
-        {
-            var existingBoard = await _repository.GetByIdAsync(id);
-            existingBoard.AddRoot(entityId);
-            _repository.Update(existingBoard);
-            return existingBoard;
+            await _repository.CreateAsync(newBoard);
         }
 
         public async Task DeleteAsync(BoardId id)
         {
-            throw new NotImplementedException();
+            await _repository.DeleteAsync(id);
+        }
+
+        public async Task<Board?> GetByIdAsync(BoardId id)
+        {
+            return await _repository.GetByIdAsync(id);
+        }
+
+        public async Task RenameAsync(RenameBoardDto dto)
+        {
+            var boardId = new BoardId(dto.Id);
+
+            await _repository.RenameAsync(boardId, dto.NewTitle);
         }
     }
 }
