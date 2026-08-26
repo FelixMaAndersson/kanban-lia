@@ -7,7 +7,9 @@ namespace kanban_lia.Infrastructure.Repositories
         Task<Column> CreateAsync(Column column);
         Task<IEnumerable<Column>> GetByBoardIdAsync(BoardId boardId);
         Task<Column?> GetByIdAsync(ColumnId id);
-        Task RenameAsync(ColumnId id, string title);
-        Task DeleteAsync(ColumnId id);
+        Task<bool> RenameAsync(ColumnId id, string title);
+        
+        //Kanske ha en move method också??
+        Task<bool> DeleteAsync(ColumnId id);
     }
 }

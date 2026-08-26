@@ -8,16 +8,19 @@ namespace kanban_lia.Infrastructure.Repositories
     {
         private readonly DbConnectionFactory _connectionFactory = connectionFactory;
 
-        public async Task CreateAsync(Placement placement)
+        public async Task<Placement> CreateAsync(Placement placement)
         {
             using var connection = _connectionFactory.CreateConnection();
-            await connection.ExecuteAsync(
+            var id = await connection.ExecuteScalarAsync<Guid>(
                 @"
                     INSERT INTO Placements 
-                    (Id, ColumnId, Position) 
-                    VALUES (@Id, @BoardId, @ColumnId, @Position)",
+                    (EntityId, ColumnId, Position) 
+                    VALUES (@EntityId, @ColumnId, @Position)",
                 placement
             );
+
+            return placement;
+
         }
 
         public async Task<Placement?> GetByIdAsync(Guid id)
