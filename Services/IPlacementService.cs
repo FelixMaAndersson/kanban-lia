@@ -5,7 +5,7 @@ namespace kanban_lia.Services
 {
     public interface IPlacementService
     {
-        Task CreateAsync(CreatePlacementDto dto);
+        Task<Placement> CreateAsync(CreatePlacementDto dto);
 
         Task<Placement?> GetByIdAsync(Guid id);
     }

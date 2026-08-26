@@ -8,17 +8,11 @@ namespace kanban_lia.Services
     {
         private readonly IBoardRepository _repository = repository;
 
-
-        public async Task CreateAsync(string title)
+        public async Task<BoardId> CreateAsync(string title)
         {
             var newBoard = Board.Create(title);
 
-            await _repository.CreateAsync(newBoard);
-        }
-
-        public async Task DeleteAsync(BoardId id)
-        {
-            await _repository.DeleteAsync(id);
+            return await _repository.CreateAsync(newBoard);
         }
 
         public async Task<Board?> GetByIdAsync(BoardId id)
@@ -26,27 +20,32 @@ namespace kanban_lia.Services
             return await _repository.GetByIdAsync(id);
         }
 
-        public async Task AddRoot(AddRootDto dto)
-        {
-            var boardId = new BoardId(dto.BoardId);
-            var entityId = new EntityId(dto.EntityId);
-
-            await _repository.AddRoot(boardId, entityId);
-        }
-
-        public async Task RemoveRoot(RemoveRootDto dto)
-        {
-            var boardId = new BoardId(dto.BoardId);
-            var entityId = new EntityId(dto.EntityId);
-
-            await _repository.RemoveRoot(boardId, entityId);
-        }
-
-        public async Task RenameAsync(RenameBoardDto dto)
+        public async Task<bool> RenameAsync(RenameBoardDto dto)
         {
             var boardId = new BoardId(dto.Id);
 
-            await _repository.RenameAsync(boardId, dto.NewTitle);
+            return await _repository.RenameAsync(boardId, dto.NewTitle);
+        }
+
+        public async Task<bool> AddRootAsync(AddRootDto dto)
+        {
+            var boardId = new BoardId(dto.BoardId);
+            var entityId = new EntityId(dto.EntityId);
+
+            return await _repository.AddRootAsync(boardId, entityId);
+        }
+
+        public async Task<bool> RemoveRootAsync(RemoveRootDto dto)
+        {
+            var boardId = new BoardId(dto.BoardId);
+            var entityId = new EntityId(dto.EntityId);
+
+            return await _repository.RemoveRootAsync(boardId, entityId);
+        }
+
+        public async Task<bool> DeleteAsync(BoardId id)
+        {
+            return await _repository.DeleteAsync(id);
         }
     }
 }

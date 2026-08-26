@@ -1,10 +1,8 @@
-﻿using kanban_lia.Endpoints.Requests.Board;
+﻿using AutoMapper;
+using kanban_lia.Endpoints.Requests.Board;
 using kanban_lia.Models.Domain;
 using kanban_lia.Services;
 using kanban_lia.Services.DTOs;
-
-// Lägg till BoardDto, ColumnDto och PlacementDto i Domain-mappen för att representera dataöverföringsobjekt (DTO) för respektive entitet.
-// Dessa DTO:er används för att skicka data mellan klienten och servern utan att exponera de interna domänmodellerna direkt.
 
 namespace kanban_lia.Endpoints;
 
@@ -22,11 +20,9 @@ public static class BoardEndpoints
         {
             var newBoard = Board.Create(title);
 
-            await boardService.CreateAsync(newBoard.Title);
+            var boardId = await boardService.CreateAsync(newBoard.Title);
 
-            return Results.Created(
-                $"/api/boards/{newBoard.Id}",
-                newBoard);
+            return Results.Created($"/api/boards/create", boardId);
         });
 
         // Get a board by its ID
@@ -44,37 +40,40 @@ public static class BoardEndpoints
         // Rename a board
         group.MapPut("/rename", async (
             RenameBoardRequest request,
-            IBoardService boardService) =>
+            IBoardService boardService,
+            IMapper mapper) =>
         {
-            var requestDto = new RenameBoardDto(request.Id, request.NewTitle);
+            var requestDto = mapper.Map<RenameBoardDto>(request);
 
-            await boardService.RenameAsync(requestDto);
+            var success = await boardService.RenameAsync(requestDto);
 
-            return Results.Ok(requestDto);
+            return Results.Ok(success);
         });
 
         // Add a new root to a board
         group.MapPut("/addroot", async (
             AddRootRequest request,
-            IBoardService boardService) =>
+            IBoardService boardService,
+            IMapper mapper) =>
         {
-            var requestDto = new AddRootDto(request.Id, request.NewEntityId);
+            var requestDto = mapper.Map<AddRootDto>(request);
 
-            await boardService.AddRootAsync(requestDto);
+            var success = await boardService.AddRootAsync(requestDto);
 
-            return Results.Ok(requestDto);
+            return Results.Ok(success);
         });
 
         // Remove a root from a board
         group.MapDelete("/removeroot", async (
             RemoveRootRequest request,
-            IBoardService boardService) =>
+            IBoardService boardService,
+            IMapper mapper) =>
         {
-            var requestDto = new RemoveRootDto(request.Id, request.EntityId);
+            var requestDto = mapper.Map<RemoveRootDto>(request);
 
-            await boardService.RemoveRootAsync(requestDto);
+            var success = await boardService.RemoveRootAsync(requestDto);
 
-            return Results.Ok(requestDto);
+            return Results.Ok(success);
         });
 
 
@@ -85,9 +84,9 @@ public static class BoardEndpoints
         {
             var boardId = new BoardId(id);
 
-            await boardService.DeleteAsync(boardId);
+            var success = await boardService.DeleteAsync(boardId);
 
-            return Results.NoContent();
+            return Results.Ok(success);
         });
     }
 }

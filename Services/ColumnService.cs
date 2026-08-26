@@ -17,11 +17,6 @@ namespace kanban_lia.Services
             return await _repository.CreateAsync(newColumn);
         }
 
-        public async Task DeleteAsync(ColumnId id)
-        {
-            await _repository.DeleteAsync(id);
-        }
-
         public async Task<IEnumerable<Column>> GetByBoardIdAsync(BoardId boardId)
         {
             return await _repository.GetByBoardIdAsync(boardId);
@@ -32,11 +27,16 @@ namespace kanban_lia.Services
             return await _repository.GetByIdAsync(id);
         }
 
-        public async Task RenameAsync(RenameColumnDto dto)
+        public async Task<bool> RenameAsync(RenameColumnDto dto)
         {
             var columnId = new ColumnId(dto.Id);
 
-            await _repository.RenameAsync(columnId, dto.NewTitle);
+            return await _repository.RenameAsync(columnId, dto.NewTitle);
+        }
+
+        public async Task<bool> DeleteAsync(ColumnId id)
+        {
+            return await _repository.DeleteAsync(id);
         }
     }
 }

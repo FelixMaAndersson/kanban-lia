@@ -8,7 +8,7 @@ namespace kanban_lia.Services
         Task<Column> CreateAsync(CreateColumnDto dto);
         Task<IEnumerable<Column>> GetByBoardIdAsync(BoardId boardId);
         Task<Column?> GetByIdAsync(ColumnId id);
-        Task RenameAsync(RenameColumnDto dto);
-        Task DeleteAsync(ColumnId id);
+        Task<bool> RenameAsync(RenameColumnDto dto);
+        Task<bool> DeleteAsync(ColumnId id);
     }
 }
