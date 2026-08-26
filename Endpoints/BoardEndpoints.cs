@@ -1,6 +1,7 @@
-﻿using kanban_lia.Endpoints.Requests;
+﻿using kanban_lia.Endpoints.Requests.Board;
 using kanban_lia.Models.Domain;
 using kanban_lia.Services;
+using kanban_lia.Services.DTOs;
 
 // Lägg till BoardDto, ColumnDto och PlacementDto i Domain-mappen för att representera dataöverföringsobjekt (DTO) för respektive entitet.
 // Dessa DTO:er används för att skicka data mellan klienten och servern utan att exponera de interna domänmodellerna direkt.
@@ -14,64 +15,77 @@ public static class BoardEndpoints
 
         var group = app.MapGroup("/api/boards");
 
+        // Create a new board
         group.MapPost("/create", async (
-            Board board,
+            string title,
             IBoardService boardService) =>
         {
-            await boardService.CreateAsync(board);
+            var newBoard = Board.Create(title);
+
+            await boardService.CreateAsync(newBoard.Title);
 
             return Results.Created(
-                $"/api/boards/{board.Id}",
-                board);
+                $"/api/boards/{newBoard.Id}",
+                newBoard);
         });
 
-        app.MapGet("/api/boards/{id:guid}", async (
+        // Get a board by its ID
+        group.MapGet("/{id:guid}", async (
             Guid id,
             IBoardService boardService) =>
         {
-            var board = await boardService.GetByIdAsync(id);
+            var boardId = new BoardId(id);
 
-            if (board is null)
-            {
-                return Results.NotFound();
-            }
+            var board = await boardService.GetByIdAsync(boardId);
 
             return Results.Ok(board);
         });
 
-        // Alternativ 1. RenameBoardRequest är ett kontrakt som innehåller boardId och newName.
+        // Rename a board
         group.MapPut("/rename", async (
             RenameBoardRequest request,
             IBoardService boardService) =>
         {
-            var boardId = new BoardId(request.Id);
-            var updatedBoard = await boardService.RenameAsync(boardId, request.NewName);
+            var requestDto = new RenameBoardDto(request.Id, request.NewTitle);
 
-            return Results.Ok(updatedBoard);
+            await boardService.RenameAsync(requestDto);
+
+            return Results.Ok(requestDto);
         });
 
+        // Add a new root to a board
         group.MapPut("/addroot", async (
             AddRootRequest request,
             IBoardService boardService) =>
         {
-            var boardId = new BoardId(request.Id);
-            var updatedBoard = await boardService.AddRootAsync(boardId, request.NewRootId);
+            var requestDto = new AddRootDto(request.Id, request.NewEntityId);
 
-            return Results.Ok(updatedBoard.Roots);
+            await boardService.AddRootAsync(requestDto);
+
+            return Results.Ok(requestDto);
         });
 
-        app.MapDelete("/api/boards/{id:guid}", async (
+        // Remove a root from a board
+        group.MapDelete("/removeroot", async (
+            RemoveRootRequest request,
+            IBoardService boardService) =>
+        {
+            var requestDto = new RemoveRootDto(request.Id, request.EntityId);
+
+            await boardService.RemoveRootAsync(requestDto);
+
+            return Results.Ok(requestDto);
+        });
+
+
+        // Delete a board by its ID
+        group.MapDelete("/delete/{id:guid}", async (
             Guid id,
             IBoardService boardService) =>
         {
-            var existingBoard = await boardService.GetByIdAsync(id);
+            var boardId = new BoardId(id);
 
-            if (existingBoard is null)
-            {
-                return Results.NotFound();
-            }
-
-            await boardService.DeleteAsync(id);
+            await boardService.DeleteAsync(boardId);
 
             return Results.NoContent();
         });

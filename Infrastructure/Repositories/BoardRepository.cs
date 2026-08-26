@@ -42,6 +42,29 @@ namespace kanban_lia.Infrastructure.Repositories
                 new { Id = id, Title = title }
             );
         }
+        public Task AddRoot(BoardId id, EntityId entityId)
+        {
+            using var connection = _connectionFactory.CreateConnection();
+            return connection.ExecuteAsync(
+                @"
+                    UPDATE Boards 
+                    SET Roots = JSON_ARRAY_APPEND(Roots, '$', @EntityId)
+                    WHERE Id = @Id",
+                new { Id = id, EntityId = entityId }
+            ); // AI genererad (mock)
+        }
+
+        public Task RemoveRoot(BoardId id, EntityId entityId)
+        {
+            using var connection = _connectionFactory.CreateConnection();
+            return connection.ExecuteAsync(
+                @"
+                    UPDATE Boards 
+                    SET Roots = JSON_REMOVE(Roots, JSON_SEARCH(Roots, @EntityId))
+                    WHERE Id = @Id",
+                new { Id = id, EntityId = entityId }
+            ); // AI genererad (mock)
+        }
 
         public async Task DeleteAsync(BoardId id)
         {

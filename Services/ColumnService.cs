@@ -8,13 +8,13 @@ namespace kanban_lia.Services
     {
         private readonly IColumnRepository _repository = repository;
 
-        public async Task CreateAsync(CreateColumnDto dto)
+        public async Task<Column> CreateAsync(CreateColumnDto dto)
         {
             var boardId = new BoardId(dto.BoardId);
 
             var newColumn = Column.Create(dto.Title, dto.Position, boardId);
 
-            await _repository.CreateAsync(newColumn);
+            return await _repository.CreateAsync(newColumn);
         }
 
         public async Task DeleteAsync(ColumnId id)
