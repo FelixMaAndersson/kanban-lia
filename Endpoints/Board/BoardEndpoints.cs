@@ -1,11 +1,19 @@
-﻿using kanban_lia.Services;
+﻿using kanban_lia.Domain;
+using kanban_lia.Endpoints.Board.Requests;
+using kanban_lia.Services;
 
-namespace kanban_lia.Endpoints;
+// Lägg till BoardDto, ColumnDto och PlacementDto i Domain-mappen för att representera dataöverföringsobjekt (DTO) för respektive entitet.
+// Dessa DTO:er används för att skicka data mellan klienten och servern utan att exponera de interna domänmodellerna direkt.
+
+namespace kanban_lia.Endpoints.Board;
 
 public static class BoardEndpoints
 {
     public static void MapBoardEndpoints(WebApplication app)
     {
+
+        var group = app.MapGroup("/api/boards");
+
         app.MapPost("/api/boards", async (
             Domain.Board board,
             IBoardService boardService) =>
@@ -31,23 +39,27 @@ public static class BoardEndpoints
             return Results.Ok(board);
         });
 
-        app.MapPut("/api/boards/{id:guid}", async (
-            Guid id,
-            Domain.Board updatedBoard,
+        // Alternativ 1. RenameBoardRequest är ett kontrakt som innehåller boardId och newName.
+        group.MapPut("/rename", async (
+            RenameBoardRequest request,
             IBoardService boardService) =>
         {
-            var existingBoard = await boardService.GetByIdAsync(id);
+            var boardId = new BoardId(request.Id);
+            var updatedBoard = await boardService.RenameAsync(boardId, request.NewName);
 
-            if (existingBoard is null)
-            {
-                return Results.NotFound();
-            }
+            return Results.Ok(updatedBoard);
+        });
 
-            updatedBoard.Id = id;
+        //Alternativ 2.
+        group.MapPut("/{id:guid}/addroot", async (
+            Guid id,
+            Guid newRootId,
+            IBoardService boardService) =>
+        {
+            var boardId = new BoardId(id);
+            var updatedBoard = await boardService.AddRootAsync(boardId, newRootId);
 
-            await boardService.UpdateAsync(updatedBoard);
-
-            return Results.NoContent();
+            return Results.Ok(updatedBoard.Roots);
         });
 
         app.MapDelete("/api/boards/{id:guid}", async (
