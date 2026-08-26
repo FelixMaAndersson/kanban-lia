@@ -8,7 +8,7 @@ namespace kanban_lia.Infrastructure.Repositories
     {
         private readonly DbConnectionFactory _connectionFactory = connectionFactory;
 
-        public async Task CreateAsync(Column column)
+        public async Task<Column> CreateAsync(Column column)
         {
             using var connection = _connectionFactory.CreateConnection();
             await connection.ExecuteAsync(
@@ -17,6 +17,7 @@ namespace kanban_lia.Infrastructure.Repositories
                     VALUES (@Id, @BoardId, @Title, @Position)",
                 column
             );
+            return column;
         }
 
         // Behöver vi lägga till en metod för att hämta alla kolumner, samt en metod för att hämta kolumner baserat på BoardId?

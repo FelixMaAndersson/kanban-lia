@@ -11,7 +11,7 @@ namespace kanban_lia.Infrastructure.Repositories
         public async Task<Placement> CreateAsync(Placement placement)
         {
             using var connection = _connectionFactory.CreateConnection();
-            var id = await connection.ExecuteScalarAsync<Guid>(
+            await connection.ExecuteScalarAsync<Guid>(
                 @"
                     INSERT INTO Placements 
                     (EntityId, ColumnId, Position) 
@@ -20,7 +20,6 @@ namespace kanban_lia.Infrastructure.Repositories
             );
 
             return placement;
-
         }
 
         public async Task<Placement?> GetByIdAsync(Guid id)

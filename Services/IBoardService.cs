@@ -5,11 +5,11 @@ namespace kanban_lia.Services
 {
     public interface IBoardService
     {
-        Task<Board> CreateAsync(string title);
+        Task<BoardId> CreateAsync(string title);
         Task<Board?> GetByIdAsync(BoardId id);
-        Task RenameAsync(RenameBoardDto dto);
-        Task AddRootAsync(AddRootDto dto);
-        Task RemoveRootAsync(RemoveRootDto dto);
-        Task DeleteAsync(BoardId id);
+        Task<bool> RenameAsync(RenameBoardDto dto);
+        Task<bool> AddRootAsync(AddRootDto dto);
+        Task<bool> RemoveRootAsync(RemoveRootDto dto);
+        Task<bool> DeleteAsync(BoardId id);
     }
 }

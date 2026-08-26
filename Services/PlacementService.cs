@@ -8,14 +8,14 @@ namespace kanban_lia.Services
     {
         private readonly IPlacementRepository _repository = repository;
 
-        public async Task CreateAsync(CreatePlacementDto dto)
+        public async Task<Placement> CreateAsync(CreatePlacementDto dto)
         {
             var entityId = new EntityId(dto.EntityId);
             var columnId = new ColumnId(dto.ColumnId);
 
             var newPlacement = Placement.Create(entityId, columnId, dto.Position);
 
-            await _repository.CreateAsync(newPlacement);
+            return await _repository.CreateAsync(newPlacement);
         }
 
         public async Task<Placement?> GetByIdAsync(Guid id)

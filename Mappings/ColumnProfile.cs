@@ -1,11 +1,11 @@
-﻿namespace kanban_lia.Mappings
-{
-    using AutoMapper;
-    using kanban_lia.Endpoints.Requests.Column;
-    using kanban_lia.Models.Domain;
-    using kanban_lia.Models.DTOs.Column;
-    using kanban_lia.Services.DTOs;
+﻿using AutoMapper;
+using kanban_lia.Endpoints.Requests.Column;
+using kanban_lia.Models.Domain;
+using kanban_lia.Models.DTOs.Column;
+using kanban_lia.Services.DTOs;
 
+namespace kanban_lia.Mappings
+{
     public class ColumnProfile : Profile
     {
         public ColumnProfile()
