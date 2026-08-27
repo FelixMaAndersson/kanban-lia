@@ -19,9 +19,9 @@ namespace kanban_lia.Services.Placements
             return await _repository.CreateAsync(newPlacement);
         }
 
-        public async Task<Placement?> GetByIdAsync(Guid id)
+        public async Task<Placement?> GetCurrentAsync(Guid id)
         {
-            return await _repository.GetByIdAsync(id);
+            return await _repository.GetCurrentAsync(id);
         }
     }
 }

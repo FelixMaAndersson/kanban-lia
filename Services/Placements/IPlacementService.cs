@@ -8,6 +8,6 @@ namespace kanban_lia.Services.Placements
     {
         Task<Placement> CreateAsync(CreatePlacementDto dto);
 
-        Task<Placement?> GetByIdAsync(Guid id);
+        Task<Placement?> GetCurrentAsync(Guid id);
     }
 }
