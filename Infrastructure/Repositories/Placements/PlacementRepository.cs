@@ -22,16 +22,23 @@ namespace kanban_lia.Infrastructure.Repositories.Placements
             return placement;
         }
 
-        public async Task<Placement?> GetByIdAsync(Guid id)
+        public async Task<Placement?> GetCurrentAsync(Guid id)
         {
             using var connection = _connectionFactory.CreateConnection();
-            var placement = await connection.QuerySingleOrDefaultAsync<Placement>(
+            
+            return await connection.QuerySingleOrDefaultAsync<Placement>(
                 @"
-                    SELECT * FROM Placements 
-                    WHERE Id = @Id",
-                new { Id = id }
+                    SELECT TOP 1
+                        p.EntityId
+                        p.ColumnId
+                        p.Timestamp
+                    FROM Placements AS p
+                    INNER JOIN Columns AS c
+                    ON p.ColumnId = c.Id
+                    WHERE p.EntityId = @EntityId 
+                    AND c.BoardId = @BoardId
+                    ORDER BY Timestamp DESC"
             );
-            return placement;
         }
     }
 }
