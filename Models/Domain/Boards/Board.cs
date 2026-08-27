@@ -7,7 +7,7 @@ namespace kanban_lia.Models.Domain.Boards
     {
         private readonly HashSet<EntityId> _roots = [];
         public BoardId Id { get; }
-        public string Title { get; private set; } = string.Empty;
+        public string Title { get; private set; }
 
 
         public IReadOnlyCollection<EntityId> Roots => _roots;
