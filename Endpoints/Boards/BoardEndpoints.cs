@@ -23,7 +23,7 @@ public static class BoardEndpoints
 
             var boardId = await boardService.CreateAsync(newBoard.Title);
 
-            return Results.Created($"/api/boards/create", boardId);
+            return Results.Ok();
         });
 
         // Get a board by its ID
@@ -40,7 +40,7 @@ public static class BoardEndpoints
 
         // Rename a board
         group.MapPut("/rename", async (
-            [FromBody]RenameBoardRequest request,
+            [FromBody] RenameBoardRequest request,
             IBoardService boardService,
             IMapper mapper) =>
         {
@@ -53,7 +53,7 @@ public static class BoardEndpoints
 
         // Add a new root to a board
         group.MapPut("/addroot", async (
-            [FromBody]AddRootRequest request,
+            [FromBody] AddRootRequest request,
             IBoardService boardService,
             IMapper mapper) =>
         {
@@ -66,7 +66,7 @@ public static class BoardEndpoints
 
         // Remove a root from a board
         group.MapDelete("/removeroot", async (
-            [FromBody]RemoveRootRequest request,
+            [FromBody] RemoveRootRequest request,
             IBoardService boardService,
             IMapper mapper) =>
         {
