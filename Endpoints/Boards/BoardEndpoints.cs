@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Microsoft.AspNetCore.Mvc;
 
 using kanban_lia.Endpoints.Boards.Requests;
 using kanban_lia.Models.Domain.Boards;
@@ -39,7 +40,7 @@ public static class BoardEndpoints
 
         // Rename a board
         group.MapPut("/rename", async (
-            RenameBoardRequest request,
+            [FromBody]RenameBoardRequest request,
             IBoardService boardService,
             IMapper mapper) =>
         {
@@ -52,7 +53,7 @@ public static class BoardEndpoints
 
         // Add a new root to a board
         group.MapPut("/addroot", async (
-            AddRootRequest request,
+            [FromBody]AddRootRequest request,
             IBoardService boardService,
             IMapper mapper) =>
         {
@@ -65,7 +66,7 @@ public static class BoardEndpoints
 
         // Remove a root from a board
         group.MapDelete("/removeroot", async (
-            RemoveRootRequest request,
+            [FromBody]RemoveRootRequest request,
             IBoardService boardService,
             IMapper mapper) =>
         {

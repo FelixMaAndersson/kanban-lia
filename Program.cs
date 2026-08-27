@@ -1,4 +1,6 @@
-
+using kanban_lia.Endpoints.Boards;
+using kanban_lia.Endpoints.Columns;
+using kanban_lia.Endpoints.Placements;
 using kanban_lia.Infrastructure.Database;
 using kanban_lia.Infrastructure.Repositories.Boards;
 using kanban_lia.Infrastructure.Repositories.Columns;
@@ -38,5 +40,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+BoardEndpoints.MapBoardEndpoints(app);
+ColumnEndpoints.MapColumnEndpoints(app);
+PlacementEndpoints.MapPlacementEndpoints(app);
 
 app.Run();

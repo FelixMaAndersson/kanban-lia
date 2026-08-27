@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Microsoft.AspNetCore.Mvc;
 
 using kanban_lia.Endpoints.Placements.Requests;
 using kanban_lia.Services.Placements;
@@ -13,7 +14,7 @@ public static class PlacementEndpoints
         var group = app.MapGroup("/api/placements");
 
         group.MapPost("/create", async (
-            CreatePlacementRequest request,
+            [FromBody]CreatePlacementRequest request,
             IPlacementService placementService,
             IMapper mapper) =>
         {
