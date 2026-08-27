@@ -2,7 +2,5 @@
 
 namespace kanban_lia.Services.Boards.Exceptions
 {
-    public class RootNotFoundException(EntityId id) : Exception($"Root with id '{id}' was not found.")
-    {
-    }
+    public class RootNotFoundException(EntityId id) : Exception($"Root with id '{id}' was not found.");
 }

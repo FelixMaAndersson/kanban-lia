@@ -2,7 +2,5 @@
 
 namespace kanban_lia.Services.Boards.Exceptions
 {
-    public class BoardNotFoundException(BoardId id) : Exception($"Board with id '{id}' was not found.")
-    {
-    }
+    public class BoardNotFoundException(BoardId id) : Exception($"Board with id '{id}' was not found.");
 }
