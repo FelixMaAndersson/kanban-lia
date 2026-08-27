@@ -1,9 +1,8 @@
-﻿using kanban_lia.Infrastructure.Repositories.Columns;
-using kanban_lia.Models.Domain.Boards;
-using kanban_lia.Models.Domain.Columns;
-using kanban_lia.Services.DTOs;
+﻿using kanban_lia.Infrastructure.Repositories;
+using kanban_lia.Models.Domain;
+using kanban_lia.Services.Columns.DTOs;
 
-namespace kanban_lia.Services
+namespace kanban_lia.Services.Columns
 {
     public class ColumnService(IColumnRepository repository) : IColumnService
     {

@@ -1,9 +1,8 @@
-﻿using kanban_lia.Infrastructure.Repositories.Boards;
-using kanban_lia.Models.Domain.Boards;
-using kanban_lia.Models.Domain.Placements;
-using kanban_lia.Services.DTOs;
+﻿using kanban_lia.Infrastructure.Repositories;
+using kanban_lia.Models.Domain;
+using kanban_lia.Services.Boards.DTOs;
 
-namespace kanban_lia.Services
+namespace kanban_lia.Services.Boards
 {
     public class BoardService(IBoardRepository repository) : IBoardService
     {

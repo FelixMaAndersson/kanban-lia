@@ -1,9 +1,10 @@
 
 using kanban_lia.Infrastructure.Database;
-using kanban_lia.Infrastructure.Repositories.Boards;
-using kanban_lia.Infrastructure.Repositories.Columns;
-using kanban_lia.Infrastructure.Repositories.Placements;
-using kanban_lia.Services;
+using kanban_lia.Infrastructure.Repositories;
+using kanban_lia.Mappings;
+using kanban_lia.Services.Boards;
+using kanban_lia.Services.Columns;
+using kanban_lia.Services.Placements;
 
 var builder = WebApplication.CreateBuilder(args);
 

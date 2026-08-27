@@ -1,9 +1,8 @@
-﻿using kanban_lia.Infrastructure.Repositories.Placements;
-using kanban_lia.Models.Domain.Columns;
-using kanban_lia.Models.Domain.Placements;
-using kanban_lia.Services.DTOs;
+﻿using kanban_lia.Infrastructure.Repositories;
+using kanban_lia.Models.Domain;
+using kanban_lia.Services.Placements.DTOs;
 
-namespace kanban_lia.Services
+namespace kanban_lia.Services.Placements
 {
     public class PlacementService(IPlacementRepository repository) : IPlacementService
     {
