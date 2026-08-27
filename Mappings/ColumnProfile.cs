@@ -1,5 +1,5 @@
 ﻿using AutoMapper;
-using kanban_lia.Endpoints.Requests.Column;
+using kanban_lia.Endpoints.Column.Requests;
 using kanban_lia.Models.Domain;
 using kanban_lia.Models.DTOs.Column;
 using kanban_lia.Services.Columns.DTOs;
