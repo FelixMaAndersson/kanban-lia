@@ -9,13 +9,13 @@ namespace kanban_lia.Services.Columns
     {
         private readonly IColumnRepository _repository = repository;
 
-        public async Task<Column> CreateAsync(CreateColumnDto dto)
+        public async Task CreateAsync(CreateColumnDto dto)
         {
             var boardId = new BoardId(dto.BoardId);
 
             var newColumn = Column.Create(dto.Title, dto.Position, boardId);
 
-            return await _repository.CreateAsync(newColumn);
+            await _repository.CreateAsync(newColumn);
         }
 
         public async Task<IEnumerable<Column>> GetByBoardIdAsync(BoardId boardId)

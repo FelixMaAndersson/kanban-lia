@@ -16,8 +16,15 @@ namespace kanban_lia.Infrastructure.Repositories.Columns
                 @"
                     INSERT INTO Columns (Id, BoardId, Title, Position) 
                     VALUES (@Id, @BoardId, @Title, @Position)",
-                column
+                new
+                {
+                    Id = column.Id.Value,
+                    BoardId = column.BoardId.Value,
+                    column.Title,
+                    column.Position
+                }
             );
+
             return column;
         }
 

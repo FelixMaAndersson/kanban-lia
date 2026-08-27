@@ -6,7 +6,7 @@ namespace kanban_lia.Services.Columns
 {
     public interface IColumnService
     {
-        Task<Column> CreateAsync(CreateColumnDto dto);
+        Task CreateAsync(CreateColumnDto dto);
         Task<IEnumerable<Column>> GetByBoardIdAsync(BoardId boardId);
         Task<Column?> GetByIdAsync(ColumnId id);
         Task<bool> RenameAsync(RenameColumnDto dto);
