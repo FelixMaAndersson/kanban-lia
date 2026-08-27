@@ -5,9 +5,13 @@ using kanban_lia.Infrastructure.Database;
 using kanban_lia.Infrastructure.Repositories.Boards;
 using kanban_lia.Infrastructure.Repositories.Columns;
 using kanban_lia.Infrastructure.Repositories.Placements;
+using kanban_lia.Models.Domain.Exceptions;
 using kanban_lia.Services.Boards;
 using kanban_lia.Services.Columns;
+using kanban_lia.Services.Columns.Exceptions;
 using kanban_lia.Services.Placements;
+
+using Microsoft.AspNetCore.Diagnostics;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -32,6 +36,38 @@ builder.Services.AddAutoMapper(cfg =>
 
 var app = builder.Build();
 
+app.UseExceptionHandler(errorApp =>
+{
+    errorApp.Run(async context =>
+    {
+        var exception = context.Features
+            .Get<IExceptionHandlerFeature>()
+            ?.Error;
+
+        var statusCode = exception switch
+        {
+            ColumnNotFoundException => StatusCodes.Status404NotFound,
+            InvalidDomainException => StatusCodes.Status400BadRequest,
+            _ => StatusCodes.Status500InternalServerError
+        };
+
+        context.Response.StatusCode = statusCode;
+
+        await Results.Problem(
+            statusCode: statusCode,
+            title: exception switch
+            {
+                ColumnNotFoundException => "Column not found",
+                InvalidDomainException => "Invalid request",
+                _ => "Internal server error"
+            },
+            detail: statusCode == StatusCodes.Status500InternalServerError
+                ? "Ett internt serverfel inträffade."
+                : exception?.Message
+        ).ExecuteAsync(context);
+    });
+});
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
@@ -45,4 +81,4 @@ BoardEndpoints.MapBoardEndpoints(app);
 ColumnEndpoints.MapColumnEndpoints(app);
 PlacementEndpoints.MapPlacementEndpoints(app);
 
-app.Run();
+await app.RunAsync();
