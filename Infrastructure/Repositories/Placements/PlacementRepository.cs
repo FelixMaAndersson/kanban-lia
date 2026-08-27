@@ -1,8 +1,8 @@
 ﻿using Dapper;
 using kanban_lia.Infrastructure.Database;
-using kanban_lia.Models.Domain;
+using kanban_lia.Models.Domain.Placements;
 
-namespace kanban_lia.Infrastructure.Repositories
+namespace kanban_lia.Infrastructure.Repositories.Placements
 {
     public class PlacementRepository(DbConnectionFactory connectionFactory) : IPlacementRepository
     {

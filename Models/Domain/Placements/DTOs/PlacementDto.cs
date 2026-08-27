@@ -1,4 +1,4 @@
-﻿namespace kanban_lia.Models.DTOs.Placement
+﻿namespace kanban_lia.Models.Domain.Placements.DTOs
 {
     public record PlacementDto(
         Guid EntityId,

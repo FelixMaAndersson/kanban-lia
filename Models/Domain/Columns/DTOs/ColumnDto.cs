@@ -1,4 +1,4 @@
-﻿namespace kanban_lia.Models.DTOs.Column
+﻿namespace kanban_lia.Models.Domain.Columns.DTOs
 {
     public record ColumnDto(
         Guid Id,

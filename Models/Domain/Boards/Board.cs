@@ -1,4 +1,6 @@
-﻿namespace kanban_lia.Models.Domain
+﻿using kanban_lia.Models.Domain.Placements;
+
+namespace kanban_lia.Models.Domain.Boards
 {
     public readonly record struct BoardId(Guid Value);
     public class Board
