@@ -17,8 +17,6 @@ namespace kanban_lia.Services.Placements
             var entityId = new EntityId(dto.EntityId);
             var columnId = new ColumnId(dto.ColumnId);
 
-     
-
             var column = await _columnRepository.GetByIdAsync(columnId);
 
             if (column is null)

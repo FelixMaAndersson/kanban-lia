@@ -1,6 +1,7 @@
 ﻿using Dapper;
 
 using kanban_lia.Infrastructure.Database;
+using kanban_lia.Infrastructure.Schemas;
 using kanban_lia.Models.Domain.Placements;
 
 namespace kanban_lia.Infrastructure.Repositories.Placements
@@ -13,9 +14,12 @@ namespace kanban_lia.Infrastructure.Repositories.Placements
         {
             using var connection = _connectionFactory.CreateConnection();
             await connection.ExecuteScalarAsync<Guid>(
-                @"
-                    INSERT INTO Placements 
-                    (EntityId, ColumnId, Position, Timestamp) 
+                $@"
+                    INSERT INTO {Schema.Placements.Table} 
+                             ({Schema.Placements.EntityId}, 
+                              {Schema.Placements.ColumnId}, 
+                              {Schema.Placements.Position}, 
+                              {Schema.Placements.Timestamp}) 
                     VALUES (@EntityId, @ColumnId, @Position, @Timestamp)",
                 new
                 {
@@ -32,17 +36,22 @@ namespace kanban_lia.Infrastructure.Repositories.Placements
             using var connection = _connectionFactory.CreateConnection();
             
             return await connection.QuerySingleOrDefaultAsync<Placement>(
-                @"
+                $@"
                     SELECT TOP 1
-                        p.EntityId
-                        p.ColumnId
-                        p.Timestamp
-                    FROM Placements AS p
-                    INNER JOIN Columns AS c
-                    ON p.ColumnId = c.Id
-                    WHERE p.EntityId = @EntityId 
-                    AND c.BoardId = @BoardId
-                    ORDER BY Timestamp DESC"
+                        p.{Schema.Placements.EntityId},
+                        p.{Schema.Placements.ColumnId},
+                        p.{Schema.Placements.Timestamp}
+                    FROM {Schema.Placements.Table} AS p
+                    INNER JOIN {Schema.Columns.Table}    AS c
+                          ON p.{Schema.Placements.ColumnId} = c.Id
+                    WHERE p.{Schema.Placements.EntityId} = @EntityId 
+                      AND c.{Schema.Columns.BoardId}     = @BoardId
+                    ORDER BY p.{Schema.Placements.Timestamp} DESC",
+                new
+                {
+                    EntityId = id,
+                    BoardId = id
+                }
             );
         }
     }
