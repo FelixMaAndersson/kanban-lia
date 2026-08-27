@@ -1,7 +1,7 @@
 ﻿using kanban_lia.Models.Domain;
-using kanban_lia.Services.DTOs;
+using kanban_lia.Services.Columns.DTOs;
 
-namespace kanban_lia.Services
+namespace kanban_lia.Services.Columns
 {
     public interface IColumnService
     {

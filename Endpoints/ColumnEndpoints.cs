@@ -1,8 +1,9 @@
 ﻿using AutoMapper;
 using kanban_lia.Endpoints.Requests.Column;
 using kanban_lia.Models.Domain;
-using kanban_lia.Services;
-using kanban_lia.Services.DTOs;
+using kanban_lia.Services.Columns;
+using kanban_lia.Services.Columns.DTOs;
+
 
 // Lägg till BoardDto, ColumnDto och PlacementDto i Domain-mappen för att representera dataöverföringsobjekt (DTO) för respektive entitet.
 // Dessa DTO:er används för att skicka data mellan klienten och servern utan att exponera de interna domänmodellerna direkt.

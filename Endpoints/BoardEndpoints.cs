@@ -1,8 +1,8 @@
 ﻿using AutoMapper;
 using kanban_lia.Endpoints.Requests.Board;
 using kanban_lia.Models.Domain;
-using kanban_lia.Services;
-using kanban_lia.Services.DTOs;
+using kanban_lia.Services.Boards;
+using kanban_lia.Services.Boards.DTOs;
 
 namespace kanban_lia.Endpoints;
 

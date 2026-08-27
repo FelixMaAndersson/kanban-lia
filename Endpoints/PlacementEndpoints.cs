@@ -1,4 +1,4 @@
-﻿using kanban_lia.Services;
+﻿using kanban_lia.Services.Placements;
 
 // Lägg till BoardDto, ColumnDto och PlacementDto i Domain-mappen för att representera dataöverföringsobjekt (DTO) för respektive entitet.
 // Dessa DTO:er används för att skicka data mellan klienten och servern utan att exponera de interna domänmodellerna direkt.
