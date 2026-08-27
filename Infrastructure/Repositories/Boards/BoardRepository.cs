@@ -15,9 +15,13 @@ namespace kanban_lia.Infrastructure.Repositories.Boards
 
             var id = await connection.ExecuteScalarAsync<Guid>(
                 @"
-                    INSERT INTO Boards (Title)
-                    VALUES (@Title)",
-                board
+                    INSERT INTO Boards (Id, Title)
+                    VALUES (@Id, @Title)",
+                new
+                {
+                    Id = board.Id.Value,
+                    board.Title
+                }
             );
 
             return new BoardId(id);

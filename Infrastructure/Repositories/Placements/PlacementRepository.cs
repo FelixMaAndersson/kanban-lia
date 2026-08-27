@@ -1,4 +1,5 @@
 ﻿using Dapper;
+
 using kanban_lia.Infrastructure.Database;
 using kanban_lia.Models.Domain.Placements;
 
@@ -16,7 +17,13 @@ namespace kanban_lia.Infrastructure.Repositories.Placements
                     INSERT INTO Placements 
                     (EntityId, ColumnId, Position, Timestamp) 
                     VALUES (@EntityId, @ColumnId, @Position, @Timestamp)",
-                placement
+                new
+                {
+                    EntityId = placement.EntityId.Value,
+                    ColumnId = placement.ColumnId.Value,
+                    placement.Position,
+                    placement.Timestamp
+                }
             );
         }
 

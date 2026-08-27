@@ -23,9 +23,9 @@ public static class ColumnEndpoints
         {
             var dto = mapper.Map<CreateColumnDto>(request);
 
-            var column = await columnService.CreateAsync(dto);
+            await columnService.CreateAsync(dto);
 
-            return Results.Created($"/api/columns/create", column);
+            return Results.Ok();
         });
 
         // Get columns by board id

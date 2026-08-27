@@ -20,9 +20,9 @@ public static class PlacementEndpoints
         {
             var requestDto = mapper.Map<CreatePlacementDto>(request);
 
-            var newPlacement = await placementService.CreateAsync(requestDto);
+            await placementService.CreateAsync(requestDto);
 
-            return Results.Created($"/api/placements/create", newPlacement);
+            return Results.Ok();
         });
     }
 }

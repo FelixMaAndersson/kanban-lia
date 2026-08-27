@@ -5,7 +5,7 @@ namespace kanban_lia.Services.Boards
 {
     public interface IBoardService
     {
-        Task<BoardId> CreateAsync(string title);
+        Task CreateAsync(string title);
         Task<Board?> GetByIdAsync(BoardId id);
         Task<bool> RenameAsync(RenameBoardDto dto);
         Task<bool> AddRootAsync(AddRootDto dto);

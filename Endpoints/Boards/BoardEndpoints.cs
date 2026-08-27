@@ -21,9 +21,9 @@ public static class BoardEndpoints
         {
             var newBoard = Board.Create(title);
 
-            var boardId = await boardService.CreateAsync(newBoard.Title);
+            await boardService.CreateAsync(newBoard.Title);
 
-            return Results.Created($"/api/boards/create", boardId);
+            return Results.Ok();
         });
 
         // Get a board by its ID
