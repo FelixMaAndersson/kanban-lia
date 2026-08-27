@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Microsoft.AspNetCore.Mvc;
 
 using kanban_lia.Endpoints.Columns.Requests;
 using kanban_lia.Models.Domain.Boards;
@@ -16,7 +17,7 @@ public static class ColumnEndpoints
 
         // Create a new column
         group.MapPost("/create", async (
-            CreateColumnRequest request,
+            [FromBody]CreateColumnRequest request,
             IColumnService columnService,
             IMapper mapper) =>
         {
@@ -53,7 +54,7 @@ public static class ColumnEndpoints
 
         // Rename a column
         group.MapPut("/rename", async (
-            RenameColumnRequest request,
+            [FromBody]RenameColumnRequest request,
             IColumnService columnService,
             IMapper mapper) =>
         {
