@@ -1,7 +1,7 @@
-﻿using kanban_lia.Models.Domain;
-using kanban_lia.Services.DTOs;
+﻿using kanban_lia.Services.Placements.DTOs;
 
-namespace kanban_lia.Services
+
+namespace kanban_lia.Services.Placements
 {
     public interface IPlacementService
     {
