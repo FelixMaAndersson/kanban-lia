@@ -1,10 +1,6 @@
 ﻿namespace kanban_lia.Services.Boards.Exceptions
 {
-    public class InvalidBoardException : Exception
+    public class InvalidBoardException(string message) : Exception(message)
     {
-        public InvalidBoardException(string message)
-            : base(message)
-        {
-        }
     }
 }
