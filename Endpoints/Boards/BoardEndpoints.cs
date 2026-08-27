@@ -1,16 +1,15 @@
 ﻿using AutoMapper;
-using kanban_lia.Endpoints.Requests.Board;
+using kanban_lia.Endpoints.Boards.Requests;
 using kanban_lia.Models.Domain;
 using kanban_lia.Services;
 using kanban_lia.Services.DTOs;
 
-namespace kanban_lia.Endpoints;
+namespace kanban_lia.Endpoints.Boards;
 
 public static class BoardEndpoints
 {
     public static void MapBoardEndpoints(WebApplication app)
     {
-
         var group = app.MapGroup("/api/boards");
 
         // Create a new board
@@ -45,9 +44,9 @@ public static class BoardEndpoints
         {
             var requestDto = mapper.Map<RenameBoardDto>(request);
 
-            var success = await boardService.RenameAsync(requestDto);
+            var result = await boardService.RenameAsync(requestDto);
 
-            return Results.Ok(success);
+            return Results.Ok(result);
         });
 
         // Add a new root to a board
@@ -58,9 +57,9 @@ public static class BoardEndpoints
         {
             var requestDto = mapper.Map<AddRootDto>(request);
 
-            var success = await boardService.AddRootAsync(requestDto);
+            var result = await boardService.AddRootAsync(requestDto);
 
-            return Results.Ok(success);
+            return Results.Ok(result);
         });
 
         // Remove a root from a board
@@ -71,9 +70,9 @@ public static class BoardEndpoints
         {
             var requestDto = mapper.Map<RemoveRootDto>(request);
 
-            var success = await boardService.RemoveRootAsync(requestDto);
+            var result = await boardService.RemoveRootAsync(requestDto);
 
-            return Results.Ok(success);
+            return Results.Ok(result);
         });
 
 
@@ -84,9 +83,9 @@ public static class BoardEndpoints
         {
             var boardId = new BoardId(id);
 
-            var success = await boardService.DeleteAsync(boardId);
+            var result = await boardService.DeleteAsync(boardId);
 
-            return Results.Ok(success);
+            return Results.Ok(result);
         });
     }
 }
