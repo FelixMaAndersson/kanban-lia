@@ -8,7 +8,6 @@ namespace kanban_lia.Models.Domain.Columns
     {
         public ColumnId Id { get; }
         public string Title { get; private set; }
-
         public int Position { get; }
         public BoardId BoardId { get; }
 
@@ -27,6 +26,11 @@ namespace kanban_lia.Models.Domain.Columns
                 throw new InvalidDomainException("Column title cannot be empty");
             }
 
+            if (title.Length > 255)
+            {
+                throw new InvalidDomainException("Column title is too long");
+            }
+
             if (position < 0)
             {
                 throw new InvalidDomainException("Column position cannot be negative");
@@ -40,6 +44,11 @@ namespace kanban_lia.Models.Domain.Columns
             if (string.IsNullOrWhiteSpace(title))
             {
                 throw new InvalidDomainException("Column title cannot be empty");
+            }
+
+            if (title.Length > 255)
+            {
+                throw new InvalidDomainException("Column title is too long");
             }
 
             Title = title;

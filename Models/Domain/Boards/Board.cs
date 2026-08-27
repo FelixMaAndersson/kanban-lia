@@ -9,7 +9,6 @@ namespace kanban_lia.Models.Domain.Boards
         private readonly HashSet<EntityId> _roots = [];
         public BoardId Id { get; }
         public string Title { get; private set; }
-
         public IReadOnlyCollection<EntityId> Roots => _roots;
 
         private Board(BoardId id, string title)
@@ -24,6 +23,7 @@ namespace kanban_lia.Models.Domain.Boards
             {
                 throw new InvalidBoardException("Title cannot be empty.");
             }
+
             if (title.Length > 255)
             {
                 throw new InvalidBoardException("Title is too long.");

@@ -77,7 +77,6 @@ public static class BoardEndpoints
             return Results.Ok(result);
         });
 
-
         // Delete a board by its ID
         group.MapDelete("/delete/{id:guid}", async (
             Guid id,

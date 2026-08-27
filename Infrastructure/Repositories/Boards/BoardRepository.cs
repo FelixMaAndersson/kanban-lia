@@ -16,7 +16,9 @@ namespace kanban_lia.Infrastructure.Repositories.Boards
 
             var id = await connection.ExecuteScalarAsync<Guid>(
                 $@"
-                    INSERT INTO {Schema.Boards.Table} ({Schema.Boards.Id}, {Schema.Boards.Title})
+                    INSERT INTO {Schema.Boards.Table} 
+                             ({Schema.Boards.Id},
+                              {Schema.Boards.Title})
                     VALUES (@Id, @Title)",
                 new
                 {
@@ -71,7 +73,9 @@ namespace kanban_lia.Infrastructure.Repositories.Boards
 
             var rowsAffected = await connection.ExecuteAsync(
                 $@"
-                    INSERT INTO {Schema.BoardRoots.Table} ({Schema.BoardRoots.BoardId}, {Schema.BoardRoots.EntityId}) 
+                    INSERT INTO {Schema.BoardRoots.Table}
+                             ({Schema.BoardRoots.BoardId}, 
+                              {Schema.BoardRoots.EntityId}) 
                     VALUES (@BoardId, @EntityId)",
                 new
                 {
@@ -123,11 +127,14 @@ namespace kanban_lia.Infrastructure.Repositories.Boards
         {
             using var connection = _connectionFactory.CreateConnection();
             var count = await connection.ExecuteScalarAsync<int>(
-                @"
+                $@"
                     SELECT COUNT(1) 
-                    FROM Boards 
-                    WHERE Id = @Id",
-                new { Id = id }
+                     FROM {Schema.Boards.Table}
+                    WHERE {Schema.Boards.Id} = @Id",
+                new
+                {
+                    Id = id
+                }
             );
 
             return count > 0;
@@ -137,11 +144,16 @@ namespace kanban_lia.Infrastructure.Repositories.Boards
         {
             using var connection = _connectionFactory.CreateConnection();
             var count = await connection.ExecuteScalarAsync<int>(
-                @"
+                $@"
                     SELECT COUNT(1) 
-                    FROM BoardRoots 
-                    WHERE BoardId = @BoardId AND EntityId = @EntityId",
-                new { BoardId = boardId, EntityId = entityId }
+                     FROM {Schema.BoardRoots.Table} 
+                    WHERE {Schema.BoardRoots.BoardId}  = @BoardId 
+                      AND {Schema.BoardRoots.EntityId} = @EntityId",
+                new
+                {
+                    BoardId = boardId,
+                    EntityId = entityId
+                }
             );
 
             return count > 0;
