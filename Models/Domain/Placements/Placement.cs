@@ -1,4 +1,5 @@
 ﻿using kanban_lia.Models.Domain.Columns;
+using kanban_lia.Models.Domain.Placements.Exceptions;
 
 namespace kanban_lia.Models.Domain.Placements
 {
@@ -24,6 +25,11 @@ namespace kanban_lia.Models.Domain.Placements
 
         public static Placement Create(EntityId entityId, ColumnId columnId, string position)
         {
+            if (string.IsNullOrWhiteSpace(position))
+            {
+                throw new InvalidPlacementPositionException(position);
+            }
+
             return new Placement(entityId, columnId, position, DateTime.UtcNow);
         }
     }
