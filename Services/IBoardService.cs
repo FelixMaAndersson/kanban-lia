@@ -1,5 +1,5 @@
 ﻿using kanban_lia.Services.DTOs;
-using kanban_lia.Models.Domain;
+using kanban_lia.Models.Domain.Boards;
 
 namespace kanban_lia.Services
 {

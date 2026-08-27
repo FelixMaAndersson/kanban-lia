@@ -1,10 +1,12 @@
-﻿namespace kanban_lia.Models.Domain
+﻿using kanban_lia.Models.Domain.Boards;
+
+namespace kanban_lia.Models.Domain.Columns
 {
     public readonly record struct ColumnId(Guid Value);
     public class Column
     {
         public ColumnId Id { get; }
-        public string Title { get; private set;} = string.Empty;
+        public string Title { get; private set; } = string.Empty;
 
         public int Position { get; }
         public BoardId BoardId { get; }

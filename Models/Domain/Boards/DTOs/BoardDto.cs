@@ -1,4 +1,4 @@
-﻿namespace kanban_lia.Models.DTOs.Board
+﻿namespace kanban_lia.Models.Domain.Boards.DTOs
 {
     public record BoardDto(
         Guid Id,

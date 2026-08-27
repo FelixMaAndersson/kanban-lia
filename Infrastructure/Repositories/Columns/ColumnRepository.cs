@@ -1,8 +1,9 @@
 ﻿using Dapper;
 using kanban_lia.Infrastructure.Database;
-using kanban_lia.Models.Domain;
+using kanban_lia.Models.Domain.Boards;
+using kanban_lia.Models.Domain.Columns;
 
-namespace kanban_lia.Infrastructure.Repositories
+namespace kanban_lia.Infrastructure.Repositories.Columns
 {
     public class ColumnRepository(DbConnectionFactory connectionFactory) : IColumnRepository
     {

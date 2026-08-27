@@ -1,5 +1,6 @@
-﻿using kanban_lia.Infrastructure.Repositories;
-using kanban_lia.Models.Domain;
+﻿using kanban_lia.Infrastructure.Repositories.Placements;
+using kanban_lia.Models.Domain.Columns;
+using kanban_lia.Models.Domain.Placements;
 using kanban_lia.Services.DTOs;
 
 namespace kanban_lia.Services

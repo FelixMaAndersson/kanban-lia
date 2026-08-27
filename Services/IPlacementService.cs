@@ -1,4 +1,4 @@
-﻿using kanban_lia.Models.Domain;
+﻿using kanban_lia.Models.Domain.Placements;
 using kanban_lia.Services.DTOs;
 
 namespace kanban_lia.Services

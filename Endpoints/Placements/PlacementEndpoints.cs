@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+
 using kanban_lia.Endpoints.Placements.Requests;
 using kanban_lia.Services;
 using kanban_lia.Services.DTOs;

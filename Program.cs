@@ -1,7 +1,8 @@
 
 using kanban_lia.Infrastructure.Database;
-using kanban_lia.Infrastructure.Repositories;
-using kanban_lia.Mappings;
+using kanban_lia.Infrastructure.Repositories.Boards;
+using kanban_lia.Infrastructure.Repositories.Columns;
+using kanban_lia.Infrastructure.Repositories.Placements;
 using kanban_lia.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -12,15 +13,18 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddSingleton<DbConnectionFactory>();
 
-builder.Services.AddScoped<IBoardRepository>();
-builder.Services.AddScoped<ColumnRepository>();
-builder.Services.AddScoped<PlacementRepository>();
+builder.Services.AddScoped<IBoardRepository, BoardRepository>();
+builder.Services.AddScoped<IColumnRepository, ColumnRepository>();
+builder.Services.AddScoped<IPlacementRepository, PlacementRepository>();
 
 builder.Services.AddScoped<IBoardService, BoardService>();
 builder.Services.AddScoped<IColumnService, ColumnService>();
 builder.Services.AddScoped<IPlacementService, PlacementService>();
 
-builder.Services.AddAutoMapper(typeof(ColumnProfile));
+builder.Services.AddAutoMapper(cfg =>
+{
+    cfg.AddMaps(typeof(Program).Assembly);
+});
 
 var app = builder.Build();
 

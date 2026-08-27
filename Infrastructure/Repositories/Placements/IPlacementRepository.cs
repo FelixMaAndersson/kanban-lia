@@ -1,6 +1,6 @@
-﻿using kanban_lia.Models.Domain;
+﻿using kanban_lia.Models.Domain.Placements;
 
-namespace kanban_lia.Infrastructure.Repositories
+namespace kanban_lia.Infrastructure.Repositories.Placements
 {
     public interface IPlacementRepository
     {
