@@ -4,7 +4,7 @@ namespace kanban_lia.Infrastructure.Repositories.Placements
 {
     public interface IPlacementRepository
     {
-        Task<Placement> CreateAsync(Placement placement);
+        Task CreateAsync(Placement placement);
         Task<Placement?> GetCurrentAsync(Guid id);
     }
 }
