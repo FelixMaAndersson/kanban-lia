@@ -1,4 +1,5 @@
 ﻿using kanban_lia.Models.Domain.Boards;
+using kanban_lia.Models.Domain.Exceptions;
 
 namespace kanban_lia.Models.Domain.Columns
 {
@@ -6,7 +7,7 @@ namespace kanban_lia.Models.Domain.Columns
     public class Column
     {
         public ColumnId Id { get; }
-        public string Title { get; private set; } = string.Empty;
+        public string Title { get; private set; }
 
         public int Position { get; }
         public BoardId BoardId { get; }
@@ -21,11 +22,26 @@ namespace kanban_lia.Models.Domain.Columns
 
         public static Column Create(string title, int position, BoardId boardId)
         {
+            if (string.IsNullOrWhiteSpace(title))
+            {
+                throw new InvalidDomainException("Column title cannot be empty");
+            }
+
+            if (position < 0)
+            {
+                throw new InvalidDomainException("Column position cannot be negative");
+            }
+
             return new Column(title, position, boardId);
         }
 
         public void Rename(string title)
         {
+            if (string.IsNullOrWhiteSpace(title))
+            {
+                throw new InvalidDomainException("Column title cannot be empty");
+            }
+
             Title = title;
         }
     }
