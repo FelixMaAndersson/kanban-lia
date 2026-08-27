@@ -1,8 +1,8 @@
 ﻿using AutoMapper;
 
 using kanban_lia.Endpoints.Placements.Requests;
-using kanban_lia.Services;
-using kanban_lia.Services.DTOs;
+using kanban_lia.Services.Placements;
+using kanban_lia.Services.Placements.DTOs;
 
 namespace kanban_lia.Endpoints.Placements;
 

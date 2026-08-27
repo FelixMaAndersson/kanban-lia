@@ -3,8 +3,8 @@
 using kanban_lia.Endpoints.Columns.Requests;
 using kanban_lia.Models.Domain.Boards;
 using kanban_lia.Models.Domain.Columns;
-using kanban_lia.Services;
-using kanban_lia.Services.DTOs;
+using kanban_lia.Services.Columns;
+using kanban_lia.Services.Columns.DTOs;
 
 namespace kanban_lia.Endpoints.Columns;
 
