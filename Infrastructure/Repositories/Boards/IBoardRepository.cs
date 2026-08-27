@@ -11,5 +11,7 @@ namespace kanban_lia.Infrastructure.Repositories.Boards
         Task<bool> AddRootAsync(BoardId id, EntityId entityId);
         Task<bool> RemoveRootAsync(BoardId id, EntityId entityId);
         Task<bool> DeleteAsync(BoardId id);
+        Task<bool> BoardExistsAsync(BoardId boardId);
+        Task<bool> RootExistsAsync(BoardId boardId, EntityId entityId);
     }
 }

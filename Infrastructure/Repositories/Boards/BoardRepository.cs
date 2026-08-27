@@ -36,6 +36,7 @@ namespace kanban_lia.Infrastructure.Repositories.Boards
                     WHERE Id = @Id",
                 new { Id = id }
             );
+
             return board;
         }
 
@@ -62,7 +63,6 @@ namespace kanban_lia.Infrastructure.Repositories.Boards
                     VALUES (@BoardId, @EntityId)",
                 new { BoardId = id, EntityId = entityId }
             );
-
 
             return rowsAffected > 0;
         }
@@ -95,7 +95,36 @@ namespace kanban_lia.Infrastructure.Repositories.Boards
                     WHERE Id = @Id",
                 new { Id = id }
             );
+
             return rowsAffected > 0;
+        }
+
+        public async Task<bool> BoardExistsAsync(BoardId id)
+        {
+            using var connection = _connectionFactory.CreateConnection();
+            var count = await connection.ExecuteScalarAsync<int>(
+                @"
+                    SELECT COUNT(1) 
+                    FROM Boards 
+                    WHERE Id = @Id",
+                new { Id = id }
+            );
+
+            return count > 0;
+        }
+
+        public async Task<bool> RootExistsAsync(BoardId boardId, EntityId entityId)
+        {
+            using var connection = _connectionFactory.CreateConnection();
+            var count = await connection.ExecuteScalarAsync<int>(
+                @"
+                    SELECT COUNT(1) 
+                    FROM BoardRoots 
+                    WHERE BoardId = @BoardId AND EntityId = @EntityId",
+                new { BoardId = boardId, EntityId = entityId }
+            );
+
+            return count > 0;
         }
     }
 }
