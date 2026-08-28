@@ -3,54 +3,53 @@ using kanban_lia.Models.Domain.Exceptions;
 
 namespace kanban_lia.Tests
 {
-    [TestClass]
     public class BoardTests
     {
-        [TestMethod]
+        [Fact]
         public void Create_WithValidTitle_CreatesBoard()
         {
             var board = Board.Create("Testboard");
 
-            Assert.AreEqual("Testboard", board.Title);
+            Assert.Equal("Testboard", board.Title);
         }
 
-        [TestMethod]
+        [Fact]
         public void Create_WithEmptyTitle_ThrowsException()
         {
-            Assert.ThrowsExactly<InvalidDomainException>(() => Board.Create(""));
+            Assert.Throws<InvalidDomainException>(() => Board.Create(""));
         }
 
-        [TestMethod]
+        [Fact]
         public void Create_WithTooLongTitle_ThrowsException()
         {
             var title = new string('a', 256);
 
-            Assert.ThrowsExactly<InvalidDomainException>(() => Board.Create(title));
+            Assert.Throws<InvalidDomainException>(() => Board.Create(title));
         }
 
-        [TestMethod]
+        [Fact]
         public void Rename_WithValidTitle_RenamesBoard()
         {
             var board = Board.Create("Testboard");
             board.Rename("Renamedboard");
 
-            Assert.AreEqual("Renamedboard", board.Title);
+            Assert.Equal("Renamedboard", board.Title);
         }
 
-        [TestMethod]
+        [Fact]
         public void Rename_WithEmptyTitle_ThrowsException()
         {
             var board = Board.Create("Testboard");
 
-            Assert.ThrowsExactly<InvalidDomainException>(() => board.Rename(""));
+            Assert.Throws<InvalidDomainException>(() => board.Rename(""));
         }
 
-        [TestMethod]
+        [Fact]
         public void Rename_WithTooLongTitle_ThrowsException()
         {
             var board = Board.Create("Testboard");
 
-            Assert.ThrowsExactly<InvalidDomainException>(() => board.Rename(new string('a', 256)));
+            Assert.Throws<InvalidDomainException>(() => board.Rename(new string('a', 256)));
         }
     }
 }
