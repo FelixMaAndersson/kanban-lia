@@ -5,7 +5,9 @@ VisualStudioVersion = 18.9.12112.369
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "kanban-lia", "kanban-lia.csproj", "{C96979E3-CEA3-45D1-A50C-E63DB0E530E8}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "kanban-lia.Tests", "kanban-lia.Tests\kanban-lia.Tests.csproj", "{7DAE15EF-304D-498D-9EA7-2801D548B4B3}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "kanban-lia.Unit.Tests", "kanban-lia.Unit.Tests\kanban-lia.Unit.Tests.csproj", "{7DAE15EF-304D-498D-9EA7-2801D548B4B3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "kanban-lia.Integration.Tests", "kanban-lia.Integration.Tests\kanban-lia.Integration.Tests.csproj", "{C492B282-EDC8-4781-92B4-6B6701254F22}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -41,6 +43,18 @@ Global
 		{7DAE15EF-304D-498D-9EA7-2801D548B4B3}.Release|x64.Build.0 = Release|Any CPU
 		{7DAE15EF-304D-498D-9EA7-2801D548B4B3}.Release|x86.ActiveCfg = Release|Any CPU
 		{7DAE15EF-304D-498D-9EA7-2801D548B4B3}.Release|x86.Build.0 = Release|Any CPU
+		{C492B282-EDC8-4781-92B4-6B6701254F22}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C492B282-EDC8-4781-92B4-6B6701254F22}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C492B282-EDC8-4781-92B4-6B6701254F22}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{C492B282-EDC8-4781-92B4-6B6701254F22}.Debug|x64.Build.0 = Debug|Any CPU
+		{C492B282-EDC8-4781-92B4-6B6701254F22}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{C492B282-EDC8-4781-92B4-6B6701254F22}.Debug|x86.Build.0 = Debug|Any CPU
+		{C492B282-EDC8-4781-92B4-6B6701254F22}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C492B282-EDC8-4781-92B4-6B6701254F22}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C492B282-EDC8-4781-92B4-6B6701254F22}.Release|x64.ActiveCfg = Release|Any CPU
+		{C492B282-EDC8-4781-92B4-6B6701254F22}.Release|x64.Build.0 = Release|Any CPU
+		{C492B282-EDC8-4781-92B4-6B6701254F22}.Release|x86.ActiveCfg = Release|Any CPU
+		{C492B282-EDC8-4781-92B4-6B6701254F22}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

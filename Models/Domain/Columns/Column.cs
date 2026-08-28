@@ -3,7 +3,7 @@ using kanban_lia.Models.Domain.Exceptions;
 
 namespace kanban_lia.Models.Domain.Columns
 {
-    public readonly record struct ColumnId(Guid Value);
+    public readonly record struct ColumnId(Guid Id);
     public class Column
     {
         public ColumnId Id { get; }

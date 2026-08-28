@@ -3,7 +3,7 @@ using kanban_lia.Models.Domain.Exceptions;
 
 namespace kanban_lia.Models.Domain.Placements
 {
-    public readonly record struct EntityId(Guid Value);
+    public readonly record struct EntityId(Guid Id);
     public class Placement
     {
         public EntityId EntityId { get; }
@@ -13,10 +13,10 @@ namespace kanban_lia.Models.Domain.Placements
 
         public DateTime Timestamp { get; }
 
-        private Placement(EntityId entityId, ColumnId columnId, string position, DateTime timestamp)
+        private Placement(Guid entityId, Guid columnId, string position, DateTime timestamp)
         {
-            EntityId = entityId;
-            ColumnId = columnId;
+            EntityId = new EntityId(entityId);
+            ColumnId = new ColumnId(columnId);
             Position = position;
             Timestamp = timestamp;
         }
@@ -35,7 +35,7 @@ namespace kanban_lia.Models.Domain.Placements
                 throw new InvalidDomainException($"Invalid placement position: '{position}'.");
             }
 
-            return new Placement(entityId, columnId, position, DateTime.UtcNow);
+            return new Placement(entityId.Id, columnId.Id, position, DateTime.UtcNow);
         }
     }
 }

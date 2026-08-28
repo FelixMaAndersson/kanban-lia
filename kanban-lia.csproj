@@ -8,10 +8,14 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<Compile Remove="kanban-lia.Tests\**" />
-		<Content Remove="kanban-lia.Tests\**" />
-		<EmbeddedResource Remove="kanban-lia.Tests\**" />
-		<None Remove="kanban-lia.Tests\**" />
+		<Compile Remove="kanban-lia.Unit.Tests\**" />
+		<Content Remove="kanban-lia.Unit.Tests\**" />
+		<EmbeddedResource Remove="kanban-lia.Unit.Tests\**" />
+		<None Remove="kanban-lia.Unit.Tests\**" />
+		<Compile Remove="kanban-lia.Integration.Tests\**" />
+		<Content Remove="kanban-lia.Integration.Tests\**" />
+		<EmbeddedResource Remove="kanban-lia.Integration.Tests\**" />
+		<None Remove="kanban-lia.Integration.Tests\**" />
 	</ItemGroup>
 
 	<ItemGroup>
