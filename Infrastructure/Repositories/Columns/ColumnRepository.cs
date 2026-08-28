@@ -3,6 +3,7 @@ using kanban_lia.Infrastructure.Database;
 using kanban_lia.Infrastructure.Schemas;
 using kanban_lia.Models.Domain.Boards;
 using kanban_lia.Models.Domain.Columns;
+using kanban_lia.Models.Domain.Columns.DTOs;
 
 namespace kanban_lia.Infrastructure.Repositories.Columns
 {
@@ -23,7 +24,7 @@ namespace kanban_lia.Infrastructure.Repositories.Columns
                     VALUES (@Id, @BoardId, @Title, @Position)",
                 new
                 {
-                    Id = column.Id.Value,
+                    Id = column.Id.Id,
                     BoardId = column.BoardId.Value,
                     column.Title,
                     column.Position
@@ -54,7 +55,7 @@ namespace kanban_lia.Infrastructure.Repositories.Columns
                          ORDER BY {Schema.Columns.Position}",
                 new
                 {
-                    BoardId = boardId
+                    BoardId = boardId.Value
                 }
             );
 
@@ -66,12 +67,16 @@ namespace kanban_lia.Infrastructure.Repositories.Columns
             using var connection = _connectionFactory.CreateConnection();
             var column = await connection.QuerySingleOrDefaultAsync<Column>(
                 $@"
-                    SELECT * FROM {Schema.Columns.Table}
+                    SELECT  {Schema.Columns.Id}, 
+                            {Schema.Columns.Title}, 
+                            {Schema.Columns.Position}, 
+                            {Schema.Columns.BoardId} 
+                    FROM    {Schema.Columns.Table}
                             WHERE {Schema.Columns.Id} = @Id
                          ORDER BY {Schema.Columns.Position}",
                 new
                 {
-                    Id = id
+                    Id = id.Id
                 }
             );
 
@@ -88,7 +93,7 @@ namespace kanban_lia.Infrastructure.Repositories.Columns
                      WHERE {Schema.Columns.Id}     = @Id",
                 new
                 {
-                    Id = id,
+                    id.Id,
                     Title = title
                 }
             );
@@ -105,7 +110,7 @@ namespace kanban_lia.Infrastructure.Repositories.Columns
                           WHERE {Schema.Columns.Id} = @Id",
                 new
                 {
-                    Id = id
+                    id.Id
                 }
             );
 

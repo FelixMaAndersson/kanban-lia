@@ -1,9 +1,11 @@
-﻿using kanban_lia.Infrastructure.Repositories.Placements;
+﻿using FractionalIndexing;
+using kanban_lia.Infrastructure.Repositories.Placements;
 using kanban_lia.Models.Domain.Columns;
 using kanban_lia.Models.Domain.Placements;
 using kanban_lia.Services.Placements.DTOs;
 using kanban_lia.Infrastructure.Repositories.Columns;
 using kanban_lia.Services.Placements.Exceptions;
+using kanban_lia.Models.Domain.Boards;
 
 namespace kanban_lia.Services.Placements
 {
@@ -15,23 +17,41 @@ namespace kanban_lia.Services.Placements
         public async Task CreateAsync(CreatePlacementDto dto)
         {
             var entityId = new EntityId(dto.EntityId);
-            var columnId = new ColumnId(dto.ColumnId);
 
-            var column = await _columnRepository.GetByIdAsync(columnId);
+            var column = await _columnRepository.GetByIdAsync(dto.ColumnId);
 
             if (column is null)
             {
-                throw new ColumnNotFoundException(columnId);
+                throw new ColumnNotFoundException(dto.ColumnId);
             }
 
-            var newPlacement = Placement.Create(entityId, columnId, dto.Position);
+            var lookup = dto.AfterEntityId.HasValue
+                ? SortKeyLookup.After
+                : SortKeyLookup.First;
 
-            await _repository.CreateAsync(newPlacement);
+            var range = await _repository.GetSortKeyRangeAsync(
+                column.Id,
+                lookup,
+                dto.AfterEntityId.HasValue
+                    ? new EntityId(dto.AfterEntityId.Value)
+                    : null);
+
+            var sortKey = OrderKeyGenerator.GenerateKeyBetween(
+                range.Previous,
+                range.Next);
+
+            var placement = Placement.Create(
+                entityId,
+                column.Id,
+                sortKey);
+
+            await _repository.CreateAsync(placement);
         }
 
-        public async Task<Placement?> GetCurrentAsync(Guid id)
+        public async Task<Placement?> GetCurrentAsync(Guid entityId, Guid boardId)
         {
-            return await _repository.GetCurrentAsync(id);
+            return await _repository.GetCurrentAsync(new EntityId(entityId),
+            new BoardId(boardId));
         }
     }
 }

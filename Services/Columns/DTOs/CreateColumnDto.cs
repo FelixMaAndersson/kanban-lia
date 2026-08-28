@@ -1,4 +1,7 @@
-﻿namespace kanban_lia.Services.Columns.DTOs
+﻿using kanban_lia.Models.Domain.Columns;
+
+namespace kanban_lia.Services.Columns.DTOs
+
 {
-    public record CreateColumnDto(string Title, int Position, Guid BoardId);
+    public record CreateColumnDto(ColumnId? Id, string Title, int Position, Guid BoardId);
 }
