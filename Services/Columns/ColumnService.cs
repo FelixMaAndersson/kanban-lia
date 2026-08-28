@@ -1,4 +1,4 @@
-﻿using kanban_lia.Infrastructure.Repositories.Columns;
+﻿﻿using kanban_lia.Infrastructure.Repositories.Columns;
 using kanban_lia.Models.Domain.Boards;
 using kanban_lia.Models.Domain.Columns;
 using kanban_lia.Services.Columns.DTOs;
@@ -14,7 +14,7 @@ namespace kanban_lia.Services.Columns
         {
             var boardId = new BoardId(dto.BoardId);
 
-            var newColumn = Column.Create(dto.Title, dto.Position, boardId);
+            var newColumn = Column.Create(dto.Id ?? new ColumnId(Guid.NewGuid()), dto.Title, dto.Position, boardId);
 
             await _repository.CreateAsync(newColumn);
         }
@@ -63,4 +63,3 @@ namespace kanban_lia.Services.Columns
         }
     }
 }
-

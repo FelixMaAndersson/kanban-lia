@@ -3,7 +3,7 @@ using kanban_lia.Models.Domain.Exceptions;
 
 namespace kanban_lia.Models.Domain.Columns
 {
-    public readonly record struct ColumnId(Guid Value);
+    public readonly record struct ColumnId(Guid Id);
     public class Column
     {
         public ColumnId Id { get; }
@@ -11,15 +11,15 @@ namespace kanban_lia.Models.Domain.Columns
         public int Position { get; }
         public BoardId BoardId { get; }
 
-        private Column(string title, int position, BoardId boardId)
+        private Column(Guid id, string title, int position, BoardId boardId)
         {
-            Id = new ColumnId(Guid.NewGuid());
+            Id = new ColumnId(id);
             Title = title;
             Position = position;
             BoardId = boardId;
         }
 
-        public static Column Create(string title, int position, BoardId boardId)
+        public static Column Create(ColumnId id, string title, int position, BoardId boardId)
         {
             if (string.IsNullOrWhiteSpace(title))
             {
@@ -36,7 +36,7 @@ namespace kanban_lia.Models.Domain.Columns
                 throw new InvalidDomainException("Column position cannot be negative");
             }
 
-            return new Column(title, position, boardId);
+            return new Column(id.Id, title, position, boardId);
         }
 
         public void Rename(string title)

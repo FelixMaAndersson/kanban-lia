@@ -27,7 +27,7 @@ namespace kanban_lia.Infrastructure.Schemas
             public const string Table = "Placements";
             public const string EntityId = nameof(Placement.EntityId);
             public const string ColumnId = nameof(Placement.ColumnId);
-            public const string Position = nameof(Placement.Position);
+            public const string SortKey = nameof(Placement.SortKey);
             public const string Timestamp = nameof(Placement.Timestamp);
         }
 
