@@ -49,7 +49,6 @@ app.UseExceptionHandler(errorApp =>
         {
             BoardNotFoundException => StatusCodes.Status404NotFound,
             RootNotFoundException => StatusCodes.Status404NotFound,
-            InvalidBoardException => StatusCodes.Status400BadRequest,
             ColumnNotFoundException => StatusCodes.Status404NotFound,
             InvalidDomainException => StatusCodes.Status400BadRequest,
             _ => StatusCodes.Status500InternalServerError
@@ -63,7 +62,6 @@ app.UseExceptionHandler(errorApp =>
             {
                 BoardNotFoundException => "Board could not be found",
                 RootNotFoundException => "Root could not be found",
-                InvalidBoardException => "Invalid request",
                 ColumnNotFoundException => "Column could not be found",
                 InvalidDomainException => "Invalid request",
                 _ => "Internal server error"

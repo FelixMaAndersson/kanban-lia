@@ -16,10 +16,10 @@ namespace kanban_lia.Infrastructure.Repositories.Columns
             await connection.ExecuteAsync(
                 $@"
                     INSERT INTO {Schema.Columns.Table} 
-                             ({Schema.Columns.Id}, 
-                              {Schema.Columns.BoardId}, 
-                              {Schema.Columns.Title}, 
-                              {Schema.Columns.Position}) 
+                               ({Schema.Columns.Id}, 
+                                {Schema.Columns.BoardId}, 
+                                {Schema.Columns.Title}, 
+                                {Schema.Columns.Position}) 
                     VALUES (@Id, @BoardId, @Title, @Position)",
                 new
                 {

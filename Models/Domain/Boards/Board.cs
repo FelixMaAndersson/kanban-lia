@@ -1,5 +1,5 @@
-﻿using kanban_lia.Models.Domain.Placements;
-using kanban_lia.Services.Boards.Exceptions;
+﻿using kanban_lia.Models.Domain.Exceptions;
+using kanban_lia.Models.Domain.Placements;
 
 namespace kanban_lia.Models.Domain.Boards
 {
@@ -21,12 +21,12 @@ namespace kanban_lia.Models.Domain.Boards
         {
             if (string.IsNullOrWhiteSpace(title))
             {
-                throw new InvalidBoardException("Title cannot be empty.");
+                throw new InvalidDomainException("Board title cannot be empty.");
             }
 
             if (title.Length > 255)
             {
-                throw new InvalidBoardException("Title is too long.");
+                throw new InvalidDomainException("Board title is too long.");
             }
 
             return new Board(new BoardId(Guid.NewGuid()), title);
@@ -35,12 +35,12 @@ namespace kanban_lia.Models.Domain.Boards
         {
             if (string.IsNullOrWhiteSpace(title))
             {
-                throw new InvalidBoardException("Title cannot be empty.");
+                throw new InvalidDomainException("Board title cannot be empty.");
             }
 
             if (title.Length > 255)
             {
-                throw new InvalidBoardException("Title is too long.");
+                throw new InvalidDomainException("Board title is too long.");
             }
 
             Title = title;

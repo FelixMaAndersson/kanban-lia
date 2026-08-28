@@ -16,10 +16,10 @@ namespace kanban_lia.Infrastructure.Repositories.Placements
             await connection.ExecuteScalarAsync<Guid>(
                 $@"
                     INSERT INTO {Schema.Placements.Table} 
-                             ({Schema.Placements.EntityId}, 
-                              {Schema.Placements.ColumnId}, 
-                              {Schema.Placements.Position}, 
-                              {Schema.Placements.Timestamp}) 
+                               ({Schema.Placements.EntityId}, 
+                                {Schema.Placements.ColumnId}, 
+                                {Schema.Placements.Position}, 
+                                {Schema.Placements.Timestamp}) 
                     VALUES (@EntityId, @ColumnId, @Position, @Timestamp)",
                 new
                 {
