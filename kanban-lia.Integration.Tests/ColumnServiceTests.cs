@@ -4,28 +4,25 @@ using kanban_lia.Models.Domain.Columns;
 using kanban_lia.Services.Columns;
 using kanban_lia.Services.Columns.DTOs;
 using kanban_lia.Services.Columns.Exceptions;
-using Moq;
 
 namespace kanban_lia.Tests
 {
-    [TestClass]
     public class ColumnServiceTests
     {
-        private Mock<IColumnRepository> _mockRepository = null!;
-        private ColumnService _columnService = null!;
+        private readonly Mock<IColumnRepository> _mockRepository;
+        private readonly ColumnService _columnService;
 
-        [TestInitialize]
-        public void Setup()
+        public ColumnServiceTests()
         {
             _mockRepository = new Mock<IColumnRepository>();
             _columnService = new ColumnService(_mockRepository.Object);
         }
 
-        [TestMethod]
+        [Fact]
         public async Task CreateAsync_WithValidDto_CallsRepositoryOnce()
         {
             var dto = new CreateColumnDto("New Column", 1, Guid.NewGuid());
-            
+
             await _columnService.CreateAsync(dto);
 
             _mockRepository.Verify(r => r.CreateAsync(It.Is<Column>(c =>
@@ -34,7 +31,7 @@ namespace kanban_lia.Tests
                 c.BoardId.Value == dto.BoardId)), Times.Once);
         }
 
-        [TestMethod]
+        [Fact]
         public async Task GetByBoardIdAsync_WithValidBoardId_CallsRepositoryOnce()
         {
             var boardId = new BoardId(Guid.NewGuid());
@@ -44,7 +41,7 @@ namespace kanban_lia.Tests
             _mockRepository.Verify(r => r.GetByBoardIdAsync(boardId), Times.Once);
         }
 
-        [TestMethod]
+        [Fact]
         public async Task GetByIdAsync_WithValidId_CallsRepositoryOnce()
         {
             var columnId = new ColumnId(Guid.NewGuid());
@@ -55,20 +52,21 @@ namespace kanban_lia.Tests
 
             var result = await _columnService.GetByIdAsync(columnId);
 
-            Assert.AreSame(column, result);
+            Assert.Same(column, result);
             _mockRepository.Verify(r => r.GetByIdAsync(columnId), Times.Once);
         }
 
-        [TestMethod]
+        [Fact]
         public async Task GetByIdAsync_WithInvalidId_ThrowsColumnNotFoundException()
         {
             var columnId = new ColumnId(Guid.NewGuid());
             _mockRepository.Setup(r => r.GetByIdAsync(columnId))
                 .ReturnsAsync((Column?)null);
-            await Assert.ThrowsExactlyAsync<ColumnNotFoundException>(() => _columnService.GetByIdAsync(columnId));
+
+            await Assert.ThrowsAsync<ColumnNotFoundException>(() => _columnService.GetByIdAsync(columnId));
         }
 
-        [TestMethod]
+        [Fact]
         public async Task RenameAsync_WithValidDto_CallsRepositoryOnce()
         {
             _mockRepository.Setup(r => r.RenameAsync(It.IsAny<ColumnId>(), It.IsAny<string>()))
@@ -78,40 +76,44 @@ namespace kanban_lia.Tests
 
             var result = await _columnService.RenameAsync(dto);
 
-            Assert.IsTrue(result);
+            Assert.True(result);
             _mockRepository.Verify(r => r.RenameAsync(
                 It.Is<ColumnId>(id => id.Value == dto.Id),
                 dto.NewTitle), Times.Once);
         }
 
-        [TestMethod]
+        [Fact]
         public async Task RenameAsync_WithInvalidDto_ThrowsColumnNotFoundException()
         {
             _mockRepository.Setup(r => r.RenameAsync(It.IsAny<ColumnId>(), It.IsAny<string>()))
                 .ReturnsAsync(false);
             var dto = new RenameColumnDto(Guid.NewGuid(), "Updated Column");
-            await Assert.ThrowsExactlyAsync<ColumnNotFoundException>(() => _columnService.RenameAsync(dto));
+
+            await Assert.ThrowsAsync<ColumnNotFoundException>(() => _columnService.RenameAsync(dto));
         }
 
-        [TestMethod]
+        [Fact]
         public async Task DeleteAsync_WithValidId_CallsRepositoryOnce()
         {
             _mockRepository.Setup(r => r.DeleteAsync(It.IsAny<ColumnId>()))
                 .ReturnsAsync(true);
             var columnId = new ColumnId(Guid.NewGuid());
+
             var result = await _columnService.DeleteAsync(columnId);
-            Assert.IsTrue(result);
+
+            Assert.True(result);
             _mockRepository.Verify(r => r.DeleteAsync(
                 It.Is<ColumnId>(id => id.Value == columnId.Value)), Times.Once);
         }
 
-        [TestMethod]
+        [Fact]
         public async Task DeleteAsync_WithInvalidId_ThrowsColumnNotFoundException()
         {
             var columnId = new ColumnId(Guid.NewGuid());
             _mockRepository.Setup(r => r.DeleteAsync(columnId))
                 .ReturnsAsync(false);
-            await Assert.ThrowsExactlyAsync<ColumnNotFoundException>(() => _columnService.DeleteAsync(columnId));
+
+            await Assert.ThrowsAsync<ColumnNotFoundException>(() => _columnService.DeleteAsync(columnId));
         }
     }
 }
