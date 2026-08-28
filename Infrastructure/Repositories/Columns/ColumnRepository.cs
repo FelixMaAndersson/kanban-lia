@@ -1,5 +1,6 @@
 ﻿using Dapper;
 using kanban_lia.Infrastructure.Database;
+using kanban_lia.Infrastructure.Schemas;
 using kanban_lia.Models.Domain.Boards;
 using kanban_lia.Models.Domain.Columns;
 
@@ -13,8 +14,12 @@ namespace kanban_lia.Infrastructure.Repositories.Columns
         {
             using var connection = _connectionFactory.CreateConnection();
             await connection.ExecuteAsync(
-                @"
-                    INSERT INTO Columns (Id, BoardId, Title, Position) 
+                $@"
+                    INSERT INTO {Schema.Columns.Table} 
+                               ({Schema.Columns.Id}, 
+                                {Schema.Columns.BoardId}, 
+                                {Schema.Columns.Title}, 
+                                {Schema.Columns.Position}) 
                     VALUES (@Id, @BoardId, @Title, @Position)",
                 new
                 {
@@ -43,12 +48,16 @@ namespace kanban_lia.Infrastructure.Repositories.Columns
         {
             using var connection = _connectionFactory.CreateConnection();
             var columns = await connection.QueryAsync<Column>(
-                @"
-                    SELECT * FROM Columns 
-                    WHERE BoardId = @BoardId
-                    ORDER BY Position",
-                new { BoardId = boardId }
+                $@"
+                    SELECT * FROM {Schema.Columns.Table} 
+                            WHERE {Schema.Columns.BoardId} = @BoardId
+                         ORDER BY {Schema.Columns.Position}",
+                new
+                {
+                    BoardId = boardId
+                }
             );
+
             return columns;
         }
 
@@ -56,12 +65,16 @@ namespace kanban_lia.Infrastructure.Repositories.Columns
         {
             using var connection = _connectionFactory.CreateConnection();
             var column = await connection.QuerySingleOrDefaultAsync<Column>(
-                @"
-                    SELECT * FROM Columns 
-                    WHERE Id = @Id
-                    ORDER BY Position",
-                new { Id = id }
+                $@"
+                    SELECT * FROM {Schema.Columns.Table}
+                            WHERE {Schema.Columns.Id} = @Id
+                         ORDER BY {Schema.Columns.Position}",
+                new
+                {
+                    Id = id
+                }
             );
+
             return column;
         }
 
@@ -69,11 +82,15 @@ namespace kanban_lia.Infrastructure.Repositories.Columns
         {
             using var connection = _connectionFactory.CreateConnection();
             var rowsAffected = await connection.ExecuteAsync(
-                @"
-                    UPDATE Columns 
-                    SET Title = @Title
-                    WHERE Id = @Id",
-                new { Id = id, Title = title }
+                $@"
+                    UPDATE {Schema.Columns.Table} 
+                       SET {Schema.Columns.Title} = @Title
+                     WHERE {Schema.Columns.Id}     = @Id",
+                new
+                {
+                    Id = id,
+                    Title = title
+                }
             );
 
             return rowsAffected > 0;
@@ -83,11 +100,15 @@ namespace kanban_lia.Infrastructure.Repositories.Columns
         {
             using var connection = _connectionFactory.CreateConnection();
             var rowsAffected = await connection.ExecuteAsync(
-                @"
-                    DELETE FROM Columns 
-                    WHERE Id = @Id",
-                new { Id = id }
+                $@"
+                    DELETE FROM {Schema.Columns.Table} 
+                          WHERE {Schema.Columns.Id} = @Id",
+                new
+                {
+                    Id = id
+                }
             );
+
             return rowsAffected > 0;
         }
     }

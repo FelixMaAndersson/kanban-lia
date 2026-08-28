@@ -8,6 +8,13 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+		<Compile Remove="kanban-lia.Tests\**" />
+		<Content Remove="kanban-lia.Tests\**" />
+		<EmbeddedResource Remove="kanban-lia.Tests\**" />
+		<None Remove="kanban-lia.Tests\**" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<PackageReference Include="AutoMapper" Version="16.2.0" />
 		<PackageReference Include="Dapper" Version="2.1.79" />
 		<PackageReference Include="FractionalIndexing" Version="1.0.1" />

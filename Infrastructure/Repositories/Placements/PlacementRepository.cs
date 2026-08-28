@@ -37,7 +37,7 @@ namespace kanban_lia.Infrastructure.Repositories.Placements
  
 
             return await connection.QuerySingleOrDefaultAsync<Placement>(
-                @"
+                $@"
                     SELECT TOP 1
                         p.EntityId,
                         p.ColumnId,

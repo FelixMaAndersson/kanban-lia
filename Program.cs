@@ -7,6 +7,7 @@ using kanban_lia.Infrastructure.Repositories.Columns;
 using kanban_lia.Infrastructure.Repositories.Placements;
 using kanban_lia.Models.Domain.Exceptions;
 using kanban_lia.Services.Boards;
+using kanban_lia.Services.Boards.Exceptions;
 using kanban_lia.Services.Columns;
 using kanban_lia.Services.Columns.Exceptions;
 using kanban_lia.Services.Placements;
@@ -46,6 +47,8 @@ app.UseExceptionHandler(errorApp =>
 
         var statusCode = exception switch
         {
+            BoardNotFoundException => StatusCodes.Status404NotFound,
+            RootNotFoundException => StatusCodes.Status404NotFound,
             ColumnNotFoundException => StatusCodes.Status404NotFound,
             InvalidDomainException => StatusCodes.Status400BadRequest,
             _ => StatusCodes.Status500InternalServerError
@@ -57,7 +60,9 @@ app.UseExceptionHandler(errorApp =>
             statusCode: statusCode,
             title: exception switch
             {
-                ColumnNotFoundException => "Column not found",
+                BoardNotFoundException => "Board could not be found",
+                RootNotFoundException => "Root could not be found",
+                ColumnNotFoundException => "Column could not be found",
                 InvalidDomainException => "Invalid request",
                 _ => "Internal server error"
             },
