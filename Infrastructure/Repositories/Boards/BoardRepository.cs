@@ -17,8 +17,8 @@ namespace kanban_lia.Infrastructure.Repositories.Boards
             var id = await connection.ExecuteScalarAsync<Guid>(
                 $@"
                     INSERT INTO {Schema.Boards.Table} 
-                             ({Schema.Boards.Id},
-                              {Schema.Boards.Title})
+                               ({Schema.Boards.Id},
+                                {Schema.Boards.Title})
                     VALUES (@Id, @Title)",
                 new
                 {
@@ -74,8 +74,8 @@ namespace kanban_lia.Infrastructure.Repositories.Boards
             var rowsAffected = await connection.ExecuteAsync(
                 $@"
                     INSERT INTO {Schema.BoardRoots.Table}
-                             ({Schema.BoardRoots.BoardId}, 
-                              {Schema.BoardRoots.EntityId}) 
+                               ({Schema.BoardRoots.BoardId}, 
+                                {Schema.BoardRoots.EntityId}) 
                     VALUES (@BoardId, @EntityId)",
                 new
                 {
