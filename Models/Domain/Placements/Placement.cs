@@ -12,12 +12,11 @@ namespace kanban_lia.Models.Domain.Placements
 
         public DateTime Timestamp { get; }
 
-        public string SortKey { get; }
-
-        private Placement(EntityId entityId, ColumnId columnId, DateTime timestamp, string sortKey)
+        private Placement(Guid entityId, Guid columnId, string position, DateTime timestamp)
         {
-            EntityId = entityId;
-            ColumnId = columnId;
+            EntityId = new EntityId(entityId);
+            ColumnId = new ColumnId(columnId);
+            Position = position;
             Timestamp = timestamp;
             SortKey = sortKey;
 
@@ -31,7 +30,7 @@ namespace kanban_lia.Models.Domain.Placements
                 throw new InvalidDomainException($"Invalid placement sort key: '{sortKey}'.");
             }
 
-            return new Placement(entityId, columnId, DateTime.UtcNow, sortKey);
+            return new Placement(entityId.Id, columnId.Id, position, DateTime.UtcNow);
         }
     }
 }

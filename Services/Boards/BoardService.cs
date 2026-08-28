@@ -60,19 +60,20 @@ namespace kanban_lia.Services.Boards
             var entityId = new EntityId(dto.EntityId);
 
             var boardExists = await _repository.BoardExistsAsync(boardId);
-            var rootExists = await _repository.RootExistsAsync(boardId, entityId);
-
-            var added = await _repository.AddRootAsync(boardId, entityId);
 
             if (!boardExists)
             {
                 throw new BoardNotFoundException(boardId);
             }
 
-            if (!rootExists)
+            var rootExists = await _repository.RootExistsAsync(boardId, entityId);
+
+            if (rootExists)
             {
-                throw new RootNotFoundException(entityId);
+                throw new RootAlreadyExistsException(entityId);
             }
+
+            var added = await _repository.AddRootAsync(boardId, entityId);
 
             return added;
         }
@@ -83,19 +84,20 @@ namespace kanban_lia.Services.Boards
             var entityId = new EntityId(dto.EntityId);
 
             var boardExists = await _repository.BoardExistsAsync(boardId);
-            var rootExists = await _repository.RootExistsAsync(boardId, entityId);
-
-            var removed = await _repository.RemoveRootAsync(boardId, entityId);
 
             if (!boardExists)
             {
                 throw new BoardNotFoundException(boardId);
             }
 
+            var rootExists = await _repository.RootExistsAsync(boardId, entityId);
+
             if (!rootExists)
             {
                 throw new RootNotFoundException(entityId);
             }
+
+            var removed = await _repository.RemoveRootAsync(boardId, entityId);
 
             return removed;
         }
