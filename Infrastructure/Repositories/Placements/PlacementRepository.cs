@@ -56,7 +56,7 @@ namespace kanban_lia.Infrastructure.Repositories.Placements
                 sql, new
                 {
                     EntityId = entityId.Id,
-                    BoardId = boardId.Value
+                    BoardId = boardId.Id
                 });
         }
 
