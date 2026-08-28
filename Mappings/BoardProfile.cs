@@ -18,7 +18,7 @@ namespace kanban_lia.Mappings
             CreateMap<Board, BoardDto>()
                 .ForMember(
                     dest => dest.Id,
-                    opt => opt.MapFrom(src => src.Id.Value));
+                    opt => opt.MapFrom(src => src.Id.Id));
         }
     }
 }
