@@ -9,33 +9,29 @@ namespace kanban_lia.Models.Domain.Placements
         public EntityId EntityId { get; }
 
         public ColumnId ColumnId { get; }
-        public string Position { get; }
 
         public DateTime Timestamp { get; }
 
-        private Placement(EntityId entityId, ColumnId columnId, string position, DateTime timestamp)
+        public string SortKey { get; }
+
+        private Placement(EntityId entityId, ColumnId columnId, DateTime timestamp, string sortKey)
         {
             EntityId = entityId;
             ColumnId = columnId;
-            Position = position;
             Timestamp = timestamp;
+            SortKey = sortKey;
+
         }
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="entityId"></param>
-        /// <param name="columnId"></param>
-        /// <param name="position">Provide a lexographical position for the entity in the column</param>
-        /// <returns></returns>
-        /// <exception cref="InvalidDomainException"></exception>
-        public static Placement Create(EntityId entityId, ColumnId columnId, string position)
+
+        public static Placement Create(EntityId entityId, ColumnId columnId, string sortKey)
         {
-            if (string.IsNullOrWhiteSpace(position))
+
+            if (string.IsNullOrWhiteSpace(sortKey))
             {
-                throw new InvalidDomainException($"Invalid placement position: '{position}'.");
+                throw new InvalidDomainException($"Invalid placement sort key: '{sortKey}'.");
             }
 
-            return new Placement(entityId, columnId, position, DateTime.UtcNow);
+            return new Placement(entityId, columnId, DateTime.UtcNow, sortKey);
         }
     }
 }
