@@ -17,46 +17,35 @@ namespace kanban_lia.Services.Placements
         public async Task CreateAsync(CreatePlacementDto dto)
         {
             var entityId = new EntityId(dto.EntityId);
-            var columnId = new ColumnId(dto.ColumnId);
-            var column = await _columnRepository.GetByIdAsync(columnId);
+
+            var column = await _columnRepository.GetByIdAsync(dto.ColumnId);
 
             if (column is null)
             {
-                throw new ColumnNotFoundException(columnId);
+                throw new ColumnNotFoundException(dto.ColumnId);
             }
 
-            string? previousSortKey = null;
-            string? nextSortKey = null;
+            var lookup = dto.AfterEntityId.HasValue
+                ? SortKeyLookup.After
+                : SortKeyLookup.First;
 
+            var range = await _repository.GetSortKeyRangeAsync(
+                column.Id,
+                lookup,
+                dto.AfterEntityId.HasValue
+                    ? new EntityId(dto.AfterEntityId.Value)
+                    : null);
 
-            if (dto.AfterEntityId.HasValue)
-            {
-                var afterEntityId = new EntityId(dto.AfterEntityId.Value);
+            var sortKey = OrderKeyGenerator.GenerateKeyBetween(
+                range.Previous,
+                range.Next);
 
-                previousSortKey = await _repository.GetCurrentSortKeyAsync(
-                    afterEntityId,
-                    columnId);
+            var placement = Placement.Create(
+                entityId,
+                column.Id,
+                sortKey);
 
-                if (previousSortKey is null)
-                {
-                    throw new PlacementNotFoundException(afterEntityId);
-                }
-
-                nextSortKey = await _repository.GetNextSortKeyAsync(
-                    previousSortKey,
-                    columnId
-                    );
-            }
-            else
-            {
-                nextSortKey = await _repository.GetFirstSortKeyAsync(columnId);
-            }
-
-            var sortKey = OrderKeyGenerator.GenerateKeyBetween(previousSortKey, nextSortKey);
-
-            var newPlacement = Placement.Create(entityId, columnId, sortKey);
-
-            await _repository.CreateAsync(newPlacement);
+            await _repository.CreateAsync(placement);
         }
 
         public async Task<Placement?> GetCurrentAsync(Guid entityId, Guid boardId)

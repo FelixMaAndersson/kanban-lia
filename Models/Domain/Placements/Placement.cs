@@ -3,7 +3,7 @@ using kanban_lia.Models.Domain.Exceptions;
 
 namespace kanban_lia.Models.Domain.Placements
 {
-    public readonly record struct EntityId(Guid Value);
+    public readonly record struct EntityId(Guid Id);
     public class Placement
     {
         public EntityId EntityId { get; }
