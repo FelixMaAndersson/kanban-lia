@@ -3,7 +3,6 @@ using kanban_lia.Infrastructure.Database;
 using kanban_lia.Infrastructure.Schemas;
 using kanban_lia.Models.Domain.Boards;
 using kanban_lia.Models.Domain.Columns;
-using kanban_lia.Models.Domain.Columns.DTOs;
 
 namespace kanban_lia.Infrastructure.Repositories.Columns
 {
@@ -24,8 +23,8 @@ namespace kanban_lia.Infrastructure.Repositories.Columns
                     VALUES (@Id, @BoardId, @Title, @Position)",
                 new
                 {
-                    Id = column.Id.Id,
-                    BoardId = column.BoardId.Value,
+                    column.Id.Id,
+                    BoardId = column.BoardId.Id,
                     column.Title,
                     column.Position
                 }
@@ -55,7 +54,7 @@ namespace kanban_lia.Infrastructure.Repositories.Columns
                          ORDER BY {Schema.Columns.Position}",
                 new
                 {
-                    BoardId = boardId.Value
+                    BoardId = boardId.Id
                 }
             );
 
@@ -76,7 +75,7 @@ namespace kanban_lia.Infrastructure.Repositories.Columns
                          ORDER BY {Schema.Columns.Position}",
                 new
                 {
-                    Id = id.Id
+                    id.Id
                 }
             );
 
