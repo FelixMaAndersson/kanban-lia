@@ -12,9 +12,10 @@ namespace kanban_lia.Services.Columns
 
         public async Task CreateAsync(CreateColumnDto dto)
         {
-            var boardId = new BoardId(dto.BoardId);
+            var columnId = dto.Id ?? new ColumnId(Guid.NewGuid());
+            var boardId = dto.BoardId;
 
-            var newColumn = Column.Create(dto.Id ?? new ColumnId(Guid.NewGuid()), dto.Title, dto.Position, boardId);
+            var newColumn = Column.Create(columnId, dto.Title, dto.Position, boardId);
 
             await _repository.CreateAsync(newColumn);
         }
@@ -30,7 +31,7 @@ namespace kanban_lia.Services.Columns
 
             if (column is null)
             {
-                throw new ColumnNotFoundException(id);
+                throw new ColumnNotFoundException(id.Id);
             }
 
             return column;
@@ -44,7 +45,7 @@ namespace kanban_lia.Services.Columns
 
             if (!renamed)
             {
-                throw new ColumnNotFoundException(columnId);
+                throw new ColumnNotFoundException(columnId.Id);
             }
 
             return renamed;
@@ -56,7 +57,7 @@ namespace kanban_lia.Services.Columns
 
             if (!deleted)
             {
-                throw new ColumnNotFoundException(id);
+                throw new ColumnNotFoundException(id.Id);
             }
 
             return deleted;

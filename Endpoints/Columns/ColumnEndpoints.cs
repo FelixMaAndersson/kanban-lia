@@ -45,9 +45,7 @@ public static class ColumnEndpoints
             Guid id,
             IColumnService columnService) =>
         {
-            var columnId = new ColumnId(id);
-
-            var column = await columnService.GetByIdAsync(columnId);
+            var column = await columnService.GetByIdAsync(new ColumnId(id));
 
             return Results.Ok(column);
         });

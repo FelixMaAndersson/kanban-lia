@@ -2,5 +2,5 @@
 
 namespace kanban_lia.Services.Placements.Exceptions
 {
-    public class ColumnNotFoundException(ColumnId id) : Exception($"Column with id '{id}' was not found.");
+    public class ColumnNotFoundException(ColumnId ColumnId) : Exception($"Column with id '{ColumnId.Id}' was not found.");
 }

@@ -1,6 +1,5 @@
 ﻿using FractionalIndexing;
 using kanban_lia.Infrastructure.Repositories.Placements;
-using kanban_lia.Models.Domain.Columns;
 using kanban_lia.Models.Domain.Placements;
 using kanban_lia.Services.Placements.DTOs;
 using kanban_lia.Infrastructure.Repositories.Columns;
