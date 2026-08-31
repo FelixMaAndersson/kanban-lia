@@ -75,7 +75,7 @@ namespace kanban_lia.Infrastructure.Repositories.Columns
                          ORDER BY {Schema.Columns.Position}",
                 new
                 {
-                    Id = id.Id
+                    id.Id
                 }
             );
 

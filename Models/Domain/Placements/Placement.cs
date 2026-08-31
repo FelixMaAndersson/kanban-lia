@@ -1,7 +1,5 @@
 ﻿using kanban_lia.Models.Domain.Columns;
 using kanban_lia.Models.Domain.Exceptions;
-using kanban_lia.Models.Domain.Placements;
-using kanban_lia.Services.Placements.DTOs;
 
 namespace kanban_lia.Models.Domain.Placements
 {
@@ -16,10 +14,10 @@ namespace kanban_lia.Models.Domain.Placements
 
         public string SortKey { get; }
 
-        private Placement(EntityId entityId, ColumnId columnId, DateTime timestamp, string sortKey)
+        private Placement(Guid entityId, Guid columnId, DateTime timestamp, string sortKey)
         {
-            EntityId = entityId;
-            ColumnId = columnId;
+            EntityId = new EntityId(entityId);
+            ColumnId = new ColumnId(columnId);
             Timestamp = timestamp;
             SortKey = sortKey;
 
@@ -33,7 +31,7 @@ namespace kanban_lia.Models.Domain.Placements
                 throw new InvalidDomainException($"Invalid placement sort key: '{sortKey}'.");
             }
 
-            return new Placement(entityId, columnId, DateTime.UtcNow, sortKey);
+            return new Placement(entityId.Id, columnId.Id, DateTime.UtcNow, sortKey);
         }
     }
 }
