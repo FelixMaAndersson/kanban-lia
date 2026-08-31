@@ -14,7 +14,7 @@ public static class PlacementEndpoints
         var group = app.MapGroup("/api/placements");
 
         group.MapPost("/create", async (
-            [FromBody]CreatePlacementRequest request,
+            [FromBody] CreatePlacementRequest request,
             IPlacementService placementService,
             IMapper mapper) =>
         {
@@ -23,6 +23,14 @@ public static class PlacementEndpoints
             await placementService.CreateAsync(requestDto);
 
             return Results.Ok();
+        });
+
+        group.MapGet("/${id:guid}", async (
+            [FromBody] GetPlacementRequest request,
+            IPlacementService placementService,
+            IMapper mapper) =>
+        {
+
         });
     }
 }
