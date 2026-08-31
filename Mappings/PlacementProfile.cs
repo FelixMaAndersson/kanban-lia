@@ -14,9 +14,15 @@ namespace kanban_lia.Mappings
             CreateMap<CreatePlacementRequest, CreatePlacementDto>();
 
             CreateMap<Placement, PlacementDto>()
-                .ForMember(dest => dest.EntityId, opt => opt.MapFrom(src => src.EntityId.Id))
-                .ForMember(dest => dest.ColumnId, opt => opt.MapFrom(src => src.ColumnId.Id))
-                .ForMember(dest => dest.Position, opt => opt.MapFrom(src => src.SortKey));
+                .ForCtorParam(
+                    nameof(PlacementDto.EntityId),
+                    opt => opt.MapFrom(src => src.EntityId.Id))
+                .ForCtorParam(
+                    nameof(PlacementDto.ColumnId),
+                    opt => opt.MapFrom(src => src.ColumnId.Id))
+                .ForCtorParam(
+                    nameof(PlacementDto.Position),
+                    opt => opt.MapFrom(src => src.SortKey));
         }
     }
 }
