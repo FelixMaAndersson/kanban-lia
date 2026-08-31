@@ -1,4 +1,5 @@
-﻿using kanban_lia.Infrastructure.Repositories.Columns;
+﻿using kanban_lia.Infrastructure.Repositories.Boards;
+using kanban_lia.Infrastructure.Repositories.Columns;
 using kanban_lia.Models.Domain.Boards;
 using kanban_lia.Models.Domain.Columns;
 using kanban_lia.Services.Columns;
@@ -7,114 +8,86 @@ using kanban_lia.Services.Columns.Exceptions;
 
 namespace kanban_lia.Integration.Tests
 {
-    public class ColumnServiceTests
+    public class ColumnServiceTests(DatabaseFixture db) : IClassFixture<DatabaseFixture>
     {
+        private readonly DatabaseFixture _db = db;
 
-        private readonly Mock<IColumnRepository> _mockRepository;
-        private readonly ColumnService _columnService;
-
-        public ColumnServiceTests()
+        private ColumnService CreateService()
         {
-            _mockRepository = new Mock<IColumnRepository>();
-            _columnService = new ColumnService(_mockRepository.Object);
+            return new ColumnService(new ColumnRepository(_db.DbFactory));
+        }
+
+        private async Task<BoardId> CreateBoardAsync()
+        {
+            var boardRepo = new BoardRepository(_db.DbFactory);
+            var board = Board.Create("Test Board");
+            await boardRepo.CreateAsync(board);
+            return board.Id;
         }
 
         [Fact]
-        public async Task CreateAsync_WithValidDto_CallsRepositoryOnce()
+        public async Task CreateAsync_WithValidId_PersistsColumnThatCanBeRetrieved()
         {
-            var dto = new CreateColumnDto("New Column", 1, Guid.NewGuid());
+            var service = CreateService();
 
-            await _columnService.CreateAsync(dto);
-
-            _mockRepository.Verify(r => r.CreateAsync(It.Is<Column>(c =>
-                c.Title == dto.Title &&
-                c.Position == dto.Position &&
-                c.BoardId.Value == dto.BoardId)), Times.Once);
-        }
-
-        [Fact]
-        public async Task GetByBoardIdAsync_WithValidBoardId_CallsRepositoryOnce()
-        {
-            var boardId = new BoardId(Guid.NewGuid());
-
-            await _columnService.GetByBoardIdAsync(boardId);
-
-            _mockRepository.Verify(r => r.GetByBoardIdAsync(boardId), Times.Once);
-        }
-
-        [Fact]
-        public async Task GetByIdAsync_WithValidId_CallsRepositoryOnce()
-        {
-            var columnId = new ColumnId(Guid.NewGuid());
-            var column = Column.Create("Some Column", 0, new BoardId(Guid.NewGuid()));
-
-            _mockRepository.Setup(r => r.GetByIdAsync(columnId))
-                .ReturnsAsync(column);
-
-            var result = await _columnService.GetByIdAsync(columnId);
-
-            Assert.Same(column, result);
-            _mockRepository.Verify(r => r.GetByIdAsync(columnId), Times.Once);
-        }
-
-        [Fact]
-        public async Task GetByIdAsync_WithInvalidId_ThrowsColumnNotFoundException()
-        {
-            var columnId = new ColumnId(Guid.NewGuid());
-            _mockRepository.Setup(r => r.GetByIdAsync(columnId))
-                .ReturnsAsync((Column?)null);
-
-            await Assert.ThrowsAsync<ColumnNotFoundException>(() => _columnService.GetByIdAsync(columnId));
-        }
-
-        [Fact]
-        public async Task RenameAsync_WithValidDto_CallsRepositoryOnce()
-        {
-            _mockRepository.Setup(r => r.RenameAsync(It.IsAny<ColumnId>(), It.IsAny<string>()))
-                .ReturnsAsync(true);
-
-            var dto = new RenameColumnDto(Guid.NewGuid(), "Updated Column");
-
-            var result = await _columnService.RenameAsync(dto);
-
-            Assert.True(result);
-            _mockRepository.Verify(r => r.RenameAsync(
-                It.Is<ColumnId>(id => id.Value == dto.Id),
-                dto.NewTitle), Times.Once);
-        }
-
-        [Fact]
-        public async Task RenameAsync_WithInvalidDto_ThrowsColumnNotFoundException()
-        {
-            _mockRepository.Setup(r => r.RenameAsync(It.IsAny<ColumnId>(), It.IsAny<string>()))
-                .ReturnsAsync(false);
-            var dto = new RenameColumnDto(Guid.NewGuid(), "Updated Column");
-
-            await Assert.ThrowsAsync<ColumnNotFoundException>(() => _columnService.RenameAsync(dto));
-        }
-
-        [Fact]
-        public async Task DeleteAsync_WithValidId_CallsRepositoryOnce()
-        {
-            _mockRepository.Setup(r => r.DeleteAsync(It.IsAny<ColumnId>()))
-                .ReturnsAsync(true);
+            var boardId = await CreateBoardAsync();
             var columnId = new ColumnId(Guid.NewGuid());
 
-            var result = await _columnService.DeleteAsync(columnId);
+            await service.CreateAsync(new CreateColumnDto(columnId, "Test Column", 1, boardId));
 
-            Assert.True(result);
-            _mockRepository.Verify(r => r.DeleteAsync(
-                It.Is<ColumnId>(id => id.Value == columnId.Value)), Times.Once);
+            var retrievedColumn = await service.GetByIdAsync(columnId);
+
+            Assert.Equal("Test Column", retrievedColumn!.Title);
+            Assert.Equal(columnId, retrievedColumn.Id);
         }
 
         [Fact]
-        public async Task DeleteAsync_WithInvalidId_ThrowsColumnNotFoundException()
+        public async Task GetByBoardIdAsync_ReturnsAllColumnsForBoard()
         {
-            var columnId = new ColumnId(Guid.NewGuid());
-            _mockRepository.Setup(r => r.DeleteAsync(columnId))
-                .ReturnsAsync(false);
+            var service = CreateService();
 
-            await Assert.ThrowsAsync<ColumnNotFoundException>(() => _columnService.DeleteAsync(columnId));
+            var boardId = await CreateBoardAsync();
+
+            await service.CreateAsync(new CreateColumnDto(new ColumnId(Guid.NewGuid()), "Column 1", 1, boardId));
+            await service.CreateAsync(new CreateColumnDto(new ColumnId(Guid.NewGuid()), "Column 2", 2, boardId));
+
+            var columns = await service.GetByBoardIdAsync(boardId);
+
+            Assert.Equal(2, columns.Count());
+            Assert.Contains(columns, c => c.Title == "Column 1");
+            Assert.Contains(columns, c => c.Title == "Column 2");
+        }
+
+        [Fact]
+        public async Task RenameAsync_WithValidId_UpdatesColumnTitle()
+        {
+            var service = CreateService();
+
+            var boardId = await CreateBoardAsync();
+            var columnId = new ColumnId(Guid.NewGuid());
+
+            await service.CreateAsync(new CreateColumnDto(columnId, "Old Title", 1, boardId));
+            var renamed = await service.RenameAsync(new RenameColumnDto(columnId.Id, "New Title"));
+
+            var updatedColumn = await service.GetByIdAsync(columnId);
+
+            Assert.True(renamed);
+            Assert.Equal("New Title", updatedColumn!.Title);
+        }
+
+        [Fact]
+        public async Task DeleteAsync_DeletesColumn()
+        {
+            var service = CreateService();
+
+            var boardId = await CreateBoardAsync();
+            var columnId = new ColumnId(Guid.NewGuid());
+
+            await service.CreateAsync(new CreateColumnDto(columnId, "Old Title", 1, boardId));
+            var deleted = await service.DeleteAsync(columnId);
+
+            Assert.True(deleted);
+            await Assert.ThrowsAsync<ColumnNotFoundException>(() => service.GetByIdAsync(columnId));
         }
     }
 }
