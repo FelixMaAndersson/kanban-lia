@@ -1,4 +1,4 @@
 ﻿namespace kanban_lia.Endpoints.Placements.Requests
 {
-    public record CreatePlacementRequest(Guid EntityId, Guid ColumnId, Guid? AfterEntityId);
+    public record CreatePlacementRequest(Guid EntityId, Guid ColumnId, Guid? AfterEntityId, Guid? BeforeEntityId);
 }
