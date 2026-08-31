@@ -1,9 +1,9 @@
 ﻿using AutoMapper;
-using Microsoft.AspNetCore.Mvc;
-
 using kanban_lia.Endpoints.Placements.Requests;
+using kanban_lia.Models.Domain.Placements.DTOs;
 using kanban_lia.Services.Placements;
 using kanban_lia.Services.Placements.DTOs;
+using Microsoft.AspNetCore.Mvc;
 
 namespace kanban_lia.Endpoints.Placements;
 
@@ -25,12 +25,17 @@ public static class PlacementEndpoints
             return Results.Ok();
         });
 
-        group.MapGet("/${id:guid}", async (
-            [FromBody] GetPlacementRequest request,
+        group.MapGet("/get", async (
+            Guid entityId,
+            Guid boardId,
             IPlacementService placementService,
             IMapper mapper) =>
         {
+            var placement = await placementService.GetCurrentAsync(entityId, boardId);
 
+            return placement is null
+                ? Results.NotFound()
+                : Results.Ok(mapper.Map<PlacementDto>(placement));
         });
     }
 }

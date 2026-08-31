@@ -1,13 +1,6 @@
-﻿using kanban_lia.Infrastructure.Repositories.Boards;
-using kanban_lia.Infrastructure.Repositories.Columns;
-using kanban_lia.Infrastructure.Repositories.Placements;
-using kanban_lia.Models.Domain.Boards;
-using kanban_lia.Models.Domain.Columns;
+﻿using kanban_lia.Models.Domain.Columns;
 using kanban_lia.Models.Domain.Exceptions;
 using kanban_lia.Models.Domain.Placements;
-using kanban_lia.Models.Domain.Placements.DTOs;
-using kanban_lia.Services.Placements;
-using kanban_lia.Services.Placements.DTOs;
 
 namespace kanban_lia.Tests
 {
