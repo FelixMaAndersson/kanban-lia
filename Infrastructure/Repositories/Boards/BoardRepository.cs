@@ -27,7 +27,7 @@ namespace kanban_lia.Infrastructure.Repositories.Boards
                 }
             );
 
-            return new BoardId(id);
+            return board.Id;
         }
 
         public async Task<Board?> GetByIdAsync(BoardId id)
