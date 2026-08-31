@@ -67,38 +67,38 @@ namespace kanban_lia.Infrastructure.Repositories.Placements
         {
             using var connection = _connectionFactory.CreateConnection();
 
-            const string sql = """
+            const string sql = $@"
         WITH TargetBoard AS
         (
-            SELECT BoardId
-            FROM Columns
-            WHERE Id = @ColumnId
+            SELECT {Schema.Columns.BoardId}
+            FROM {Schema.Columns.Table}
+            WHERE {Schema.Columns.Id} = @ColumnId
         ),
         CurrentPlacements AS
         (
             SELECT
-                p.EntityId,
-                p.ColumnId,
-                p.SortKey,
+                p.{Schema.Placements.EntityId},
+                p.{Schema.Placements.ColumnId},
+                p.{Schema.Placements.SortKey},
                 ROW_NUMBER() OVER
                 (
-                    PARTITION BY p.EntityId
-                    ORDER BY p.Timestamp DESC
+                    PARTITION BY p.{Schema.Placements.EntityId}
+                    ORDER BY p.{Schema.Placements.Timestamp} DESC
                 ) AS rn
-            FROM Placements p
-            INNER JOIN Columns c
-                ON p.ColumnId = c.Id
+            FROM {Schema.Placements.Table} p
+            INNER JOIN {Schema.Columns.Table} c
+                ON p.{Schema.Placements.ColumnId} = c.{Schema.Columns.Id}
             INNER JOIN TargetBoard tb
-                ON c.BoardId = tb.BoardId
+                ON c.{Schema.Columns.BoardId} = tb.{Schema.Columns.BoardId}
         ),
         CurrentColumn AS
         (
             SELECT
-                EntityId,
-                SortKey
+                {Schema.Placements.EntityId},
+                {Schema.Placements.SortKey}
             FROM CurrentPlacements
             WHERE rn = 1
-              AND ColumnId = @ColumnId
+              AND {Schema.Placements.ColumnId} = @ColumnId
         )
         SELECT
             CASE
@@ -109,17 +109,17 @@ namespace kanban_lia.Infrastructure.Repositories.Placements
             CASE
                 WHEN @Lookup = 0 THEN
                     (
-                        SELECT TOP 1 SortKey
+                        SELECT TOP 1 {Schema.Placements.SortKey}
                         FROM CurrentColumn
-                        ORDER BY SortKey COLLATE Latin1_General_100_BIN2 ASC
+                        ORDER BY {Schema.Placements.SortKey} COLLATE Latin1_General_100_BIN2 ASC
                     )
                 ELSE
                     (
-                        SELECT TOP 1 SortKey
+                        SELECT TOP 1 {Schema.Placements.SortKey}
                         FROM CurrentColumn
-                        WHERE SortKey COLLATE Latin1_General_100_BIN2
-                            > anchor.SortKey COLLATE Latin1_General_100_BIN2
-                        ORDER BY SortKey COLLATE Latin1_General_100_BIN2 ASC
+                        WHERE {Schema.Placements.SortKey} COLLATE Latin1_General_100_BIN2
+                            > anchor.{Schema.Placements.SortKey} COLLATE Latin1_General_100_BIN2
+                        ORDER BY {Schema.Placements.SortKey} COLLATE Latin1_General_100_BIN2 ASC
                     )
             END AS Next
         FROM
@@ -131,7 +131,7 @@ namespace kanban_lia.Infrastructure.Repositories.Placements
                     WHERE EntityId = @AfterEntityId
                 ) AS SortKey
         ) anchor;
-        """;
+        ";
 
             return await connection.QuerySingleAsync<SortKeyRange>(
                 sql,

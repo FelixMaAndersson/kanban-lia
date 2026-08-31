@@ -11,12 +11,12 @@ namespace kanban_lia.Models.Domain.Columns
         public int Position { get; }
         public BoardId BoardId { get; }
 
-        private Column(Guid id, string title, int position, BoardId boardId)
+        private Column(Guid id, string title, int position, Guid boardId)
         {
             Id = new ColumnId(id);
             Title = title;
             Position = position;
-            BoardId = boardId;
+            BoardId = new BoardId(boardId);
         }
 
         public static Column Create(ColumnId id, string title, int position, BoardId boardId)
@@ -36,7 +36,7 @@ namespace kanban_lia.Models.Domain.Columns
                 throw new InvalidDomainException("Column position cannot be negative");
             }
 
-            return new Column(id.Id, title, position, boardId);
+            return new Column(id.Id, title, position, boardId.Id);
         }
 
         public void Rename(string title)
