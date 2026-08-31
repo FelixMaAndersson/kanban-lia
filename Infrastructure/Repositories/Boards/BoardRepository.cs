@@ -116,7 +116,7 @@ namespace kanban_lia.Infrastructure.Repositories.Boards
                           WHERE {Schema.Boards.Id} = @Id",
                 new
                 {
-                    Id = id
+                    id.Id
                 }
             );
 
