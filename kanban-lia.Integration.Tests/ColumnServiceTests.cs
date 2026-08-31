@@ -5,10 +5,11 @@ using kanban_lia.Services.Columns;
 using kanban_lia.Services.Columns.DTOs;
 using kanban_lia.Services.Columns.Exceptions;
 
-namespace kanban_lia.Tests
+namespace kanban_lia.Integration.Tests
 {
     public class ColumnServiceTests
     {
+
         private readonly Mock<IColumnRepository> _mockRepository;
         private readonly ColumnService _columnService;
 
