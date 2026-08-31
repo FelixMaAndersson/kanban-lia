@@ -9,7 +9,7 @@ namespace kanban_lia.Tests
         [Fact]
         public void Create_WithValidTitle_SetsTitle()
         {
-            var column = Column.Create("Test Column", 0, new BoardId(Guid.NewGuid()));
+            var column = Column.Create(new ColumnId(Guid.NewGuid()), "Test Column", 0, new BoardId(Guid.NewGuid()));
 
             Assert.Equal("Test Column", column.Title);
         }
@@ -17,7 +17,7 @@ namespace kanban_lia.Tests
         [Fact]
         public void Create_WithEmptyTitle_ThrowsInvalidDomainException()
         {
-            Assert.Throws<InvalidDomainException>(() => Column.Create("", 0, new BoardId(Guid.NewGuid())));
+            Assert.Throws<InvalidDomainException>(() => Column.Create(new ColumnId(Guid.NewGuid()), "", 0, new BoardId(Guid.NewGuid())));
         }
 
         [Fact]
@@ -25,19 +25,19 @@ namespace kanban_lia.Tests
         {
             var longTitle = new string('a', 256);
 
-            Assert.Throws<InvalidDomainException>(() => Column.Create(longTitle, 0, new BoardId(Guid.NewGuid())));
+            Assert.Throws<InvalidDomainException>(() => Column.Create(new ColumnId(Guid.NewGuid()), longTitle, 0, new BoardId(Guid.NewGuid())));
         }
 
         [Fact]
         public void Create_WithNegativePosition_ThrowsInvalidDomainException()
         {
-            Assert.Throws<InvalidDomainException>(() => Column.Create("Test Column", -1, new BoardId(Guid.NewGuid())));
+            Assert.Throws<InvalidDomainException>(() => Column.Create(new ColumnId(Guid.NewGuid()), "Test Column", -1, new BoardId(Guid.NewGuid())));
         }
 
         [Fact]
         public void Rename_WithValidTitle_UpdatesTitle()
         {
-            var column = Column.Create("Test Column", 0, new BoardId(Guid.NewGuid()));
+            var column = Column.Create(new ColumnId(Guid.NewGuid()), "Test Column", 0, new BoardId(Guid.NewGuid()));
             column.Rename("New Title");
 
             Assert.Equal("New Title", column.Title);
@@ -46,7 +46,7 @@ namespace kanban_lia.Tests
         [Fact]
         public void Rename_WithEmptyTitle_ThrowsInvalidDomainException()
         {
-            var column = Column.Create("Test Column", 0, new BoardId(Guid.NewGuid()));
+            var column = Column.Create(new ColumnId(Guid.NewGuid()), "Test Column", 0, new BoardId(Guid.NewGuid()));
 
             Assert.Throws<InvalidDomainException>(() => column.Rename(""));
         }
@@ -54,7 +54,7 @@ namespace kanban_lia.Tests
         [Fact]
         public void Rename_WithTooLongTitle_ThrowsInvalidDomainException()
         {
-            var column = Column.Create("Test Column", 0, new BoardId(Guid.NewGuid()));
+            var column = Column.Create(new ColumnId(Guid.NewGuid()), "Test Column", 0, new BoardId(Guid.NewGuid()));
             var longTitle = new string('a', 256);
 
             Assert.Throws<InvalidDomainException>(() => column.Rename(longTitle));
