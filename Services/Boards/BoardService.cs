@@ -10,11 +10,11 @@ namespace kanban_lia.Services.Boards
     {
         private readonly IBoardRepository _repository = repository;
 
-        public async Task CreateAsync(string title)
+        public async Task<BoardId> CreateAsync(string title)
         {
             var newBoard = Board.Create(title);
 
-            await _repository.CreateAsync(newBoard);
+            return await _repository.CreateAsync(newBoard);
         }
 
         public async Task<Board?> GetByIdAsync(BoardId id)
