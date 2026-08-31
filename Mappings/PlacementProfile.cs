@@ -12,6 +12,7 @@ namespace kanban_lia.Mappings
         public PlacementProfile()
         {
             CreateMap<CreatePlacementRequest, CreatePlacementDto>();
+            CreateMap<GetPlacementRequest, GetPlacementDto>();
 
             CreateMap<Placement, PlacementDto>();
         }
