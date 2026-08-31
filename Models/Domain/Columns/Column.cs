@@ -19,9 +19,6 @@ namespace kanban_lia.Models.Domain.Columns
             BoardId = new BoardId(boardId);
         }
 
-        internal static Column Rehydrate(Guid id, string title, int position, Guid boardId)
-            => new(id, title, position, boardId);
-
         public static Column Create(ColumnId? id, string title, int position, BoardId boardId)
         {
             if (string.IsNullOrWhiteSpace(title))
