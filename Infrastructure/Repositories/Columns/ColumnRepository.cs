@@ -10,6 +10,18 @@ namespace kanban_lia.Infrastructure.Repositories.Columns
     {
         private readonly DbConnectionFactory _connectionFactory = connectionFactory;
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Major Code Smell", "S1144:Unused private types or members should be removed", Justification = "Populated by Dapper via reflection")]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Major Code Smell", "S3459:Unassigned members should be removed", Justification = "Populated by Dapper via reflection")]
+        private sealed class ColumnRow
+        {
+            public Guid Id { get; set; }
+            public Guid BoardId { get; set; }
+            public string Title { get; set; } = null!;
+            public int Position { get; set; } = 0;
+
+            public Column ToDomain() => Column.Rehydrate(Id, Title, Position, BoardId);
+        }
+
         public async Task<Column> CreateAsync(Column column)
         {
             using var connection = _connectionFactory.CreateConnection();
@@ -47,9 +59,13 @@ namespace kanban_lia.Infrastructure.Repositories.Columns
         public async Task<IEnumerable<Column>> GetByBoardIdAsync(BoardId boardId)
         {
             using var connection = _connectionFactory.CreateConnection();
-            var columns = await connection.QueryAsync<Column>(
+            var columns = await connection.QueryAsync<ColumnRow>(
                 $@"
-                    SELECT * FROM {Schema.Columns.Table} 
+                    SELECT  {Schema.Columns.Id}, 
+                            {Schema.Columns.Title}, 
+                            {Schema.Columns.Position}, 
+                            {Schema.Columns.BoardId} 
+                    FROM    {Schema.Columns.Table} 
                             WHERE {Schema.Columns.BoardId} = @BoardId
                          ORDER BY {Schema.Columns.Position}",
                 new
@@ -58,28 +74,27 @@ namespace kanban_lia.Infrastructure.Repositories.Columns
                 }
             );
 
-            return columns;
+            return columns.Select(r => r.ToDomain());
         }
 
         public async Task<Column?> GetByIdAsync(ColumnId id)
         {
             using var connection = _connectionFactory.CreateConnection();
-            var column = await connection.QuerySingleOrDefaultAsync<Column>(
+            var column = await connection.QuerySingleOrDefaultAsync<ColumnRow>(
                 $@"
                     SELECT  {Schema.Columns.Id}, 
                             {Schema.Columns.Title}, 
                             {Schema.Columns.Position}, 
                             {Schema.Columns.BoardId} 
                     FROM    {Schema.Columns.Table}
-                            WHERE {Schema.Columns.Id} = @Id
-                         ORDER BY {Schema.Columns.Position}",
+                            WHERE {Schema.Columns.Id} = @Id",
                 new
                 {
                     id.Id
                 }
             );
 
-            return column;
+            return column?.ToDomain();
         }
 
         public async Task<bool> RenameAsync(ColumnId id, string title)
