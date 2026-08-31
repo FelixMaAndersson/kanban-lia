@@ -61,10 +61,10 @@ namespace kanban_lia.Infrastructure.Repositories.Placements
         }
 
         public async Task<SortKeyRange> GetSortKeyRangeAsync(
-    ColumnId columnId,
-    SortKeyLookup lookup,
-    EntityId? afterEntityId = null,
-    EntityId? beforeEntityId = null)
+            ColumnId columnId,
+            SortKeyLookup lookup,
+            EntityId? afterEntityId = null,
+            EntityId? beforeEntityId = null)
         {
             using var connection = _connectionFactory.CreateConnection();
 
@@ -118,7 +118,12 @@ namespace kanban_lia.Infrastructure.Repositories.Placements
         )
         SELECT
             CASE
-                WHEN @Lookup = 0 THEN NULL
+                WHEN @Lookup = 0 THEN
+                    (
+                        SELECT TOP 1 {Schema.Placements.SortKey}
+                        FROM CurrentColumn
+                        ORDER BY {Schema.Placements.SortKey} COLLATE Latin1_General_100_BIN2 DESC
+                    )
 
                 WHEN @Lookup = 1 THEN
                     AfterSortKey
@@ -135,11 +140,7 @@ namespace kanban_lia.Infrastructure.Repositories.Placements
 
             CASE
                 WHEN @Lookup = 0 THEN
-                    (
-                        SELECT TOP 1 {Schema.Placements.SortKey}
-                        FROM CurrentColumn
-                        ORDER BY {Schema.Placements.SortKey} COLLATE Latin1_General_100_BIN2 ASC
-                    )
+                    NULL
 
                 WHEN @Lookup = 1 THEN
                     (
@@ -162,7 +163,7 @@ namespace kanban_lia.Infrastructure.Repositories.Placements
                 {
                     ColumnId = columnId.Id,
                     Lookup = (int)lookup,
-                    afterEntityId?.Id,
+                    AfterEntityId = afterEntityId?.Id,
                     BeforeEntityId = beforeEntityId?.Id
                 });
         }

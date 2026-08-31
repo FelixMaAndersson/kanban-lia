@@ -23,10 +23,13 @@ CREATE TABLE BoardRoots
 
 CREATE TABLE Placements
 (
-    EntityId  UNIQUEIDENTIFIER NOT NULL,
-    ColumnId  UNIQUEIDENTIFIER NOT NULL,
-    Position  NVARCHAR(255)    NOT NULL,
-    Timestamp DATETIME2        NOT NULL,
-    CONSTRAINT PK_Placements PRIMARY KEY (EntityId, ColumnId, Timestamp),
-    CONSTRAINT FK_Placements_Columns FOREIGN KEY (ColumnId) REFERENCES Columns (Id)
+    Id UNIQUEIDENTIFIER NOT NULL CONSTRAINT PK_Placements PRIMARY KEY DEFAULT NEWSEQUENTIALID(),
+    EntityId UNIQUEIDENTIFIER NOT NULL,
+    ColumnId UNIQUEIDENTIFIER NOT NULL,
+    SortKey NVARCHAR(254) NOT NULL,
+    Timestamp DATETIME2 NOT NULL,
+
+    CONSTRAINT FK_Placements_Columns
+        FOREIGN KEY (ColumnId)
+        REFERENCES Columns(Id)
 );

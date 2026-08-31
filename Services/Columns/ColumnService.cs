@@ -28,7 +28,7 @@ namespace kanban_lia.Services.Columns
 
             if (column is null)
             {
-                throw new ColumnNotFoundException(id.Id);
+                throw new ColumnNotFoundException(id);
             }
 
             return column;
@@ -42,7 +42,7 @@ namespace kanban_lia.Services.Columns
 
             if (!renamed)
             {
-                throw new ColumnNotFoundException(columnId.Id);
+                throw new ColumnNotFoundException(columnId);
             }
 
             return renamed;
@@ -54,7 +54,7 @@ namespace kanban_lia.Services.Columns
 
             if (!deleted)
             {
-                throw new ColumnNotFoundException(id.Id);
+                throw new ColumnNotFoundException(id);
             }
 
             return deleted;

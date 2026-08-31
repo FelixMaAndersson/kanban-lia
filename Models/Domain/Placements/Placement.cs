@@ -14,24 +14,34 @@ namespace kanban_lia.Models.Domain.Placements
 
         public string SortKey { get; }
 
-        private Placement(Guid entityId, Guid columnId, DateTime timestamp, string sortKey)
+        private Placement(
+            Guid entityId,
+            Guid columnId,
+            string sortKey,
+            DateTime timestamp)
         {
             EntityId = new EntityId(entityId);
             ColumnId = new ColumnId(columnId);
-            Timestamp = timestamp;
             SortKey = sortKey;
-
+            Timestamp = timestamp;
         }
 
-        public static Placement Create(EntityId entityId, ColumnId columnId, string sortKey)
+        public static Placement Create(
+            EntityId entityId,
+            ColumnId columnId,
+            string sortKey)
         {
-
             if (string.IsNullOrWhiteSpace(sortKey))
             {
-                throw new InvalidDomainException($"Invalid placement sort key: '{sortKey}'.");
+                throw new InvalidDomainException(
+                    $"Invalid placement sort key: '{sortKey}'.");
             }
 
-            return new Placement(entityId.Id, columnId.Id, DateTime.UtcNow, sortKey);
+            return new Placement(
+                entityId.Id,
+                columnId.Id,
+                sortKey,
+                DateTime.UtcNow);
         }
     }
 }
