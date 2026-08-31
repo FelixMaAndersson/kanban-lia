@@ -60,6 +60,30 @@ namespace kanban_lia.Infrastructure.Repositories.Placements
                 });
         }
 
+        public async Task<Placement?> GetCurrentAsyncByColumn(EntityId entityId, HashSet<ColumnId> columnIds)
+        {
+            using var connection = _connectionFactory.CreateConnection();
+
+            const string sql = $@"
+                    SELECT TOP 1
+                        p.{Schema.Placements.EntityId},
+                        p.{Schema.Placements.ColumnId},
+                        p.{Schema.Placements.SortKey},
+                        p.{Schema.Placements.Timestamp}
+                    FROM {Schema.Placements.Table} AS p
+                    WHERE p.{Schema.Placements.EntityId} = @EntityId 
+                    AND p.{Schema.Placements.ColumnId} IN @ColumnIds
+                    ORDER BY p.{Schema.Placements.Timestamp} DESC
+                ";
+
+            return await connection.QuerySingleOrDefaultAsync<Placement>(
+                sql, new
+                {
+                    EntityId = entityId.Id,
+                    ColumnIds = columnIds.Select(c => c.Id)
+                });
+        }
+
         public async Task<SortKeyRange> GetSortKeyRangeAsync(
             ColumnId columnId,
             SortKeyLookup lookup,
