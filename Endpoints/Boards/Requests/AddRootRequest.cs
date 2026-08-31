@@ -1,4 +1,4 @@
 ﻿namespace kanban_lia.Endpoints.Boards.Requests
 {
-    public record AddRootRequest(Guid Id, Guid NewEntityId);
+    public record AddRootRequest(Guid BoardId, Guid EntityId);
 }

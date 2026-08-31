@@ -27,7 +27,7 @@ namespace kanban_lia.Infrastructure.Repositories.Boards
                 }
             );
 
-            return new BoardId(id);
+            return board.Id;
         }
 
         public async Task<Board?> GetByIdAsync(BoardId id)
@@ -79,8 +79,8 @@ namespace kanban_lia.Infrastructure.Repositories.Boards
                     VALUES (@BoardId, @EntityId)",
                 new
                 {
-                    BoardId = id,
-                    EntityId = entityId
+                    BoardId = id.Id,
+                    EntityId = entityId.Id
                 }
             );
 
@@ -98,8 +98,8 @@ namespace kanban_lia.Infrastructure.Repositories.Boards
                             AND {Schema.BoardRoots.EntityId} = @EntityId",
                 new
                 {
-                    BoardId = id,
-                    EntityId = entityId
+                    BoardId = id.Id,
+                    EntityId = entityId.Id
                 }
             );
 
@@ -133,7 +133,7 @@ namespace kanban_lia.Infrastructure.Repositories.Boards
                     WHERE {Schema.Boards.Id} = @Id",
                 new
                 {
-                    Id = id
+                    id.Id
                 }
             );
 
@@ -151,8 +151,8 @@ namespace kanban_lia.Infrastructure.Repositories.Boards
                       AND {Schema.BoardRoots.EntityId} = @EntityId",
                 new
                 {
-                    BoardId = boardId,
-                    EntityId = entityId
+                    BoardId = boardId.Id,
+                    EntityId = entityId.Id
                 }
             );
 
