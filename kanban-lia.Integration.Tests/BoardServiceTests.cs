@@ -9,20 +9,18 @@ using kanban_lia.Models.Domain.Placements;
 
 namespace kanban_lia.Tests
 {
-    [TestClass]
     public class BoardServiceTests
     {
         private Mock<IBoardRepository> _mockRepository = null!;
         private BoardService _service = null!;
 
-        [TestInitialize]
         public void Setup()
         {
             _mockRepository = new Mock<IBoardRepository>();
             _service = new BoardService(_mockRepository.Object);
         }
 
-        [TestMethod]
+        [Fact]
         public async Task CreateAsync_WithValidId_CreatesBoard()
         {
             var id = new BoardId(Guid.NewGuid());
@@ -34,7 +32,7 @@ namespace kanban_lia.Tests
             _mockRepository.Verify(r => r.CreateAsync(It.Is<Board>(b => b.Title == "Testboard")), Times.Once);
         }
 
-        [TestMethod]
+        [Fact]
         public async Task GetById_WithExistingBoard_ReturnsBoard()
         {
             var id = new BoardId(Guid.NewGuid());
@@ -42,20 +40,20 @@ namespace kanban_lia.Tests
 
             _mockRepository.Setup(r => r.GetByIdAsync(id)).ReturnsAsync(board);
 
-            Assert.AreEqual(board, await _service.GetByIdAsync(id));
+            Assert.Equal(board, await _service.GetByIdAsync(id));
         }
 
-        [TestMethod]
+        [Fact]
         public async Task GetById_WithNonExistingBoard_ThrowsException()
         {
             var id = new BoardId(Guid.NewGuid());
 
             _mockRepository.Setup(r => r.GetByIdAsync(id)).ReturnsAsync((Board?)null);
 
-            await Assert.ThrowsExactlyAsync<BoardNotFoundException>(() => _service.GetByIdAsync(id));
+            await Assert.ThrowsAsync<BoardNotFoundException>(() => _service.GetByIdAsync(id));
         }
 
-        [TestMethod]
+        [Fact]
         public async Task RenameAsync_WithExistingBoard_RenamesBoard()
         {
             var id = new BoardId(Guid.NewGuid());
@@ -64,22 +62,22 @@ namespace kanban_lia.Tests
             _mockRepository.Setup(r => r.GetByIdAsync(id)).ReturnsAsync(board);
             _mockRepository.Setup(r => r.RenameAsync(id, "Renamedboard")).ReturnsAsync(true);
 
-            await _service.RenameAsync(new RenameBoardDto(id.Value, "Renamedboard"));
+            await _service.RenameAsync(new RenameBoardDto(id.Id, "Renamedboard"));
 
             _mockRepository.Verify(r => r.RenameAsync(id, "Renamedboard"), Times.Once);
         }
 
-        [TestMethod]
+        [Fact]
         public async Task RenameAsync_WithNonExistingBoard_ThrowsException()
         {
             var id = new BoardId(Guid.NewGuid());
 
             _mockRepository.Setup(r => r.GetByIdAsync(id)).ReturnsAsync((Board?)null);
 
-            await Assert.ThrowsExactlyAsync<BoardNotFoundException>(() => _service.RenameAsync(new RenameBoardDto(id.Value, "Renamedboard")));
+            await Assert.ThrowsAsync<BoardNotFoundException>(() => _service.RenameAsync(new RenameBoardDto(id.Id, "Renamedboard")));
         }
 
-        [TestMethod]
+        [Fact]
         public async Task RenameAsync_WhenRepoFails_ThrowsException()
         {
             var id = new BoardId(Guid.NewGuid());
@@ -88,10 +86,10 @@ namespace kanban_lia.Tests
             _mockRepository.Setup(r => r.GetByIdAsync(id)).ReturnsAsync(board);
             _mockRepository.Setup(r => r.RenameAsync(id, "Renamedboard")).ReturnsAsync(false);
 
-            await Assert.ThrowsExactlyAsync<BoardNotFoundException>(() => _service.RenameAsync(new RenameBoardDto(id.Value, "Renamedboard")));
+            await Assert.ThrowsAsync<BoardNotFoundException>(() => _service.RenameAsync(new RenameBoardDto(id.Id, "Renamedboard")));
         }
 
-        [TestMethod]
+        [Fact]
         public async Task AddRootAsync_WithExistingBoard_AddsRoot()
         {
             var boardId = new BoardId(Guid.NewGuid());
@@ -100,12 +98,12 @@ namespace kanban_lia.Tests
             _mockRepository.Setup(r => r.BoardExistsAsync(boardId)).ReturnsAsync(true);
             _mockRepository.Setup(r => r.RootExistsAsync(boardId, entityId)).ReturnsAsync(false);
 
-            await _service.AddRootAsync(new AddRootDto(boardId.Value, entityId.Value));
+            await _service.AddRootAsync(new AddRootDto(boardId.Id, entityId.Id));
 
             _mockRepository.Verify(r => r.AddRootAsync(boardId, entityId), Times.Once);
         }
 
-        [TestMethod]
+        [Fact]
         public async Task AddRootAsync_WithNonExistingBoard_ThrowsException()
         {
             var boardId = new BoardId(Guid.NewGuid());
@@ -113,10 +111,10 @@ namespace kanban_lia.Tests
 
             _mockRepository.Setup(r => r.BoardExistsAsync(boardId)).ReturnsAsync(false);
 
-            await Assert.ThrowsExactlyAsync<BoardNotFoundException>(() => _service.AddRootAsync(new AddRootDto(boardId.Value, entityId.Value)));
+            await Assert.ThrowsAsync<BoardNotFoundException>(() => _service.AddRootAsync(new AddRootDto(boardId.Id, entityId.Id)));
         }
 
-        [TestMethod]
+        [Fact]
         public async Task AddRootAsync_WithDuplicateRoot_ThrowsException()
         {
             var boardId = new BoardId(Guid.NewGuid());
@@ -125,10 +123,10 @@ namespace kanban_lia.Tests
             _mockRepository.Setup(r => r.BoardExistsAsync(boardId)).ReturnsAsync(true);
             _mockRepository.Setup(r => r.RootExistsAsync(boardId, entityId)).ReturnsAsync(true);
 
-            await Assert.ThrowsExactlyAsync<RootAlreadyExistsException>(() => _service.AddRootAsync(new AddRootDto(boardId.Value, entityId.Value)));
+            await Assert.ThrowsAsync<RootAlreadyExistsException>(() => _service.AddRootAsync(new AddRootDto(boardId.Id, entityId.Id)));
         }
 
-        [TestMethod]
+        [Fact]
         public async Task RemoveRootAsync_WithExistingBoard_RemovesRoot()
         {
             var boardId = new BoardId(Guid.NewGuid());
@@ -137,12 +135,12 @@ namespace kanban_lia.Tests
             _mockRepository.Setup(r => r.BoardExistsAsync(boardId)).ReturnsAsync(true);
             _mockRepository.Setup(r => r.RootExistsAsync(boardId, entityId)).ReturnsAsync(true);
 
-            await _service.RemoveRootAsync(new RemoveRootDto(boardId.Value, entityId.Value));
+            await _service.RemoveRootAsync(new RemoveRootDto(boardId.Id, entityId.Id));
 
             _mockRepository.Verify(r => r.RemoveRootAsync(boardId, entityId), Times.Once);
         }
 
-        [TestMethod]
+        [Fact]
         public async Task RemoveRootAsync_WithNonExistingBoard_ThrowsException()
         {
             var boardId = new BoardId(Guid.NewGuid());
@@ -150,10 +148,10 @@ namespace kanban_lia.Tests
 
             _mockRepository.Setup(r => r.BoardExistsAsync(boardId)).ReturnsAsync(false);
 
-            await Assert.ThrowsExactlyAsync<BoardNotFoundException>(() => _service.RemoveRootAsync(new RemoveRootDto(boardId.Value, entityId.Value)));
+            await Assert.ThrowsAsync<BoardNotFoundException>(() => _service.RemoveRootAsync(new RemoveRootDto(boardId.Id, entityId.Id)));
         }
 
-        [TestMethod]
+        [Fact]
         public async Task RemoveRootAsync_WithNoRoot_ThrowsException()
         {
             var boardId = new BoardId(Guid.NewGuid());
@@ -162,10 +160,10 @@ namespace kanban_lia.Tests
             _mockRepository.Setup(r => r.BoardExistsAsync(boardId)).ReturnsAsync(true);
             _mockRepository.Setup(r => r.RootExistsAsync(boardId, entityId)).ReturnsAsync(false);
 
-            await Assert.ThrowsExactlyAsync<RootNotFoundException>(() => _service.RemoveRootAsync(new RemoveRootDto(boardId.Value, entityId.Value)));
+            await Assert.ThrowsAsync<RootNotFoundException>(() => _service.RemoveRootAsync(new RemoveRootDto(boardId.Id, entityId.Id)));
         }
 
-        [TestMethod]
+        [Fact]
         public async Task DeleteAsync_WithValidId_DeletesBoard()
         {
             var id = new BoardId(Guid.NewGuid());
@@ -177,14 +175,14 @@ namespace kanban_lia.Tests
             _mockRepository.Verify(r => r.DeleteAsync(id), Times.Once);
         }
 
-        [TestMethod]
+        [Fact]
         public async Task DeleteAsync_WhenRepoFails_ThrowsException()
         {
             var id = new BoardId(Guid.NewGuid());
 
             _mockRepository.Setup(r => r.DeleteAsync(id)).ReturnsAsync(false);
 
-            await Assert.ThrowsExactlyAsync<BoardNotFoundException>(() => _service.DeleteAsync(id));
+            await Assert.ThrowsAsync<BoardNotFoundException>(() => _service.DeleteAsync(id));
         }
     }
 }
