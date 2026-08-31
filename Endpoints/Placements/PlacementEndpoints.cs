@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using kanban_lia.Endpoints.Placements.Requests;
+using kanban_lia.Models.Domain.Columns;
 using kanban_lia.Models.Domain.Placements.DTOs;
 using kanban_lia.Services.Placements;
 using kanban_lia.Services.Placements.DTOs;
@@ -27,11 +28,11 @@ public static class PlacementEndpoints
 
         group.MapGet("/get", async (
             Guid entityId,
-            Guid boardId,
+            HashSet<Guid> columnIds,
             IPlacementService placementService,
             IMapper mapper) =>
         {
-            var placement = await placementService.GetCurrentAsync(entityId, boardId);
+            var placement = await placementService.GetCurrentAsyncByColumn(entityId, columnIds.Select(id => new ColumnId(id)).ToHashSet());
 
             return placement is null
                 ? Results.NotFound()

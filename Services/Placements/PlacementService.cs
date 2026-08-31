@@ -2,6 +2,7 @@
 using kanban_lia.Infrastructure.Repositories.Columns;
 using kanban_lia.Infrastructure.Repositories.Placements;
 using kanban_lia.Models.Domain.Boards;
+using kanban_lia.Models.Domain.Columns;
 using kanban_lia.Models.Domain.Exceptions;
 using kanban_lia.Models.Domain.Placements;
 using kanban_lia.Services.Placements.DTOs;
@@ -88,6 +89,11 @@ namespace kanban_lia.Services.Placements
         public async Task<Placement?> GetCurrentAsync(Guid entityId, Guid boardId)
         {
             return await _repository.GetCurrentAsync(new EntityId(entityId), new BoardId(boardId));
+        }
+
+        public async Task<Placement?> GetCurrentAsyncByColumn(Guid entityId, HashSet<ColumnId> columnIds)
+        {
+            return await _repository.GetCurrentAsyncByColumn(new EntityId(entityId), columnIds);
         }
     }
 }

@@ -1,4 +1,5 @@
-﻿using kanban_lia.Models.Domain.Placements;
+﻿using kanban_lia.Models.Domain.Columns;
+using kanban_lia.Models.Domain.Placements;
 using kanban_lia.Services.Placements.DTOs;
 
 namespace kanban_lia.Services.Placements
@@ -7,5 +8,6 @@ namespace kanban_lia.Services.Placements
     {
         Task CreateAsync(CreatePlacementDto dto);
         Task<Placement?> GetCurrentAsync(Guid entityId, Guid boardId);
+        Task<Placement?> GetCurrentAsyncByColumn(Guid entityId, HashSet<ColumnId> columnIds);
     }
 }
