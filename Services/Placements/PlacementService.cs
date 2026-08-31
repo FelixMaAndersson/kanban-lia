@@ -24,16 +24,32 @@ namespace kanban_lia.Services.Placements
                 throw new ColumnNotFoundException(dto.ColumnId);
             }
 
-            var lookup = dto.AfterEntityId.HasValue
-                ? SortKeyLookup.After
-                : SortKeyLookup.First;
+            SortKeyLookup lookup;
+
+            if (dto.AfterEntityId.HasValue)
+            {
+                lookup = SortKeyLookup.After;
+            }
+            else
+            {
+                lookup = SortKeyLookup.First;
+            }
+
+            EntityId? afterEntityId;
+
+            if (dto.AfterEntityId.HasValue)
+            {
+                afterEntityId = new EntityId(dto.AfterEntityId.Value);
+            }
+            else
+            {
+                afterEntityId = null;
+            }
 
             var range = await _repository.GetSortKeyRangeAsync(
                 column.Id,
                 lookup,
-                dto.AfterEntityId.HasValue
-                    ? new EntityId(dto.AfterEntityId.Value)
-                    : null);
+                afterEntityId);
 
             var sortKey = OrderKeyGenerator.GenerateKeyBetween(
                 range.Previous,
