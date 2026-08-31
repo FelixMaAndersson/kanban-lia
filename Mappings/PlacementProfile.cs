@@ -12,9 +12,11 @@ namespace kanban_lia.Mappings
         public PlacementProfile()
         {
             CreateMap<CreatePlacementRequest, CreatePlacementDto>();
-            CreateMap<GetPlacementRequest, GetPlacementDto>();
 
-            CreateMap<Placement, PlacementDto>();
+            CreateMap<Placement, PlacementDto>()
+                .ForMember(dest => dest.EntityId, opt => opt.MapFrom(src => src.EntityId.Id))
+                .ForMember(dest => dest.ColumnId, opt => opt.MapFrom(src => src.ColumnId.Id))
+                .ForMember(dest => dest.Position, opt => opt.MapFrom(src => src.SortKey));
         }
     }
 }
