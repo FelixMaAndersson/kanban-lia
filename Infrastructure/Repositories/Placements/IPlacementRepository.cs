@@ -9,8 +9,8 @@ namespace kanban_lia.Infrastructure.Repositories.Placements
     public enum SortKeyLookup
     {
         Empty = 0,
-        Before = 1,
-        After = 2
+        After = 1,
+        Before = 2
     }
     public interface IPlacementRepository
     {
