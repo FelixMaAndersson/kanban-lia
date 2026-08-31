@@ -10,18 +10,6 @@ namespace kanban_lia.Infrastructure.Repositories.Columns
     {
         private readonly DbConnectionFactory _connectionFactory = connectionFactory;
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Major Code Smell", "S1144:Unused private types or members should be removed", Justification = "Populated by Dapper via reflection")]
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Major Code Smell", "S3459:Unassigned members should be removed", Justification = "Populated by Dapper via reflection")]
-        private sealed class ColumnRow
-        {
-            public Guid Id { get; set; }
-            public Guid BoardId { get; set; }
-            public string Title { get; set; } = null!;
-            public int Position { get; set; } = 0;
-
-            public Column ToDomain() => Column.Rehydrate(Id, Title, Position, BoardId);
-        }
-
         public async Task<Column> CreateAsync(Column column)
         {
             using var connection = _connectionFactory.CreateConnection();
@@ -59,28 +47,28 @@ namespace kanban_lia.Infrastructure.Repositories.Columns
         public async Task<IEnumerable<Column>> GetByBoardIdAsync(BoardId boardId)
         {
             using var connection = _connectionFactory.CreateConnection();
-            var columns = await connection.QueryAsync<ColumnRow>(
+            var columns = await connection.QueryAsync<Column>(
                 $@"
                     SELECT  {Schema.Columns.Id}, 
                             {Schema.Columns.Title}, 
                             {Schema.Columns.Position}, 
                             {Schema.Columns.BoardId} 
                     FROM    {Schema.Columns.Table} 
-                            WHERE {Schema.Columns.BoardId} = @BoardId
+                            WHERE {Schema.Columns.BoardId} = @Id
                          ORDER BY {Schema.Columns.Position}",
                 new
                 {
-                    BoardId = boardId.Id
+                    boardId.Id
                 }
             );
 
-            return columns.Select(r => r.ToDomain());
+            return columns;
         }
 
         public async Task<Column?> GetByIdAsync(ColumnId id)
         {
             using var connection = _connectionFactory.CreateConnection();
-            var column = await connection.QuerySingleOrDefaultAsync<ColumnRow>(
+            var column = await connection.QuerySingleOrDefaultAsync<Column>(
                 $@"
                     SELECT  {Schema.Columns.Id}, 
                             {Schema.Columns.Title}, 
@@ -94,7 +82,7 @@ namespace kanban_lia.Infrastructure.Repositories.Columns
                 }
             );
 
-            return column?.ToDomain();
+            return column;
         }
 
         public async Task<bool> RenameAsync(ColumnId id, string title)
