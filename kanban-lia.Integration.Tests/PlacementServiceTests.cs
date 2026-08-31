@@ -150,6 +150,7 @@ namespace kanban_lia.Integration.Tests
                 $"entity1 SortKey: '{placement1.SortKey}', " +
                 $"entity2 SortKey: '{placement2.SortKey}'");
         }
+
         [Fact]
         public async Task CreateAsync_WithNoAfterOrBeforeEntityId_UsesEmptyLookup()
         {
@@ -167,6 +168,7 @@ namespace kanban_lia.Integration.Tests
                     1,
                     boardId));
             var entityId1 = Guid.NewGuid();
+
             // Act
             await placementService.CreateAsync(
                 new Services.Placements.DTOs.CreatePlacementDto(
@@ -174,6 +176,7 @@ namespace kanban_lia.Integration.Tests
                     columnId,
                     null,
                     null));
+
             // Assert
             var placement1 = await repository.GetCurrentAsync(
                 new EntityId(entityId1),
@@ -212,8 +215,72 @@ namespace kanban_lia.Integration.Tests
         }
 
         [Fact]
+        public async Task CreateAsync_WithoutBeforeOrAfter_WhenColumnHasPlacements_PlacesLast()
+        {
+            // Arrange
+            var boardService = CreateBoardService();
+            var columnService = CreateColumnService();
+            var placementService = CreatePlacementService();
+            var repository = CreatePlacementRepository();
+
+            var boardId = await boardService.CreateAsync("Testboard");
+
+            var columnId = new ColumnId(Guid.NewGuid());
+
+            await columnService.CreateAsync(
+                new Services.Columns.DTOs.CreateColumnDto(
+                    columnId,
+                    "Column 1",
+                    1,
+                    boardId));
+
+            var entityId1 = Guid.NewGuid();
+            var entityId2 = Guid.NewGuid();
+
+            await placementService.CreateAsync(
+                new Services.Placements.DTOs.CreatePlacementDto(
+                    entityId1,
+                    columnId,
+                    null,
+                    null));
+
+            // Act
+            await placementService.CreateAsync(
+                new Services.Placements.DTOs.CreatePlacementDto(
+                    entityId2,
+                    columnId,
+                    null,
+                    null));
+
+            // Assert
+            var placement1 = await repository.GetCurrentAsync(
+                new EntityId(entityId1),
+                boardId);
+
+            var placement2 = await repository.GetCurrentAsync(
+                new EntityId(entityId2),
+                boardId);
+
+            Assert.NotNull(placement1);
+            Assert.NotNull(placement2);
+
+            Assert.NotEqual(
+                placement1.SortKey,
+                placement2.SortKey);
+
+            Assert.True(
+                string.CompareOrdinal(
+                    placement1.SortKey,
+                    placement2.SortKey) < 0,
+                $"Expected entity2 to be placed after entity1. " +
+                $"entity1 SortKey: '{placement1.SortKey}', " +
+                $"entity2 SortKey: '{placement2.SortKey}'");
+        }
+
+        [Fact]
         public async Task CreateAsync_WithNonExistingColumn_ThrowsException()
         {
+            // Arrange
             var boardService = CreateBoardService();
             var placementService = CreatePlacementService();
             var columnService = CreateColumnService();
@@ -226,6 +293,7 @@ namespace kanban_lia.Integration.Tests
                 columnId,
                 null,
                 null);
+
             // Act & Assert
             await Assert.ThrowsAsync<ColumnNotFoundException>(
                 () => placementService.CreateAsync(dto));

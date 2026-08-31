@@ -8,7 +8,7 @@ namespace kanban_lia.Infrastructure.Repositories.Placements
     public record SortKeyRange(string? Previous, string? Next);
     public enum SortKeyLookup
     {
-        Empty = 0,
+        Last = 0,
         After = 1,
         Before = 2
     }

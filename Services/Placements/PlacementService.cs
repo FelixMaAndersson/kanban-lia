@@ -36,7 +36,7 @@ namespace kanban_lia.Services.Placements
             }
             else
             {
-                lookup = SortKeyLookup.Empty;
+                lookup = SortKeyLookup.Last;
             }
 
             EntityId? afterEntityId;
