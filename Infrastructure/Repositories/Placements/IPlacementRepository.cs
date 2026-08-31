@@ -5,22 +5,22 @@ using kanban_lia.Services.Placements;
 
 namespace kanban_lia.Infrastructure.Repositories.Placements
 {
-    public record SortKeyRange(
-    string? Previous,
-    string? Next);
+    public record SortKeyRange(string? Previous, string? Next);
     public enum SortKeyLookup
     {
-        First,
-        After
+        Empty = 0,
+        Before = 1,
+        After = 2
     }
     public interface IPlacementRepository
     {
         Task CreateAsync(Placement placement);
         Task<Placement?> GetCurrentAsync(EntityId entityId, BoardId boardId);
         Task<SortKeyRange> GetSortKeyRangeAsync(
-    ColumnId columnId,
-    SortKeyLookup lookup,
-    EntityId? afterEntityId = null);
+            ColumnId columnId,
+            SortKeyLookup lookup,
+            EntityId? afterEntityId = null,
+            EntityId? beforeEntityId = null);
 
     }
 }

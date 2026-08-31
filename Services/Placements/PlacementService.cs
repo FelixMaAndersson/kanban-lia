@@ -1,10 +1,11 @@
 ﻿using FractionalIndexing;
+using kanban_lia.Infrastructure.Repositories.Columns;
 using kanban_lia.Infrastructure.Repositories.Placements;
+using kanban_lia.Models.Domain.Boards;
+using kanban_lia.Models.Domain.Exceptions;
 using kanban_lia.Models.Domain.Placements;
 using kanban_lia.Services.Placements.DTOs;
-using kanban_lia.Infrastructure.Repositories.Columns;
 using kanban_lia.Services.Placements.Exceptions;
-using kanban_lia.Models.Domain.Boards;
 
 namespace kanban_lia.Services.Placements
 {
@@ -30,12 +31,17 @@ namespace kanban_lia.Services.Placements
             {
                 lookup = SortKeyLookup.After;
             }
+            else if (dto.BeforeEntityId.HasValue)
+            {
+                lookup = SortKeyLookup.Before;
+            }
             else
             {
-                lookup = SortKeyLookup.First;
+                lookup = SortKeyLookup.Empty;
             }
 
             EntityId? afterEntityId;
+            EntityId? beforeEntityId;
 
             if (dto.AfterEntityId.HasValue)
             {
@@ -46,10 +52,26 @@ namespace kanban_lia.Services.Placements
                 afterEntityId = null;
             }
 
+            if (dto.BeforeEntityId.HasValue)
+            {
+                beforeEntityId = new EntityId(dto.BeforeEntityId.Value);
+            }
+            else
+            {
+                beforeEntityId = null;
+            }
+
+            if (dto.AfterEntityId.HasValue && dto.BeforeEntityId.HasValue)
+            {
+                throw new InvalidDomainException(
+                    "Only one of AfterEntityId and BeforeEntityId can be provided.");
+            }
+
             var range = await _repository.GetSortKeyRangeAsync(
                 column.Id,
                 lookup,
-                afterEntityId);
+                afterEntityId,
+                beforeEntityId);
 
             var sortKey = OrderKeyGenerator.GenerateKeyBetween(
                 range.Previous,

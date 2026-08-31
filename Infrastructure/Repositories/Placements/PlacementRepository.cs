@@ -63,7 +63,8 @@ namespace kanban_lia.Infrastructure.Repositories.Placements
         public async Task<SortKeyRange> GetSortKeyRangeAsync(
     ColumnId columnId,
     SortKeyLookup lookup,
-    EntityId? afterEntityId = null)
+    EntityId? afterEntityId = null,
+    EntityId? beforeEntityId = null)
         {
             using var connection = _connectionFactory.CreateConnection();
 
@@ -99,11 +100,37 @@ namespace kanban_lia.Infrastructure.Repositories.Placements
             FROM CurrentPlacements
             WHERE rn = 1
               AND {Schema.Placements.ColumnId} = @ColumnId
+        ),
+        Anchors AS
+        (
+            SELECT
+                (
+                    SELECT {Schema.Placements.SortKey}
+                    FROM CurrentColumn
+                    WHERE {Schema.Placements.EntityId} = @AfterEntityId
+                ) AS AfterSortKey,
+
+                (
+                    SELECT {Schema.Placements.SortKey}
+                    FROM CurrentColumn
+                    WHERE {Schema.Placements.EntityId} = @BeforeEntityId
+                ) AS BeforeSortKey
         )
         SELECT
             CASE
                 WHEN @Lookup = 0 THEN NULL
-                ELSE anchor.SortKey
+
+                WHEN @Lookup = 1 THEN
+                    AfterSortKey
+
+                WHEN @Lookup = 2 THEN
+                    (
+                        SELECT TOP 1 {Schema.Placements.SortKey}
+                        FROM CurrentColumn
+                        WHERE {Schema.Placements.SortKey} COLLATE Latin1_General_100_BIN2
+                            < BeforeSortKey COLLATE Latin1_General_100_BIN2
+                        ORDER BY {Schema.Placements.SortKey} COLLATE Latin1_General_100_BIN2 DESC
+                    )
             END AS Previous,
 
             CASE
@@ -113,25 +140,21 @@ namespace kanban_lia.Infrastructure.Repositories.Placements
                         FROM CurrentColumn
                         ORDER BY {Schema.Placements.SortKey} COLLATE Latin1_General_100_BIN2 ASC
                     )
-                ELSE
+
+                WHEN @Lookup = 1 THEN
                     (
                         SELECT TOP 1 {Schema.Placements.SortKey}
                         FROM CurrentColumn
                         WHERE {Schema.Placements.SortKey} COLLATE Latin1_General_100_BIN2
-                            > anchor.{Schema.Placements.SortKey} COLLATE Latin1_General_100_BIN2
+                            > AfterSortKey COLLATE Latin1_General_100_BIN2
                         ORDER BY {Schema.Placements.SortKey} COLLATE Latin1_General_100_BIN2 ASC
                     )
+
+                WHEN @Lookup = 2 THEN
+                    BeforeSortKey
             END AS Next
-        FROM
-        (
-            SELECT
-                (
-                    SELECT SortKey
-                    FROM CurrentColumn
-                    WHERE EntityId = @AfterEntityId
-                ) AS SortKey
-        ) anchor;
-        ";
+        FROM Anchors;
+    ";
 
             return await connection.QuerySingleAsync<SortKeyRange>(
                 sql,
@@ -139,7 +162,8 @@ namespace kanban_lia.Infrastructure.Repositories.Placements
                 {
                     ColumnId = columnId.Id,
                     Lookup = (int)lookup,
-                    AfterEntityId = afterEntityId?.Id
+                    afterEntityId?.Id,
+                    BeforeEntityId = beforeEntityId?.Id
                 });
         }
     }
