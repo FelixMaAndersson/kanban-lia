@@ -1,10 +1,10 @@
 ﻿using AutoMapper;
-using Microsoft.AspNetCore.Mvc;
-
 using kanban_lia.Endpoints.Boards.Requests;
 using kanban_lia.Models.Domain.Boards;
 using kanban_lia.Services.Boards;
 using kanban_lia.Services.Boards.DTOs;
+using Microsoft.AspNetCore.Mvc;
+using static kanban_lia.Infrastructure.Schemas.Schema;
 
 namespace kanban_lia.Endpoints.Boards;
 
@@ -21,9 +21,12 @@ public static class BoardEndpoints
         {
             var newBoard = Board.Create(title);
 
-            await boardService.CreateAsync(newBoard.Title);
+            var boardId = await boardService.CreateAsync(newBoard.Title);
 
-            return Results.Ok();
+            return Results.Ok(new
+            {
+                id = boardId.Id
+            });
         });
 
         // Get a board by its ID

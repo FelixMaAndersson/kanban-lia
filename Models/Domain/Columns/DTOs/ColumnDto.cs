@@ -4,6 +4,6 @@
         Guid Id,
         string Title,
         int Position,
-        int BoardId
+        Guid BoardId
     );
 }

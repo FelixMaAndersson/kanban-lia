@@ -27,12 +27,12 @@ public static class PlacementEndpoints
         });
 
         group.MapGet("/get", async (
-            Guid entityId,
-            HashSet<Guid> columnIds,
+            [FromQuery] Guid entityId,
+            [FromQuery] Guid[] columnIds,
             IPlacementService placementService,
             IMapper mapper) =>
         {
-            var placement = await placementService.GetCurrentAsyncByColumn(entityId, columnIds.Select(id => new ColumnId(id)).ToHashSet());
+            var placement = await placementService.GetCurrentAsyncByColumn(entityId, [.. columnIds.Select(id => new ColumnId(id))]);
 
             return placement is null
                 ? Results.NotFound()
