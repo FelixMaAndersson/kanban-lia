@@ -1,5 +1,9 @@
-﻿using kanban_lia.Infrastructure.Repositories.Boards;
+﻿using AutoMapper;
+using Microsoft.Extensions.Logging.Abstractions;
+
+using kanban_lia.Infrastructure.Repositories.Boards;
 using kanban_lia.Infrastructure.Repositories.Columns;
+using kanban_lia.Mappings;
 using kanban_lia.Models.Domain.Columns;
 using kanban_lia.Services.Boards;
 using kanban_lia.Services.Columns;
@@ -11,15 +15,22 @@ namespace kanban_lia.Integration.Tests
     public class ColumnServiceTests(DatabaseFixture db) : IClassFixture<DatabaseFixture>
     {
         private readonly DatabaseFixture _db = db;
+        private static readonly IMapper _mapper = new MapperConfiguration(
+            cfg =>
+            {
+                cfg.AddProfile(new ColumnProfile());
+            },
+            NullLoggerFactory.Instance
+        ).CreateMapper();
 
         private ColumnService CreateColumnService()
         {
-            return new ColumnService(new ColumnRepository(_db.DbFactory));
+            return new ColumnService(new ColumnRepository(_db.DbFactory), _mapper);
         }
 
         private BoardService CreateBoardService()
         {
-            return new BoardService(new BoardRepository(_db.DbFactory));
+            return new BoardService(new BoardRepository(_db.DbFactory), _mapper);
         }
 
         [Fact]
@@ -36,7 +47,7 @@ namespace kanban_lia.Integration.Tests
             var retrievedColumn = await columnService.GetByIdAsync(columnId);
 
             Assert.Equal("Test Column", retrievedColumn!.Title);
-            Assert.Equal(columnId, retrievedColumn.Id);
+            Assert.Equal(columnId.Id, retrievedColumn.Id);
         }
 
         [Fact]
