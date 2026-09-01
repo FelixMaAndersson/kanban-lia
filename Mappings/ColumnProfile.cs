@@ -22,11 +22,11 @@ namespace kanban_lia.Mappings
             CreateMap<RenameColumnRequest, RenameColumnDto>();
 
             CreateMap<Column, ColumnDto>()
-                .ForMember(
-                    dest => dest.Id,
+                .ForCtorParam(
+                    nameof(ColumnDto.Id),
                     opt => opt.MapFrom(src => src.Id.Id))
-                .ForMember(
-                    dest => dest.BoardId,
+                .ForCtorParam(
+                    nameof(ColumnDto.BoardId),
                     opt => opt.MapFrom(src => src.BoardId.Id));
         }
     }

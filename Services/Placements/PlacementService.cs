@@ -1,20 +1,23 @@
-﻿using FractionalIndexing;
+﻿using AutoMapper;
+using FractionalIndexing;
+
 using kanban_lia.Infrastructure.Repositories.Columns;
 using kanban_lia.Infrastructure.Repositories.Placements;
-using kanban_lia.Models.Domain.Boards;
 using kanban_lia.Models.Domain.Columns;
 using kanban_lia.Models.Domain.Exceptions;
 using kanban_lia.Models.Domain.Placements;
+using kanban_lia.Models.Domain.Placements.DTOs;
+using kanban_lia.Services.Columns.Exceptions;
 using kanban_lia.Services.Placements.DTOs;
-using kanban_lia.Services.Placements.Exceptions;
 
 namespace kanban_lia.Services.Placements
 {
-    public class PlacementService(IPlacementRepository repository, IColumnRepository columnRepository) : IPlacementService
+    public class PlacementService(IPlacementRepository repository, IColumnRepository columnRepository, IMapper mapper) : IPlacementService
     {
+        private readonly IMapper _mapper = mapper;
         private readonly IPlacementRepository _repository = repository;
         private readonly IColumnRepository _columnRepository = columnRepository;
-
+        
         public async Task CreateAsync(CreatePlacementDto dto)
         {
             var entityId = new EntityId(dto.EntityId);
@@ -86,14 +89,21 @@ namespace kanban_lia.Services.Placements
             await _repository.CreateAsync(placement);
         }
 
-        public async Task<Placement?> GetCurrentAsync(Guid entityId, Guid boardId)
-        {
-            return await _repository.GetCurrentAsync(new EntityId(entityId), new BoardId(boardId));
-        }
+        //public async Task<Placement?> GetCurrentAsync(Guid entityId, Guid boardId)
+        //{
+        //    return await _repository.GetCurrentAsync(new EntityId(entityId), new BoardId(boardId));
+        //}
 
-        public async Task<Placement?> GetCurrentAsyncByColumn(Guid entityId, HashSet<ColumnId> columnIds)
+        public async Task<PlacementDto?> GetCurrentAsyncByColumn(Guid entityId, HashSet<ColumnId> columnIds)
         {
-            return await _repository.GetCurrentAsyncByColumn(new EntityId(entityId), columnIds);
+            var placement = await _repository.GetCurrentAsyncByColumn(new EntityId(entityId), columnIds);
+
+            if (placement is null)
+            {
+                return null;
+            }
+
+            return _mapper.Map<PlacementDto>(placement);
         }
     }
 }

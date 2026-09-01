@@ -16,9 +16,12 @@ namespace kanban_lia.Mappings
             CreateMap<RemoveRootRequest, RemoveRootDto>();
 
             CreateMap<Board, BoardDto>()
-                .ForMember(
-                    dest => dest.Id,
-                    opt => opt.MapFrom(src => src.Id.Id));
+                .ForCtorParam(
+                    nameof(BoardDto.Id),
+                    opt => opt.MapFrom(src => src.Id.Id))
+                .ForCtorParam(
+                    nameof(BoardDto.Roots),
+                    opt => opt.MapFrom(src => src.Roots.Select(r => r.Id).ToList()));
         }
     }
 }
