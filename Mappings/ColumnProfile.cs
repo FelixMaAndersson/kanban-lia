@@ -24,7 +24,10 @@ namespace kanban_lia.Mappings
             CreateMap<Column, ColumnDto>()
                 .ForMember(
                     dest => dest.Id,
-                    opt => opt.MapFrom(src => src.Id.Id));
+                    opt => opt.MapFrom(src => src.Id.Id))
+                .ForMember(
+                    dest => dest.BoardId,
+                    opt => opt.MapFrom(src => src.BoardId.Id));
         }
     }
 }
