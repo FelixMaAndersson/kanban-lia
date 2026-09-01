@@ -1,9 +1,13 @@
-﻿using kanban_lia.Infrastructure.Repositories.Boards;
-using kanban_lia.Services.Boards;
+﻿using AutoMapper;
+
+using kanban_lia.Infrastructure.Repositories.Boards;
+using kanban_lia.Mappings;
 using kanban_lia.Models.Domain.Boards;
-using kanban_lia.Services.Boards.Exceptions;
-using kanban_lia.Services.Boards.DTOs;
 using kanban_lia.Models.Domain.Placements;
+using kanban_lia.Services.Boards;
+using kanban_lia.Services.Boards.DTOs;
+using kanban_lia.Services.Boards.Exceptions;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace kanban_lia.Integration.Tests;
 
@@ -11,11 +15,17 @@ public class BoardServiceTests : IClassFixture<DatabaseFixture>
 {
     private readonly IBoardRepository _repository;
     private readonly BoardService _service;
+    private static readonly IMapper _mapper = new MapperConfiguration(
+    cfg =>
+    {
+        cfg.AddProfile(new BoardProfile());
+    },
+    NullLoggerFactory.Instance).CreateMapper();
 
     public BoardServiceTests(DatabaseFixture fixture)
     {
         _repository = new BoardRepository(fixture.DbFactory);
-        _service = new BoardService(_repository);
+        _service = new BoardService(_repository, _mapper);
     }
 
     [Fact]
@@ -36,7 +46,7 @@ public class BoardServiceTests : IClassFixture<DatabaseFixture>
         var board = await _service.GetByIdAsync(id);
 
         Assert.NotNull(board);
-        Assert.Equal(id, board.Id);
+        Assert.Equal(id.Id, board.Id);
     }
 
     [Fact]
