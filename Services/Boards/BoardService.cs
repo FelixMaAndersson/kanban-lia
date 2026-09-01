@@ -1,13 +1,16 @@
-﻿using kanban_lia.Infrastructure.Repositories.Boards;
+﻿using AutoMapper;
+using kanban_lia.Infrastructure.Repositories.Boards;
 using kanban_lia.Models.Domain.Boards;
+using kanban_lia.Models.Domain.Boards.DTOs;
 using kanban_lia.Models.Domain.Placements;
 using kanban_lia.Services.Boards.DTOs;
 using kanban_lia.Services.Boards.Exceptions;
 
 namespace kanban_lia.Services.Boards
 {
-    public class BoardService(IBoardRepository repository) : IBoardService
+    public class BoardService(IBoardRepository repository, IMapper mapper) : IBoardService
     {
+        private readonly IMapper _mapper = mapper;
         private readonly IBoardRepository _repository = repository;
 
         public async Task<BoardId> CreateAsync(string title)
@@ -17,7 +20,7 @@ namespace kanban_lia.Services.Boards
             return await _repository.CreateAsync(newBoard);
         }
 
-        public async Task<Board?> GetByIdAsync(BoardId id)
+        public async Task<BoardDto?> GetByIdAsync(BoardId id)
         {
             var board = await _repository.GetByIdAsync(id);
 
@@ -26,7 +29,7 @@ namespace kanban_lia.Services.Boards
                 throw new BoardNotFoundException(id);
             }
 
-            return board;
+            return _mapper.Map<BoardDto>(board);
         }
 
         public async Task<bool> RenameAsync(RenameBoardDto dto)

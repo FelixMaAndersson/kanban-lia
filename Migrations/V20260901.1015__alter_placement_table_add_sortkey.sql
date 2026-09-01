@@ -1,0 +1,2 @@
+ALTER TABLE Placements
+ADD SortKey NVARCHAR(254) NOT NULL;
