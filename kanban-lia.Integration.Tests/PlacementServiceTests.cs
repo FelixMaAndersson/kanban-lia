@@ -1,4 +1,7 @@
-﻿using kanban_lia.Infrastructure.Repositories.Boards;
+﻿using AutoMapper;
+using Microsoft.Extensions.Logging.Abstractions;
+
+using kanban_lia.Infrastructure.Repositories.Boards;
 using kanban_lia.Infrastructure.Repositories.Columns;
 using kanban_lia.Infrastructure.Repositories.Placements;
 using kanban_lia.Models.Domain.Columns;
@@ -6,18 +9,39 @@ using kanban_lia.Models.Domain.Exceptions;
 using kanban_lia.Models.Domain.Placements;
 using kanban_lia.Services.Boards;
 using kanban_lia.Services.Columns;
-using kanban_lia.Services.Placements.Exceptions;
+using kanban_lia.Services.Columns.Exceptions;
 using kanban_lia.Services.Placements;
+using kanban_lia.Mappings;
 
 namespace kanban_lia.Integration.Tests
 {
-    public class PlacementServiceTests(DatabaseFixture db) : IClassFixture<DatabaseFixture>
+    public class PlacementServiceTests : IClassFixture<DatabaseFixture>
     {
-        private readonly DatabaseFixture _db = db;
+        private readonly DatabaseFixture _db;
+        private readonly IMapper _mapper;
+
+        public PlacementServiceTests(DatabaseFixture db)
+        {
+            _db = db;
+
+            var config = new MapperConfiguration(
+                cfg =>
+                {
+                    cfg.AddProfile<BoardProfile>();
+                    cfg.AddProfile<ColumnProfile>();
+                    cfg.AddProfile<PlacementProfile>();
+                },
+                NullLoggerFactory.Instance);
+
+            _mapper = config.CreateMapper();
+        }
 
         private PlacementService CreatePlacementService()
         {
-            return new PlacementService(new PlacementRepository(_db.DbFactory), new ColumnRepository(_db.DbFactory));
+            return new PlacementService(
+                new PlacementRepository(_db.DbFactory),
+                new ColumnRepository(_db.DbFactory),
+                _mapper);
         }
 
         private PlacementRepository CreatePlacementRepository()
@@ -27,12 +51,16 @@ namespace kanban_lia.Integration.Tests
 
         private ColumnService CreateColumnService()
         {
-            return new ColumnService(new ColumnRepository(_db.DbFactory));
+            return new ColumnService(
+                new ColumnRepository(_db.DbFactory),
+                _mapper);
         }
 
         private BoardService CreateBoardService()
         {
-            return new BoardService(new BoardRepository(_db.DbFactory));
+            return new BoardService(
+                new BoardRepository(_db.DbFactory),
+                _mapper);
         }
 
         [Fact]
