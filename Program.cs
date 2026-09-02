@@ -1,6 +1,7 @@
 using kanban_lia.Endpoints.Boards;
 using kanban_lia.Endpoints.Columns;
 using kanban_lia.Endpoints.Placements;
+using kanban_lia.Hubs;
 using kanban_lia.Infrastructure.Database;
 using kanban_lia.Infrastructure.Repositories.Boards;
 using kanban_lia.Infrastructure.Repositories.Columns;
@@ -40,8 +41,11 @@ builder.Services.AddCors(options =>
     options.AddDefaultPolicy(policy =>
         policy.WithOrigins("http://localhost:5173")
               .AllowAnyHeader()
-              .AllowAnyMethod());
+              .AllowAnyMethod()
+              .AllowCredentials());
 });
+
+builder.Services.AddSignalR();
 
 var app = builder.Build();
 
@@ -90,9 +94,10 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.UseHttpsRedirection();
 app.UseCors();
 
-app.UseHttpsRedirection();
+app.MapHub<BoardHub>("/hubs/board");
 
 BoardEndpoints.MapBoardEndpoints(app);
 ColumnEndpoints.MapColumnEndpoints(app);
