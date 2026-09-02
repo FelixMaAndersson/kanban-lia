@@ -1,6 +1,6 @@
 ﻿using AutoMapper;
 using FractionalIndexing;
-
+using kanban_lia.Hubs;
 using kanban_lia.Infrastructure.Repositories.Columns;
 using kanban_lia.Infrastructure.Repositories.Placements;
 using kanban_lia.Models.Domain.Columns;
@@ -9,15 +9,17 @@ using kanban_lia.Models.Domain.Placements;
 using kanban_lia.Models.Domain.Placements.DTOs;
 using kanban_lia.Services.Columns.Exceptions;
 using kanban_lia.Services.Placements.DTOs;
+using Microsoft.AspNetCore.SignalR;
 
 namespace kanban_lia.Services.Placements
 {
-    public class PlacementService(IPlacementRepository repository, IColumnRepository columnRepository, IMapper mapper) : IPlacementService
+    public class PlacementService(IPlacementRepository repository, IColumnRepository columnRepository, IMapper mapper, IHubContext<BoardHub> hub) : IPlacementService
     {
-        private readonly IMapper _mapper = mapper;
         private readonly IPlacementRepository _repository = repository;
         private readonly IColumnRepository _columnRepository = columnRepository;
-        
+        private readonly IMapper _mapper = mapper;
+        private readonly IHubContext<BoardHub> _hub = hub;
+
         public async Task CreateAsync(CreatePlacementDto dto)
         {
             var entityId = new EntityId(dto.EntityId);
@@ -87,6 +89,10 @@ namespace kanban_lia.Services.Placements
                 sortKey);
 
             await _repository.CreateAsync(placement);
+
+            Console.WriteLine("sendning placement changed");
+
+            await _hub.Clients.All.SendAsync("PlacementChanged");
         }
 
         //public async Task<Placement?> GetCurrentAsync(Guid entityId, Guid boardId)
