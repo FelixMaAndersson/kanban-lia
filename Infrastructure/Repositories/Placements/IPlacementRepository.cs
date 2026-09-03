@@ -16,12 +16,12 @@ namespace kanban_lia.Infrastructure.Repositories.Placements
     {
         Task CreateAsync(Placement placement);
         Task<Placement?> GetCurrentAsync(EntityId entityId, BoardId boardId);
-        Task<Placement?> GetCurrentAsyncByColumn(EntityId entityId, HashSet<ColumnId> columnIds);
+        Task<IEnumerable<Placement?>> GetCurrentByBoardAsync(BoardId boardId);
+        //Task<Placement?> GetCurrentAsyncByColumn(EntityId entityId, HashSet<ColumnId> columnIds);
         Task<SortKeyRange> GetSortKeyRangeAsync(
             ColumnId columnId,
             SortKeyLookup lookup,
             EntityId? afterEntityId = null,
             EntityId? beforeEntityId = null);
-
     }
 }
