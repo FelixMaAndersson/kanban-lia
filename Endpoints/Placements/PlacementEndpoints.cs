@@ -1,9 +1,6 @@
 ﻿using AutoMapper;
 using kanban_lia.Endpoints.Placements.Requests;
 using kanban_lia.Models.Domain.Boards;
-using kanban_lia.Models.Domain.Columns;
-using kanban_lia.Models.Domain.Placements;
-using kanban_lia.Models.Domain.Placements.DTOs;
 using kanban_lia.Services.Placements;
 using kanban_lia.Services.Placements.DTOs;
 using Microsoft.AspNetCore.Mvc;
