@@ -41,16 +41,16 @@ namespace kanban_lia.Infrastructure.Repositories.Placements
             using var connection = _connectionFactory.CreateConnection();
 
             const string sql = $@"
-                    SELECT TOP 1
-                        p.{Schema.Placements.EntityId},
-                        p.{Schema.Placements.BoardId},
-                        p.{Schema.Placements.ColumnId},
-                        p.{Schema.Placements.SortKey},
-                        p.{Schema.Placements.Timestamp}
-                    FROM {Schema.Placements.Table} AS p
-                    WHERE p.{Schema.Placements.EntityId} = @EntityId 
-                    AND c.{Schema.Columns.BoardId} = @BoardId
-                    ORDER BY p.{Schema.Placements.Timestamp} DESC
+            SELECT TOP 1
+                p.{Schema.Placements.EntityId},
+                p.{Schema.Placements.BoardId},
+                p.{Schema.Placements.ColumnId},
+                p.{Schema.Placements.SortKey},
+                p.{Schema.Placements.Timestamp}
+            FROM {Schema.Placements.Table} AS p
+            WHERE p.{Schema.Placements.EntityId} = @EntityId
+              AND p.{Schema.Placements.BoardId} = @BoardId
+            ORDER BY p.{Schema.Placements.Timestamp} DESC;
                 ";
 
             return await connection.QuerySingleOrDefaultAsync<Placement>(
