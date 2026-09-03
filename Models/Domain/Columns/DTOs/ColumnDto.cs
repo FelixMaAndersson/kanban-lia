@@ -1,9 +1,11 @@
-﻿namespace kanban_lia.Models.Domain.Columns.DTOs
+﻿using kanban_lia.Models.Domain.Boards;
+
+namespace kanban_lia.Models.Domain.Columns.DTOs
 {
     public record ColumnDto(
-        Guid Id,
+        ColumnId Id,
         string Title,
         int Position,
-        Guid BoardId
+        BoardId BoardId
     );
 }

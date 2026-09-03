@@ -35,7 +35,7 @@ namespace kanban_lia.Services.Boards
 
         public async Task<bool> RenameAsync(RenameBoardDto dto)
         {
-            var boardId = new BoardId(dto.Id);
+            var boardId = dto.Id;
 
             var board = await _repository.GetByIdAsync(boardId);
 
@@ -60,8 +60,8 @@ namespace kanban_lia.Services.Boards
 
         public async Task<bool> AddRootAsync(AddRootDto dto)
         {
-            var boardId = new BoardId(dto.BoardId);
-            var entityId = new EntityId(dto.EntityId);
+            var boardId = dto.BoardId;
+            var entityId = dto.EntityId;
 
             var boardExists = await _repository.BoardExistsAsync(boardId);
 
@@ -84,8 +84,8 @@ namespace kanban_lia.Services.Boards
 
         public async Task<bool> RemoveRootAsync(RemoveRootDto dto)
         {
-            var boardId = new BoardId(dto.BoardId);
-            var entityId = new EntityId(dto.EntityId);
+            var boardId = dto.BoardId;
+            var entityId = dto.EntityId;
 
             var boardExists = await _repository.BoardExistsAsync(boardId);
 

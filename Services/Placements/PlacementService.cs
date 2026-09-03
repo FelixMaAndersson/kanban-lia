@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using FractionalIndexing;
+
 using kanban_lia.Hubs;
 using kanban_lia.Infrastructure.Repositories.Boards;
 using kanban_lia.Infrastructure.Repositories.Columns;
@@ -21,12 +22,11 @@ namespace kanban_lia.Services.Placements
         private readonly IColumnRepository _columnRepository = columnRepository;
         private readonly IMapper _mapper = mapper;
         private readonly IHubContext<BoardHub> _hub = hub;
-
         private readonly IBoardRepository _boardRepository = boardRepository;
 
         public async Task CreateAsync(CreatePlacementDto dto)
         {
-            var entityId = new EntityId(dto.EntityId);
+            var entityId = dto.EntityId;
 
             var column = await _columnRepository.GetByIdAsync(dto.ColumnId);
 
@@ -36,7 +36,7 @@ namespace kanban_lia.Services.Placements
             {
                 throw new ColumnNotFoundException(dto.ColumnId);
             }
-            
+
             if (board is null)
             {
                 throw new BoardNotFoundException(dto.BoardId);
@@ -89,8 +89,6 @@ namespace kanban_lia.Services.Placements
             {
                 beforeEntityId = null;
             }
-
-
 
             var range = await _repository.GetSortKeyRangeAsync(
                 column.Id,

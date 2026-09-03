@@ -41,7 +41,7 @@ namespace kanban_lia.Services.Columns
 
         public async Task<bool> RenameAsync(RenameColumnDto dto)
         {
-            var columnId = new ColumnId(dto.Id);
+            var columnId = dto.Id;
 
             var renamed = await _repository.RenameAsync(columnId, dto.NewTitle);
 
