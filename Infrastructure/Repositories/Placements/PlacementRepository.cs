@@ -19,14 +19,16 @@ namespace kanban_lia.Infrastructure.Repositories.Placements
             await connection.ExecuteAsync(
                 $@"
                     INSERT INTO {Schema.Placements.Table} 
-                    ({Schema.Placements.EntityId}, 
+                    ({Schema.Placements.EntityId},
+                     {Schema.Placements.BoardId},
                      {Schema.Placements.ColumnId}, 
                      {Schema.Placements.Timestamp}, 
                      {Schema.Placements.SortKey}) 
-                    VALUES (@EntityId, @ColumnId, @Timestamp, @SortKey)",
+                    VALUES (@EntityId, @BoardId, @ColumnId, @Timestamp, @SortKey)",
                 new
                 {
                     EntityId = placement.EntityId.Id,
+                    BoardId = placement.BoardId.Id,
                     ColumnId = placement.ColumnId.Id,
                     placement.Timestamp,
                     placement.SortKey
@@ -41,12 +43,11 @@ namespace kanban_lia.Infrastructure.Repositories.Placements
             const string sql = $@"
                     SELECT TOP 1
                         p.{Schema.Placements.EntityId},
+                        p.{Schema.Placements.BoardId},
                         p.{Schema.Placements.ColumnId},
                         p.{Schema.Placements.SortKey},
                         p.{Schema.Placements.Timestamp}
                     FROM {Schema.Placements.Table} AS p
-                    INNER JOIN {Schema.Columns.Table} AS c
-                    ON p.{Schema.Placements.ColumnId} = c.{Schema.Columns.Id}
                     WHERE p.{Schema.Placements.EntityId} = @EntityId 
                     AND c.{Schema.Columns.BoardId} = @BoardId
                     ORDER BY p.{Schema.Placements.Timestamp} DESC
@@ -60,40 +61,45 @@ namespace kanban_lia.Infrastructure.Repositories.Placements
                 });
         }
 
-        public async Task<IEnumerable<Placement?>> GetCurrentByBoardAsync(BoardId boardId)
+        public async Task<IEnumerable<Placement>> GetCurrentByBoardAsync(BoardId boardId)
         {
             using var connection = _connectionFactory.CreateConnection();
+
             const string sql = $@"
-                WITH CurrentPlacements AS
+        WITH CurrentPlacements AS
+        (
+            SELECT
+                p.{Schema.Placements.EntityId},
+                c.{Schema.Columns.BoardId} AS BoardId,
+                p.{Schema.Placements.ColumnId},
+                p.{Schema.Placements.SortKey},
+                p.{Schema.Placements.Timestamp},
+                ROW_NUMBER() OVER
                 (
-                    SELECT
-                        p.{Schema.Placements.EntityId},
-                        p.{Schema.Placements.BoardId},
-                        p.{Schema.Placements.ColumnId},
-                        p.{Schema.Placements.SortKey},
-                        p.{Schema.Placements.Timestamp},
-                        ROW_NUMBER() OVER
-                        (
-                            PARTITION BY p.{Schema.Placements.EntityId}
-                            ORDER BY p.{Schema.Placements.Timestamp} DESC
-                        ) AS rn
-                    FROM {Schema.Placements.Table} AS p
-                    WHERE p.{Schema.Placements.BoardId} = @BoardId
-                )
-                SELECT
-                    {Schema.Placements.EntityId},
-                    {Schema.Placements.BoardId},
-                    {Schema.Placements.ColumnId},
-                    {Schema.Placements.SortKey},
-                    {Schema.Placements.Timestamp}
-                FROM CurrentPlacements
-                WHERE rn = 1
-                ORDER BY
-                    {Schema.Placements.ColumnId},
-                    {Schema.Placements.SortKey} COLLATE Latin1_General_100_BIN2;
-            ";
+                    PARTITION BY p.{Schema.Placements.EntityId}
+                    ORDER BY p.{Schema.Placements.Timestamp} DESC
+                ) AS rn
+            FROM {Schema.Placements.Table} AS p
+            INNER JOIN {Schema.Columns.Table} AS c
+                ON p.{Schema.Placements.ColumnId} = c.{Schema.Columns.Id}
+            WHERE c.{Schema.Columns.BoardId} = @BoardId
+        )
+        SELECT
+            EntityId,
+            BoardId,
+            ColumnId,
+            SortKey,
+            Timestamp
+        FROM CurrentPlacements
+        WHERE rn = 1
+        ORDER BY
+            ColumnId,
+            SortKey COLLATE Latin1_General_100_BIN2;
+    ";
+
             return await connection.QueryAsync<Placement>(
-                sql, new
+                sql,
+                new
                 {
                     BoardId = boardId.Id
                 });
