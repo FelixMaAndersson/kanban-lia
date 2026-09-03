@@ -35,9 +35,9 @@ public static class PlacementEndpoints
                 entityId,
                 boardId);
 
-            var requestDto = mapper.Map<GetPlacementDto>(request);
+            var dto = mapper.Map<GetPlacementDto>(request);
 
-            var placement = await placementService.GetCurrentAsync(requestDto);
+            var placement = await placementService.GetCurrentAsync(dto);
 
             return placement is null
                 ? Results.NotFound()
