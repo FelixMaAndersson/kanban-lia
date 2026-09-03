@@ -3,5 +3,5 @@
 
 namespace kanban_lia.Services.Placements.DTOs
 {
-    public record GetPlacementDto(Guid entityId, BoardId boardId);
+    public record GetPlacementDto(Guid EntityId, BoardId BoardId);
 }

@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 
 using kanban_lia.Endpoints.Placements.Requests;
+using kanban_lia.Models.Domain.Boards;
 using kanban_lia.Models.Domain.Columns;
 using kanban_lia.Models.Domain.Placements;
 using kanban_lia.Models.Domain.Placements.DTOs;
@@ -15,7 +16,18 @@ namespace kanban_lia.Mappings
             CreateMap<CreatePlacementRequest, CreatePlacementDto>()
                 .ForCtorParam(
                     nameof(CreatePlacementDto.ColumnId),
-                    opt => opt.MapFrom(src => new ColumnId(src.ColumnId)));
+                    opt => opt.MapFrom(src => new ColumnId(src.ColumnId)))
+                .ForCtorParam(
+                    nameof(CreatePlacementDto.BoardId),
+                    opt => opt.MapFrom(src => new BoardId(src.BoardId)));
+
+            CreateMap<GetPlacementRequest, GetPlacementDto>()
+                .ForCtorParam(
+                    nameof(GetPlacementDto.EntityId),
+                    opt => opt.MapFrom(src => new EntityId(src.EntityId)))
+                .ForCtorParam(
+                    nameof(GetPlacementDto.BoardId),
+                    opt => opt.MapFrom(src => new BoardId(src.BoardId)));
 
             CreateMap<Placement, PlacementDto>()
                 .ForCtorParam(
@@ -26,7 +38,10 @@ namespace kanban_lia.Mappings
                     opt => opt.MapFrom(src => src.ColumnId.Id))
                 .ForCtorParam(
                     nameof(PlacementDto.Position),
-                    opt => opt.MapFrom(src => src.SortKey));
+                    opt => opt.MapFrom(src => src.SortKey))
+                .ForCtorParam(
+                    nameof(PlacementDto.BoardId),
+                    opt => opt.MapFrom(src => src.BoardId.Id));
         }
     }
 }
