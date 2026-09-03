@@ -11,7 +11,6 @@ namespace kanban_lia.Models.Domain.Boards
         public string Title { get; private set; }
         public IReadOnlyCollection<EntityId> Roots => _roots;
 
-
         private Board(Guid id, string title)
         {
             Id = new BoardId(id);

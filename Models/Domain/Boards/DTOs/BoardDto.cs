@@ -1,7 +1,7 @@
 ﻿namespace kanban_lia.Models.Domain.Boards.DTOs
 {
     public record BoardDto(
-        Guid Id,
+        BoardId Id,
         string Title,
         IReadOnlyCollection<Guid> Roots
     );

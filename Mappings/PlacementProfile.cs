@@ -29,19 +29,7 @@ namespace kanban_lia.Mappings
                     nameof(GetPlacementDto.BoardId),
                     opt => opt.MapFrom(src => new BoardId(src.BoardId)));
 
-            CreateMap<Placement, PlacementDto>()
-                .ForCtorParam(
-                    nameof(PlacementDto.EntityId),
-                    opt => opt.MapFrom(src => src.EntityId.Id))
-                .ForCtorParam(
-                    nameof(PlacementDto.ColumnId),
-                    opt => opt.MapFrom(src => src.ColumnId.Id))
-                .ForCtorParam(
-                    nameof(PlacementDto.Position),
-                    opt => opt.MapFrom(src => src.SortKey))
-                .ForCtorParam(
-                    nameof(PlacementDto.BoardId),
-                    opt => opt.MapFrom(src => src.BoardId.Id));
+            CreateMap<Placement, PlacementDto>();
         }
     }
 }

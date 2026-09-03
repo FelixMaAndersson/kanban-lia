@@ -7,7 +7,7 @@ namespace kanban_lia.Models.Domain.Placements.DTOs
         EntityId EntityId,
         BoardId BoardId,
         ColumnId ColumnId,
-        string Position,
-        DateTime TimeStamp
+        DateTime TimeStamp,
+        string SortKey
     );
 }

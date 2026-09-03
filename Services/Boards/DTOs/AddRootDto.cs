@@ -1,4 +1,7 @@
-﻿namespace kanban_lia.Services.Boards.DTOs
+﻿using kanban_lia.Models.Domain.Boards;
+using kanban_lia.Models.Domain.Placements;
+
+namespace kanban_lia.Services.Boards.DTOs
 {
-    public record AddRootDto(Guid BoardId, Guid EntityId);
+    public record AddRootDto(BoardId BoardId, EntityId EntityId);
 }

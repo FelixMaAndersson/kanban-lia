@@ -14,20 +14,17 @@ namespace kanban_lia.Mappings
         {
             CreateMap<CreateColumnRequest, CreateColumnDto>()
                 .ForCtorParam(
-                    "Id",
+                    nameof(CreateColumnDto.Id),
                     opt => opt.MapFrom(_ => (ColumnId?)null))
                 .ForCtorParam(
-                    "BoardId",
+                    nameof(CreateColumnDto.BoardId),
                     opt => opt.MapFrom(src => new BoardId(src.BoardId)));
-            CreateMap<RenameColumnRequest, RenameColumnDto>();
+            CreateMap<RenameColumnRequest, RenameColumnDto>()
+                .ForCtorParam(
+                    nameof(RenameColumnDto.Id),
+                    opt => opt.MapFrom(src => new ColumnId(src.Id)));
 
-            CreateMap<Column, ColumnDto>()
-                .ForCtorParam(
-                    nameof(ColumnDto.Id),
-                    opt => opt.MapFrom(src => src.Id.Id))
-                .ForCtorParam(
-                    nameof(ColumnDto.BoardId),
-                    opt => opt.MapFrom(src => src.BoardId.Id));
+            CreateMap<Column, ColumnDto>();
         }
     }
 }

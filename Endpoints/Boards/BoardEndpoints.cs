@@ -4,7 +4,6 @@ using kanban_lia.Models.Domain.Boards;
 using kanban_lia.Services.Boards;
 using kanban_lia.Services.Boards.DTOs;
 using Microsoft.AspNetCore.Mvc;
-using static kanban_lia.Infrastructure.Schemas.Schema;
 
 namespace kanban_lia.Endpoints.Boards;
 

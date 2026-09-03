@@ -14,7 +14,7 @@ namespace kanban_lia.Infrastructure.Repositories.Boards
         {
             using var connection = _connectionFactory.CreateConnection();
 
-            var id = await connection.ExecuteScalarAsync<Guid>(
+            await connection.ExecuteScalarAsync<Guid>(
                 $@"
                     INSERT INTO {Schema.Boards.Table} 
                                ({Schema.Boards.Id},
