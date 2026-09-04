@@ -113,16 +113,13 @@ namespace kanban_lia.Services.Placements
             await _hub.Clients.All.SendAsync("PlacementChanged");
         }
 
-        public async Task<PlacementDto?> GetCurrentAsync(GetPlacementDto dto)
+        public async Task<IEnumerable<PlacementDto>> GetCurrentAsync(GetPlacementDto dto)
         {
-            var placement = await _repository.GetCurrentAsync(dto.EntityIds, dto.BoardId);
+            var placements = await _repository.GetCurrentAsync(
+                dto.EntityIds,
+                dto.BoardId);
 
-            if (placement is null)
-            {
-                return null;
-            }
-
-            return _mapper.Map<PlacementDto>(placement);
+            return _mapper.Map<IEnumerable<PlacementDto>>(placements);
         }
 
         public async Task<IEnumerable<PlacementDto>> GetCurrentByBoardAsync(BoardId boardId)

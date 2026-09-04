@@ -71,7 +71,7 @@ namespace kanban_lia.Infrastructure.Repositories.Placements
             return await connection.QueryAsync<Placement>(
                 sql, new
                 {
-                    EntityId = entityIds.Select(x => x.Id),
+                    EntityIds = entityIds.Select(x => x.Id),
                     BoardId = boardId.Id
                 });
         }
