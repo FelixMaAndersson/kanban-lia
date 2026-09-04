@@ -115,7 +115,7 @@ namespace kanban_lia.Services.Placements
 
         public async Task<PlacementDto?> GetCurrentAsync(GetPlacementDto dto)
         {
-            var placement = await _repository.GetCurrentAsync(dto.EntityId, dto.BoardId);
+            var placement = await _repository.GetCurrentAsync(dto.EntityIds, dto.BoardId);
 
             if (placement is null)
             {

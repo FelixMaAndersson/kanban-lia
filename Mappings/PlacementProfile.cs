@@ -26,8 +26,8 @@ namespace kanban_lia.Mappings
                         
             CreateMap<GetPlacementRequest, GetPlacementDto>()
                 .ForCtorParam(
-                    nameof(GetPlacementDto.EntityId),
-                    opt => opt.MapFrom(src => new EntityId(src.EntityId)))
+                    nameof(GetPlacementDto.EntityIds),
+                    opt => opt.MapFrom(src => src.EntityIds.Select(id => new EntityId(id))))
                 .ForCtorParam(
                     nameof(GetPlacementDto.BoardId),
                     opt => opt.MapFrom(src => new BoardId(src.BoardId)));
