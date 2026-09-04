@@ -1,10 +1,10 @@
 ﻿using Dapper;
-
 using kanban_lia.Infrastructure.Database;
+using kanban_lia.Infrastructure.Schemas;
 using kanban_lia.Models.Domain.Boards;
 using kanban_lia.Models.Domain.Columns;
 using kanban_lia.Models.Domain.Placements;
-using kanban_lia.Infrastructure.Schemas;
+using static kanban_lia.Infrastructure.Schemas.Schema;
 
 namespace kanban_lia.Infrastructure.Repositories.Placements
 {
@@ -74,6 +74,52 @@ namespace kanban_lia.Infrastructure.Repositories.Placements
                     EntityIds = entityIds.Select(x => x.Id),
                     BoardId = boardId.Id
                 });
+        }
+
+        public async Task<IEnumerable<Placement>> GetCurrentByColumnAsync(IEnumerable<EntityId> entityIds, ColumnId columnId)
+        {
+            using var connection = _connectionFactory.CreateConnection();
+            const string sql = $@"
+                WITH TargetBoard AS
+                (
+                    SELECT BoardId
+                    FROM Columns
+                    WHERE Id = @ColumnId
+                ),
+                CurrentPlacements AS
+                (
+                    SELECT
+                        p.{Schema.Placements.EntityId},
+                        p.{Schema.Placements.BoardId},
+                        p.{Schema.Placements.ColumnId},
+                        p.{Schema.Placements.SortKey},
+                        p.{Schema.Placements.Timestamp},
+                        ROW_NUMBER() OVER
+                        (
+                            PARTITION BY p.{Schema.Placements.EntityId}
+                            ORDER BY p.{Schema.Placements.Timestamp} DESC
+                        ) AS rn
+                    FROM Placements AS p
+                    INNER JOIN TargetBoard AS tb
+                        ON p.{Schema.Placements.BoardId} = tb.{Schema.Columns.BoardId}
+                    WHERE p.{Schema.Placements.EntityId} IN @EntityIds
+                )
+                SELECT
+                    {Schema.Placements.EntityId},
+                    {Schema.Placements.BoardId},
+                    {Schema.Placements.ColumnId},
+                    {Schema.Placements.SortKey},
+                    {Schema.Placements.Timestamp}
+                FROM CurrentPlacements
+                WHERE rn = 1
+            ";
+            
+            return await connection.QueryAsync<Placement>(
+               sql, new
+               {
+                   EntityIds = entityIds.Select(x => x.Id),
+                   ColumnId = columnId.Id
+               });
         }
 
         public async Task<IEnumerable<Placement>> GetCurrentByBoardAsync(BoardId boardId)
