@@ -36,27 +36,42 @@ namespace kanban_lia.Infrastructure.Repositories.Placements
             );
         }
 
-        public async Task<Placement?> GetCurrentAsync(EntityId entityId, BoardId boardId)
+        public async Task<IEnumerable<Placement>> GetCurrentAsync(IEnumerable<EntityId> entityIds, BoardId boardId)
         {
             using var connection = _connectionFactory.CreateConnection();
 
             const string sql = $@"
-            SELECT TOP 1
-                p.{Schema.Placements.EntityId},
-                p.{Schema.Placements.BoardId},
-                p.{Schema.Placements.ColumnId},
-                p.{Schema.Placements.SortKey},
-                p.{Schema.Placements.Timestamp}
-            FROM {Schema.Placements.Table} AS p
-            WHERE p.{Schema.Placements.EntityId} = @EntityId
-              AND p.{Schema.Placements.BoardId} = @BoardId
-            ORDER BY p.{Schema.Placements.Timestamp} DESC;
-                ";
+                WITH CurrentPlacements AS
+                (
+                    SELECT
+                        p.{Schema.Placements.EntityId},
+                        p.{Schema.Placements.BoardId},
+                        p.{Schema.Placements.ColumnId},
+                        p.{Schema.Placements.SortKey},
+                        p.{Schema.Placements.Timestamp},
+                        ROW_NUMBER() OVER
+                        (
+                            PARTITION BY p.{Schema.Placements.EntityId}
+                            ORDER BY p.{Schema.Placements.Timestamp} DESC
+                        ) AS rn
+                    FROM {Schema.Placements.Table} AS p
+                    WHERE p.{Schema.Placements.EntityId} IN @EntityIds
+                      AND p.{Schema.Placements.BoardId} = @BoardId
+                )
+                SELECT
+                    {Schema.Placements.EntityId},
+                    {Schema.Placements.BoardId},
+                    {Schema.Placements.ColumnId},
+                    {Schema.Placements.SortKey},
+                    {Schema.Placements.Timestamp}
+                FROM CurrentPlacements
+                WHERE rn = 1;
+            ";
 
-            return await connection.QuerySingleOrDefaultAsync<Placement>(
+            return await connection.QueryAsync<Placement>(
                 sql, new
                 {
-                    EntityId = entityId.Id,
+                    EntityId = entityIds.Select(x => x.Id),
                     BoardId = boardId.Id
                 });
         }

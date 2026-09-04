@@ -26,13 +26,13 @@ public static class PlacementEndpoints
         });
 
         group.MapGet("/get", async (
-            [FromQuery] Guid entityId,
+            [FromQuery] Guid[] entityIds,
             [FromQuery] Guid boardId,
             IPlacementService placementService,
             IMapper mapper) =>
         {
             var request = new GetPlacementRequest(
-                entityId,
+                entityIds,
                 boardId);
 
             var dto = mapper.Map<GetPlacementDto>(request);

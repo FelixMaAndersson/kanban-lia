@@ -4,5 +4,5 @@ using kanban_lia.Models.Domain.Placements;
 
 namespace kanban_lia.Services.Placements.DTOs
 {
-    public record GetPlacementDto(EntityId EntityId, BoardId BoardId);
+    public record GetPlacementDto(IEnumerable<EntityId> EntityIds, BoardId BoardId);
 }
