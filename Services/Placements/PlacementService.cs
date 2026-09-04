@@ -6,6 +6,7 @@ using kanban_lia.Infrastructure.Repositories.Boards;
 using kanban_lia.Infrastructure.Repositories.Columns;
 using kanban_lia.Infrastructure.Repositories.Placements;
 using kanban_lia.Models.Domain.Boards;
+using kanban_lia.Models.Domain.Columns;
 using kanban_lia.Models.Domain.Exceptions;
 using kanban_lia.Models.Domain.Placements;
 using kanban_lia.Models.Domain.Placements.DTOs;
@@ -122,11 +123,10 @@ namespace kanban_lia.Services.Placements
             return _mapper.Map<IEnumerable<PlacementDto>>(placements);
         }
 
-        public async Task<IEnumerable<PlacementDto>> GetCurrentByColumnAsync(GetPlacementByColumnDto dto)
+        public async Task<IEnumerable<PlacementDto>> GetCurrentByColumnAsync(ColumnId columnId)
         {
             var placements = await _repository.GetCurrentByColumnAsync(
-                dto.EntityIds,
-                dto.ColumnId);
+                columnId);
             return _mapper.Map<IEnumerable<PlacementDto>>(placements);
         }
 

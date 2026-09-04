@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using kanban_lia.Endpoints.Placements.Requests;
 using kanban_lia.Models.Domain.Boards;
+using kanban_lia.Models.Domain.Columns;
 using kanban_lia.Services.Placements;
 using kanban_lia.Services.Placements.DTOs;
 using Microsoft.AspNetCore.Mvc;
@@ -45,8 +46,8 @@ public static class PlacementEndpoints
         });
 
         group.MapGet("/board/{boardId:guid}", async (
-     Guid boardId,
-     IPlacementService placementService) =>
+            Guid boardId,
+            IPlacementService placementService) =>
         {
             var placements = await placementService.GetCurrentByBoardAsync(
                 new BoardId(boardId));
@@ -55,19 +56,11 @@ public static class PlacementEndpoints
         });
 
         group.MapGet("/column/{columnId:guid}", async (
-            [FromQuery] Guid[] entityIds,
-            [FromQuery] Guid columnId,
-            IPlacementService placementService,
-            IMapper mapper) =>
+            Guid columnId,
+            IPlacementService placementService) =>
         {
-            var request = new GetPlacementByColumnRequest(
-                entityIds,
-                columnId);
-
-            var dto = mapper.Map<GetPlacementByColumnDto>(request);
-
             var placements = await placementService.GetCurrentByColumnAsync(
-                dto);
+                new ColumnId(columnId));
 
             return Results.Ok(placements);
         });
