@@ -53,5 +53,23 @@ public static class PlacementEndpoints
 
             return Results.Ok(placements);
         });
+
+        group.MapGet("/column/{columnId:guid}", async (
+            [FromQuery] Guid[] entityIds,
+            [FromQuery] Guid columnId,
+            IPlacementService placementService,
+            IMapper mapper) =>
+        {
+            var request = new GetPlacementByColumnRequest(
+                entityIds,
+                columnId);
+
+            var dto = mapper.Map<GetPlacementByColumnDto>(request);
+
+            var placements = await placementService.GetCurrentByColumnAsync(
+                dto);
+
+            return Results.Ok(placements);
+        });
     }
 }
