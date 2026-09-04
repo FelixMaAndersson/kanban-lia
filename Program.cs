@@ -80,9 +80,7 @@ app.UseExceptionHandler(errorApp =>
                 InvalidDomainException => "Invalid request",
                 _ => "Internal server error"
             },
-            detail: statusCode == StatusCodes.Status500InternalServerError
-                ? "Ett internt serverfel inträffade."
-                : exception?.Message
+            detail: exception?.Message
         ).ExecuteAsync(context);
     });
 });
