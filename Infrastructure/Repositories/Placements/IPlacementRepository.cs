@@ -16,7 +16,7 @@ namespace kanban_lia.Infrastructure.Repositories.Placements
         Task CreateAsync(Placement placement);
         Task<IEnumerable<Placement>> GetCurrentAsync(IEnumerable<EntityId> entityIds, BoardId boardId);
         Task<IEnumerable<Placement>> GetCurrentByBoardAsync(BoardId boardId);
-        Task<IEnumerable<Placement>> GetCurrentByColumnAsync(IEnumerable<EntityId> entityIds, ColumnId columnId);
+        Task<IEnumerable<Placement>> GetCurrentByColumnAsync(ColumnId columnId);
         Task<SortKeyRange> GetSortKeyRangeAsync(
             ColumnId columnId,
             SortKeyLookup lookup,
