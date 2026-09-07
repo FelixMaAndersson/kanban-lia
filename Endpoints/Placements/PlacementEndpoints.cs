@@ -57,10 +57,12 @@ public static class PlacementEndpoints
 
         group.MapGet("/column/{columnId:guid}", async (
             Guid columnId,
+            Guid boardId,
             IPlacementService placementService) =>
         {
             var placements = await placementService.GetCurrentByColumnAsync(
-                new ColumnId(columnId));
+                new ColumnId(columnId),
+                new BoardId(boardId));
 
             return Results.Ok(placements);
         });

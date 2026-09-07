@@ -123,10 +123,11 @@ namespace kanban_lia.Services.Placements
             return _mapper.Map<IEnumerable<PlacementDto>>(placements);
         }
 
-        public async Task<IEnumerable<PlacementDto>> GetCurrentByColumnAsync(ColumnId columnId)
+        public async Task<IEnumerable<PlacementDto>> GetCurrentByColumnAsync(ColumnId columnId, BoardId boardId)
         {
             var placements = await _repository.GetCurrentByColumnAsync(
-                columnId);
+                columnId,
+                boardId);
             return _mapper.Map<IEnumerable<PlacementDto>>(placements);
         }
 
