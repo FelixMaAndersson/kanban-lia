@@ -3,6 +3,7 @@ using kanban_lia.Endpoints.Columns;
 using kanban_lia.Endpoints.Placements;
 using kanban_lia.Hubs;
 using kanban_lia.Infrastructure.Database;
+using kanban_lia.Infrastructure.JsonConverters;
 using kanban_lia.Infrastructure.Repositories.Boards;
 using kanban_lia.Infrastructure.Repositories.Columns;
 using kanban_lia.Infrastructure.Repositories.Placements;
@@ -46,6 +47,13 @@ builder.Services.AddCors(options =>
 });
 
 builder.Services.AddSignalR();
+
+builder.Services.ConfigureHttpJsonOptions(options =>
+{
+    options.SerializerOptions.Converters.Add(new EntityIdJsonConverter());
+    options.SerializerOptions.Converters.Add(new BoardIdJsonConverter());
+    options.SerializerOptions.Converters.Add(new ColumnIdJsonConverter());
+});
 
 var app = builder.Build();
 
