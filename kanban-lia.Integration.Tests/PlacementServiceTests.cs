@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.AspNetCore.SignalR;
 
 using kanban_lia.Infrastructure.Repositories.Boards;
 using kanban_lia.Infrastructure.Repositories.Columns;
@@ -41,6 +42,7 @@ namespace kanban_lia.Integration.Tests
             return new PlacementService(
                 new PlacementRepository(_db.DbFactory),
                 new ColumnRepository(_db.DbFactory),
+                new BoardRepository(_db.DbFactory),
                 _mapper);
         }
 
