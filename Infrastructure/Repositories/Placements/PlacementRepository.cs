@@ -4,7 +4,6 @@ using kanban_lia.Infrastructure.Schemas;
 using kanban_lia.Models.Domain.Boards;
 using kanban_lia.Models.Domain.Columns;
 using kanban_lia.Models.Domain.Placements;
-using static kanban_lia.Infrastructure.Schemas.Schema;
 
 namespace kanban_lia.Infrastructure.Repositories.Placements
 {
@@ -12,28 +11,40 @@ namespace kanban_lia.Infrastructure.Repositories.Placements
     {
         private readonly DbConnectionFactory _connectionFactory = connectionFactory;
 
-        public async Task CreateAsync(Placement placement)
+        public async Task CreateAsync(IEnumerable<Placement> placements)
         {
             using var connection = _connectionFactory.CreateConnection();
 
-            await connection.ExecuteAsync(
-                $@"
+            var sql = $@"
                     INSERT INTO {Schema.Placements.Table} 
-                    ({Schema.Placements.EntityId},
-                     {Schema.Placements.BoardId},
-                     {Schema.Placements.ColumnId}, 
-                     {Schema.Placements.Timestamp}, 
-                     {Schema.Placements.SortKey}) 
-                    VALUES (@EntityId, @BoardId, @ColumnId, @Timestamp, @SortKey)",
-                new
-                {
-                    EntityId = placement.EntityId.Id,
-                    BoardId = placement.BoardId.Id,
-                    ColumnId = placement.ColumnId.Id,
-                    placement.Timestamp,
-                    placement.SortKey
-                }
-            );
+                    (
+                        {Schema.Placements.EntityId},
+                        {Schema.Placements.BoardId},
+                        {Schema.Placements.ColumnId}, 
+                        {Schema.Placements.Timestamp}, 
+                        {Schema.Placements.SortKey}
+                    ) 
+                    VALUES (
+                        @EntityId, 
+                        @BoardId, 
+                        @ColumnId, 
+                        @Timestamp, 
+                        @SortKey
+                    );
+            ";
+
+            var parameters = placements.Select(p => new
+            {
+                EntityId = p.EntityId.Id,
+                BoardId = p.BoardId.Id,
+                ColumnId = p.ColumnId.Id,
+                p.Timestamp,
+                p.SortKey
+            });
+
+            await connection.ExecuteAsync(
+                sql,
+                parameters);
         }
 
         public async Task<IEnumerable<Placement>> GetCurrentAsync(IEnumerable<EntityId> entityIds, BoardId boardId)
@@ -80,7 +91,13 @@ namespace kanban_lia.Infrastructure.Repositories.Placements
         {
             using var connection = _connectionFactory.CreateConnection();
             const string sql = $@"
-                WITH CurrentPlacements AS
+                SELECT
+                    cP.{Schema.Placements.EntityId},
+                    cP.{Schema.Placements.BoardId},
+                    cP.{Schema.Placements.ColumnId},
+                    cP.{Schema.Placements.SortKey},
+                    cP.{Schema.Placements.Timestamp}
+                FROM
                 (
                     SELECT
                         p.{Schema.Placements.EntityId},
@@ -95,17 +112,10 @@ namespace kanban_lia.Infrastructure.Repositories.Placements
                         ) AS rn
                     FROM {Schema.Placements.Table} AS p
                     WHERE p.{Schema.Placements.BoardId} = @BoardId
-                )
-                SELECT
-                    {Schema.Placements.EntityId},
-                    {Schema.Placements.BoardId},
-                    {Schema.Placements.ColumnId},
-                    {Schema.Placements.SortKey},
-                    {Schema.Placements.Timestamp}
-                FROM CurrentPlacements
-                WHERE rn = 1
-                  AND {Schema.Placements.ColumnId} = @ColumnId
-                ORDER BY {Schema.Placements.SortKey} COLLATE Latin1_General_100_BIN2;
+                ) AS cP
+                WHERE cP.rn = 1
+                  AND cP.{Schema.Placements.ColumnId} = @ColumnId
+                ORDER BY cP.{Schema.Placements.SortKey} COLLATE Latin1_General_100_BIN2;
             ";
 
             return await connection.QueryAsync<Placement>(

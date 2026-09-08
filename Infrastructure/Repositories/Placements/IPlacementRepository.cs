@@ -13,7 +13,7 @@ namespace kanban_lia.Infrastructure.Repositories.Placements
     }
     public interface IPlacementRepository
     {
-        Task CreateAsync(Placement placement);
+        Task CreateAsync(IEnumerable<Placement> placements);
         Task<IEnumerable<Placement>> GetCurrentAsync(IEnumerable<EntityId> entityIds, BoardId boardId);
         Task<IEnumerable<Placement>> GetCurrentByBoardAsync(BoardId boardId);
         Task<IEnumerable<Placement>> GetCurrentByColumnAsync(ColumnId columnId, BoardId boardId);
