@@ -11,7 +11,6 @@ namespace kanban_lia.Services.Placements
         Task CreateAsync(CreatePlacementDto dto);
         Task<IEnumerable<PlacementDto>> GetCurrentAsync(GetPlacementDto dto);
         Task<IEnumerable<PlacementDto>> GetCurrentByBoardAsync(BoardId boardId);
-
         Task<IEnumerable<PlacementDto>> GetCurrentByColumnAsync(ColumnId columnId, BoardId boardId);
     }
 }

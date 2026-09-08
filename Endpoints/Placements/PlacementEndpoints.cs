@@ -1,10 +1,13 @@
 ﻿using AutoMapper;
 using kanban_lia.Endpoints.Placements.Requests;
+using kanban_lia.Hubs;
 using kanban_lia.Models.Domain.Boards;
 using kanban_lia.Models.Domain.Columns;
+using kanban_lia.Models.Events;
 using kanban_lia.Services.Placements;
 using kanban_lia.Services.Placements.DTOs;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 
 namespace kanban_lia.Endpoints.Placements;
 
@@ -17,11 +20,21 @@ public static class PlacementEndpoints
         group.MapPost("/create", async (
             [FromBody] CreatePlacementRequest request,
             IPlacementService placementService,
-            IMapper mapper) =>
+            IMapper mapper,
+            IHubContext<BoardHub> hub) =>
         {
             var requestDto = mapper.Map<CreatePlacementDto>(request);
 
             await placementService.CreateAsync(requestDto);
+
+            await hub.Clients.All.SendAsync(
+                "PlacementCreated",
+                new PlacementCreatedEvent(
+                    request.EntityId,
+                    request.SourceColumnId,
+                    request.ColumnId
+                )
+            );
 
             return Results.Ok();
         });
