@@ -15,6 +15,7 @@ using kanban_lia.Services.Boards.Exceptions;
 using kanban_lia.Services.Columns.Exceptions;
 using kanban_lia.Services.Placements.DTOs;
 using Microsoft.AspNetCore.SignalR;
+using static kanban_lia.Infrastructure.Schemas.Schema;
 
 namespace kanban_lia.Services.Placements
 {
@@ -34,7 +35,7 @@ namespace kanban_lia.Services.Placements
 
         public async Task CreateAsync(CreatePlacementDto dto)
         {
-            var entityId = dto.EntityId;
+            var entityIds = dto.EntityIds;
 
             var column = await _columnRepository.GetByIdAsync(dto.ColumnId);
 
@@ -104,15 +105,23 @@ namespace kanban_lia.Services.Placements
                 afterEntityId,
                 beforeEntityId);
 
-            var sortKey = OrderKeyGenerator.GenerateKeyBetween(
-                range.Previous,
-                range.Next);
+            var placements = new List<Placement>();
 
-            var placement = Placement.Create(
-                entityId,
-                board.Id,
-                column.Id,
-                sortKey);
+            var previous = range.Previous;
+            var next = range.Next;
+
+            foreach (var entityId in entityIds)
+            {
+
+                var sortKey = OrderKeyGenerator.GenerateKeyBetween(
+                    previous,
+                    next);
+
+                var placement = Placement.Create(
+                    entityId,
+                    board.Id,
+                    column.Id,
+                    sortKey);
 
             await _repository.CreateAsync(placement);
         }
