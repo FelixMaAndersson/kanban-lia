@@ -1,7 +1,7 @@
 ﻿namespace kanban_lia.Models.Events
 {
     public record PlacementCreatedEvent(
-    Guid EntityId,
+    Guid[] EntityIds,
     Guid? SourceColumnId,
     Guid TargetColumnId
 );

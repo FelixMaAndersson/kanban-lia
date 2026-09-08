@@ -30,7 +30,7 @@ public static class PlacementEndpoints
             await hub.Clients.All.SendAsync(
                 "PlacementCreated",
                 new PlacementCreatedEvent(
-                    request.EntityId,
+                    request.EntityIds,
                     request.SourceColumnId,
                     request.ColumnId
                 )
