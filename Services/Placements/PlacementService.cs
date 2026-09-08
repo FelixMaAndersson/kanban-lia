@@ -123,7 +123,10 @@ namespace kanban_lia.Services.Placements
                     column.Id,
                     sortKey);
 
-            await _repository.CreateAsync(placement);
+                placements.Add(placement);
+            }
+
+            await _repository.CreateAsync(placements);
         }
 
         public async Task<IEnumerable<PlacementDto>> GetCurrentAsync(GetPlacementDto dto)
