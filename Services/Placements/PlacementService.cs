@@ -10,6 +10,7 @@ using kanban_lia.Models.Domain.Columns;
 using kanban_lia.Models.Domain.Exceptions;
 using kanban_lia.Models.Domain.Placements;
 using kanban_lia.Models.Domain.Placements.DTOs;
+using kanban_lia.Models.Events;
 using kanban_lia.Services.Boards.Exceptions;
 using kanban_lia.Services.Columns.Exceptions;
 using kanban_lia.Services.Placements.DTOs;
@@ -24,6 +25,12 @@ namespace kanban_lia.Services.Placements
         private readonly IMapper _mapper = mapper;
         private readonly IHubContext<BoardHub> _hub = hub;
         private readonly IBoardRepository _boardRepository = boardRepository;
+
+        public record PlacementCreatedEvent(
+            Guid EntityId,
+            Guid? SourceColumnId,
+            Guid TargetColumnId
+        );
 
         public async Task CreateAsync(CreatePlacementDto dto)
         {
@@ -108,10 +115,6 @@ namespace kanban_lia.Services.Placements
                 sortKey);
 
             await _repository.CreateAsync(placement);
-
-            Console.WriteLine("sendning placement changed");
-
-            await _hub.Clients.All.SendAsync("PlacementChanged");
         }
 
         public async Task<IEnumerable<PlacementDto>> GetCurrentAsync(GetPlacementDto dto)
