@@ -31,6 +31,10 @@ namespace kanban_lia.Models.Domain.Boards
 
             return new Board(Guid.NewGuid(), title);
         }
+        public static Board Restore(Guid id, string title)
+        {
+            return new Board(id, title);
+        }
         public void Rename(string title)
         {
             if (string.IsNullOrWhiteSpace(title))
