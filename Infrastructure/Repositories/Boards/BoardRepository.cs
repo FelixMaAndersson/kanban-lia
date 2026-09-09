@@ -34,7 +34,7 @@ namespace kanban_lia.Infrastructure.Repositories.Boards
         {
             using var connection = _connectionFactory.CreateConnection();
 
-            var board = await connection.QuerySingleOrDefaultAsync<Board>(
+            var boardData = await connection.QuerySingleOrDefaultAsync<(Guid Id, string Title)>(
                 $@"
                     SELECT {Schema.Boards.Id}, 
                            {Schema.Boards.Title}
@@ -43,8 +43,29 @@ namespace kanban_lia.Infrastructure.Repositories.Boards
                 new
                 {
                     id.Id
-                }
-            );
+                });
+
+            if (boardData == default)
+            {
+                return null;
+            }
+
+            var board = Board.Restore(boardData.Id, boardData.Title);
+
+            var roots = await connection.QueryAsync<Guid>(
+                $@"
+                    SELECT {Schema.BoardRoots.EntityId}
+                      FROM {Schema.BoardRoots.Table} 
+                     WHERE {Schema.BoardRoots.BoardId} = @BoardId",
+                new
+                {
+                    BoardId = id.Id
+                });
+
+            foreach (var root in roots)
+            {
+                board.AddRoot(new EntityId(root));
+            }
 
             return board;
         }
