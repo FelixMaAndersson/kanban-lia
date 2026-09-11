@@ -25,7 +25,7 @@ public static class PlacementEndpoints
         {
             var requestDto = mapper.Map<CreatePlacementDto>(request);
 
-            await placementService.CreateAsync(requestDto);
+            await placementService.CreateAsync(requestDto, request.SourceColumnId);
 
             await hub.Clients.All.SendAsync(
                 "PlacementCreated",

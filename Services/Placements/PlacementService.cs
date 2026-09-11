@@ -33,7 +33,7 @@ namespace kanban_lia.Services.Placements
             Guid TargetColumnId
         );
 
-        public async Task CreateAsync(CreatePlacementDto dto)
+        public async Task CreateAsync(CreatePlacementDto dto, Guid? SourceColumnId)
         {
             var entityIds = dto.EntityIds;
 
