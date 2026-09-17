@@ -1,8 +1,10 @@
 ﻿using AutoMapper;
 using kanban_lia.Endpoints.Placements.Requests;
 using kanban_lia.Hubs;
+using kanban_lia.Infrastructure.Repositories.Columns;
 using kanban_lia.Models.Domain.Boards;
 using kanban_lia.Models.Domain.Columns;
+using kanban_lia.Models.Domain.Placements;
 using kanban_lia.Models.Domain.Placements.DTOs;
 using kanban_lia.Models.Events;
 using kanban_lia.Services.Placements;
@@ -21,27 +23,67 @@ public static class PlacementEndpoints
         group.MapPost("/create", async (
             [FromBody] CreatePlacementRequest request,
             IPlacementService placementService,
-            IMapper mapper,
+            IColumnEdgeRepository columnEdgeRepository,
             IHubContext<BoardHub> hub) =>
         {
-            var requestDto = mapper.Map<CreatePlacementDto>(request);
+            var entityIds = request.EntityIds
+                .Select(id => new EntityId(id))
+                .ToList();
 
-            var columnsToPlaceIn = GetConnectedColumns(request.ColumnId);
-            var sourceColumnsToSignal = GetConnectedColumns(request.SourceColumnId);
+            var boardId = new BoardId(request.BoardId);
 
-            List<PlacementDto> placementDtos = new List<PlacementDto>();
-            foreach (var columnId in columnsToPlaceIn)
+            var columnsToPlaceIn = await GetConnectedColumns(
+                new ColumnId(request.ColumnId),
+                columnEdgeRepository);
+
+            var currentPlacements = await placementService.GetCurrentAsync(
+                new GetPlacementDto(
+                    entityIds,
+                    boardId
+                )
+            );
+   
+            var currentSourceColumns = currentPlacements
+                .Select(p => p.ColumnId)
+                .Distinct()
+                .ToList();
+
+
+            var sourceColumns = new List<ColumnId>();
+
+            foreach (var sourceColumn in currentSourceColumns)
             {
-                var dto = new CreatePlacementDto(
-                    request.EntityIds,
-                    columnId,
-                    request.AfterEntityId,
-                    request.BeforeEntityId);
+                var connectedSourceColumns = await GetConnectedColumns(
+                    sourceColumn,
+                    columnEdgeRepository);
+
+                    sourceColumns.AddRange(connectedSourceColumns);
+
             }
 
-            await placementService.CreateAsync(requestDto, request.SourceColumnId);
+            var placementOperations = new List<PlacementOperationDto>();
 
-            //await Task.Delay(3000);
+
+            for (var i = 0; i < columnsToPlaceIn.Count; i++)
+            {
+                var createDto = new CreatePlacementDto(
+                    entityIds,
+                    boardId,
+                    columnsToPlaceIn[i],
+                    request.AfterEntityId,
+                    request.BeforeEntityId
+                );
+
+                var operationDto = new PlacementOperationDto(
+                    createDto,
+                    sourceColumns[i]
+                );
+
+                placementOperations.Add(operationDto);
+
+            }
+
+            await placementService.CreateAsync(placementOperations);
 
             await hub.Clients.All.SendAsync(
                 "PlacementCreated",
@@ -95,5 +137,28 @@ public static class PlacementEndpoints
 
             return Results.Ok(placements);
         });
+    }
+    private static async Task<List<ColumnId>> GetConnectedColumns(
+    ColumnId columnId,
+    IColumnEdgeRepository columnEdgeRepository)
+    {
+        var fromEdges =
+            await columnEdgeRepository.GetByFromColumnIdAsync(columnId);
+
+        var toEdges =
+            await columnEdgeRepository.GetByToColumnIdAsync(columnId);
+
+        var connectedColumns = new List<ColumnId>
+    {
+        columnId
+    };
+
+        connectedColumns.AddRange(
+            fromEdges.Select(edge => edge.ToColumnId));
+
+        connectedColumns.AddRange(
+            toEdges.Select(edge => edge.FromColumnId));
+
+        return connectedColumns.Distinct().ToList();
     }
 }
