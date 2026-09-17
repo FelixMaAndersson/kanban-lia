@@ -125,18 +125,22 @@ public static class PlacementEndpoints
                 placementOperations.Add(operationDto);
             }
 
+            var changes = columnPairs
+            .Select(pair => new PlacementChange(
+                pair.Source?.Id ?? null,
+                pair.Target.Id
+            )).ToList();
+
             await placementService.CreateAsync(placementOperations);
-            foreach (var c in columnPairs)
-            {
+
+
                 await hub.Clients.All.SendAsync(
                     "PlacementCreated",
                     new PlacementCreatedEvent(
                         request.EntityIds,
-                        c.Target.Id,
-                        c.Source?.Id ?? Guid.Empty
+                        changes
                     )
                 );
-            }
 
             return Results.Ok();
         });
