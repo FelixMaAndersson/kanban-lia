@@ -27,6 +27,8 @@ public static class PlacementEndpoints
 
             await placementService.CreateAsync(requestDto, request.SourceColumnId);
 
+            //await Task.Delay(3000);
+
             await hub.Clients.All.SendAsync(
                 "PlacementCreated",
                 new PlacementCreatedEvent(
