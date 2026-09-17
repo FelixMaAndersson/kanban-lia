@@ -3,6 +3,7 @@ using kanban_lia.Endpoints.Placements.Requests;
 using kanban_lia.Hubs;
 using kanban_lia.Models.Domain.Boards;
 using kanban_lia.Models.Domain.Columns;
+using kanban_lia.Models.Domain.Placements.DTOs;
 using kanban_lia.Models.Events;
 using kanban_lia.Services.Placements;
 using kanban_lia.Services.Placements.DTOs;
@@ -24,6 +25,19 @@ public static class PlacementEndpoints
             IHubContext<BoardHub> hub) =>
         {
             var requestDto = mapper.Map<CreatePlacementDto>(request);
+
+            var columnsToPlaceIn = GetConnectedColumns(request.ColumnId);
+            var sourceColumnsToSignal = GetConnectedColumns(request.SourceColumnId);
+
+            List<PlacementDto> placementDtos = new List<PlacementDto>();
+            foreach (var columnId in columnsToPlaceIn)
+            {
+                var dto = new CreatePlacementDto(
+                    request.EntityIds,
+                    columnId,
+                    request.AfterEntityId,
+                    request.BeforeEntityId);
+            }
 
             await placementService.CreateAsync(requestDto, request.SourceColumnId);
 
