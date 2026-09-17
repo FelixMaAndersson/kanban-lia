@@ -33,100 +33,103 @@ namespace kanban_lia.Services.Placements
             Guid TargetColumnId
         );
 
-        public async Task CreateAsync(CreatePlacementDto dto, Guid? SourceColumnId)
+        public async Task CreateAsync(IEnumerable<PlacementOperationDto> dtos)
         {
-            var entityIds = dto.EntityIds;
-
-            var column = await _columnRepository.GetByIdAsync(dto.ColumnId);
-
-            var board = await _boardRepository.GetByIdAsync(dto.BoardId);
-
-            if (column is null)
+            foreach (var dto in dtos)
             {
-                throw new ColumnNotFoundException(dto.ColumnId);
-            }
+                var entityIds = dto.Dto.EntityIds;
 
-            if (board is null)
-            {
-                throw new BoardNotFoundException(dto.BoardId);
-            }
+                var column = await _columnRepository.GetByIdAsync(dto.Dto.ColumnId);
 
-            if (dto.AfterEntityId.HasValue && dto.BeforeEntityId.HasValue)
-            {
-                throw new InvalidDomainException(
-                    "Only one of AfterEntityId and BeforeEntityId can be provided.");
-            }
+                var board = await _boardRepository.GetByIdAsync(dto.Dto.BoardId);
 
-            if (column.BoardId != board.Id)
-            {
-                throw new InvalidDomainException(
-                    "The column does not belong to the specified board.");
-            }
+                if (column is null)
+                {
+                    throw new ColumnNotFoundException(dto.Dto.ColumnId);
+                }
 
-            SortKeyLookup lookup;
+                if (board is null)
+                {
+                    throw new BoardNotFoundException(dto.Dto.BoardId);
+                }
 
-            if (dto.AfterEntityId.HasValue)
-            {
-                lookup = SortKeyLookup.After;
-            }
-            else if (dto.BeforeEntityId.HasValue)
-            {
-                lookup = SortKeyLookup.Before;
-            }
-            else
-            {
-                lookup = SortKeyLookup.Last;
-            }
+                if (dto.Dto.AfterEntityId.HasValue && dto.Dto.BeforeEntityId.HasValue)
+                {
+                    throw new InvalidDomainException(
+                        "Only one of AfterEntityId and BeforeEntityId can be provided.");
+                }
 
-            EntityId? afterEntityId;
-            EntityId? beforeEntityId;
+                if (column.BoardId != board.Id)
+                {
+                    throw new InvalidDomainException(
+                        "The column does not belong to the specified board.");
+                }
 
-            if (dto.AfterEntityId.HasValue)
-            {
-                afterEntityId = new EntityId(dto.AfterEntityId.Value);
-            }
-            else
-            {
-                afterEntityId = null;
-            }
+                SortKeyLookup lookup;
 
-            if (dto.BeforeEntityId.HasValue)
-            {
-                beforeEntityId = new EntityId(dto.BeforeEntityId.Value);
-            }
-            else
-            {
-                beforeEntityId = null;
-            }
+                if (dto.Dto.AfterEntityId.HasValue)
+                {
+                    lookup = SortKeyLookup.After;
+                }
+                else if (dto.Dto.BeforeEntityId.HasValue)
+                {
+                    lookup = SortKeyLookup.Before;
+                }
+                else
+                {
+                    lookup = SortKeyLookup.Last;
+                }
 
-            var range = await _repository.GetSortKeyRangeAsync(
-                column.Id,
-                lookup,
-                afterEntityId,
-                beforeEntityId);
+                EntityId? afterEntityId;
+                EntityId? beforeEntityId;
 
-            var placements = new List<Placement>();
+                if (dto.Dto.AfterEntityId.HasValue)
+                {
+                    afterEntityId = new EntityId(dto.Dto.AfterEntityId.Value);
+                }
+                else
+                {
+                    afterEntityId = null;
+                }
 
-            var previous = range.Previous;
-            var next = range.Next;
+                if (dto.Dto.BeforeEntityId.HasValue)
+                {
+                    beforeEntityId = new EntityId(dto.Dto.BeforeEntityId.Value);
+                }
+                else
+                {
+                    beforeEntityId = null;
+                }
 
-            foreach (var entityId in entityIds)
-            {
-
-                var sortKey = OrderKeyGenerator.GenerateKeyBetween(
-                    previous,
-                    next);
-
-                var placement = Placement.Create(
-                    entityId,
-                    board.Id,
+                var range = await _repository.GetSortKeyRangeAsync(
                     column.Id,
-                    sortKey);
+                    lookup,
+                    afterEntityId,
+                    beforeEntityId);
 
-                placements.Add(placement);
+                var placements = new List<Placement>();
+
+                var previous = range.Previous;
+                var next = range.Next;
+
+                foreach (var entityId in entityIds)
+                {
+
+                    var sortKey = OrderKeyGenerator.GenerateKeyBetween(
+                        previous,
+                        next);
+
+                    var placement = Placement.Create(
+                        entityId,
+                        board.Id,
+                        column.Id,
+                        sortKey);
+
+                    placements.Add(placement);
+                }
+
+                await _repository.CreateAsync(placements);
             }
-
-            await _repository.CreateAsync(placements);
         }
 
         public async Task<IEnumerable<PlacementDto>> GetCurrentAsync(GetPlacementDto dto)
