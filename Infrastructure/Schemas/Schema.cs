@@ -22,6 +22,13 @@ namespace kanban_lia.Infrastructure.Schemas
             public const string BoardId = nameof(Column.BoardId);
         }
 
+        public static class ColumnEdges
+        {
+            public const string Table = "ColumnEdges";
+            public const string FromColumnId = nameof(ColumnEdge.FromColumnId);
+            public const string ToColumnId = nameof(ColumnEdge.ToColumnId);
+        }
+
         public static class Placements
         {
             public const string Table = "Placements";
