@@ -7,6 +7,7 @@ using kanban_lia.Models.Domain.Columns;
 using kanban_lia.Models.Domain.Placements;
 using kanban_lia.Models.Domain.Placements.DTOs;
 using kanban_lia.Models.Events;
+using kanban_lia.Services.Columns.Exceptions;
 using kanban_lia.Services.Placements;
 using kanban_lia.Services.Placements.DTOs;
 using Microsoft.AspNetCore.Mvc;
@@ -21,10 +22,11 @@ public static class PlacementEndpoints
         var group = app.MapGroup("/api/placements");
 
         group.MapPost("/create", async (
-            [FromBody] CreatePlacementRequest request,
-            IPlacementService placementService,
-            IColumnEdgeRepository columnEdgeRepository,
-            IHubContext<BoardHub> hub) =>
+    [FromBody] CreatePlacementRequest request,
+    IPlacementService placementService,
+    IColumnRepository columnRepository,
+    IColumnEdgeRepository columnEdgeRepository,
+    IHubContext<BoardHub> hub) =>
         {
             var entityIds = request.EntityIds
                 .Select(id => new EntityId(id))
@@ -32,7 +34,7 @@ public static class PlacementEndpoints
 
             var boardId = new BoardId(request.BoardId);
 
-            var columnsToPlaceIn = await GetConnectedColumns(
+            var targetColumnIds = await GetConnectedColumns(
                 new ColumnId(request.ColumnId),
                 columnEdgeRepository);
 
@@ -42,57 +44,99 @@ public static class PlacementEndpoints
                     boardId
                 )
             );
-   
-            var currentSourceColumns = currentPlacements
-                .Select(p => p.ColumnId)
+
+
+            var sourceColumnIds = new List<ColumnId>();
+
+            foreach (var placement in currentPlacements)
+            {
+                var connectedSourceColumns = await GetConnectedColumns(
+                    placement.ColumnId,
+                    columnEdgeRepository);
+
+                sourceColumnIds.AddRange(connectedSourceColumns);
+            }
+
+            sourceColumnIds = sourceColumnIds
                 .Distinct()
                 .ToList();
 
 
-            var sourceColumns = new List<ColumnId>();
 
-            foreach (var sourceColumn in currentSourceColumns)
+            var columnPairs =
+                new List<(ColumnId Target, ColumnId? Source)>();
+
+            foreach (var targetColumnId in targetColumnIds)
             {
-                var connectedSourceColumns = await GetConnectedColumns(
-                    sourceColumn,
-                    columnEdgeRepository);
+                var targetColumn =
+                    await columnRepository.GetByIdAsync(targetColumnId);
 
-                    sourceColumns.AddRange(connectedSourceColumns);
+                if (targetColumn is null)
+                {
+                    throw new ColumnNotFoundException(targetColumnId);
+                }
 
+                ColumnId? matchingSourceId = null;
+
+                foreach (var sourceColumnId in sourceColumnIds)
+                {
+                    var sourceColumn =
+                        await columnRepository.GetByIdAsync(sourceColumnId);
+
+                    if (sourceColumn?.BoardId == targetColumn.BoardId)
+                    {
+                        matchingSourceId = sourceColumnId;
+                        break;
+                    }
+                }
+
+                columnPairs.Add((
+                    Target: targetColumnId,
+                    Source: matchingSourceId
+                ));
             }
 
-            var placementOperations = new List<PlacementOperationDto>();
+            var placementOperations =
+                new List<PlacementOperationDto>();
 
-
-            for (var i = 0; i < columnsToPlaceIn.Count; i++)
+            foreach (var pair in columnPairs)
             {
+                var targetColumn =
+                    await columnRepository.GetByIdAsync(pair.Target);
+
+                if (targetColumn is null)
+                {
+                    throw new ColumnNotFoundException(pair.Target);
+                }
+
                 var createDto = new CreatePlacementDto(
                     entityIds,
-                    boardId,
-                    columnsToPlaceIn[i],
+                    targetColumn.BoardId,
+                    pair.Target,
                     request.AfterEntityId,
                     request.BeforeEntityId
                 );
 
                 var operationDto = new PlacementOperationDto(
                     createDto,
-                    sourceColumns[i]
+                    pair.Source
                 );
 
                 placementOperations.Add(operationDto);
-
             }
 
             await placementService.CreateAsync(placementOperations);
-
-            await hub.Clients.All.SendAsync(
-                "PlacementCreated",
-                new PlacementCreatedEvent(
-                    request.EntityIds,
-                    request.SourceColumnId,
-                    request.ColumnId
-                )
-            );
+            foreach (var c in columnPairs)
+            {
+                await hub.Clients.All.SendAsync(
+                    "PlacementCreated",
+                    new PlacementCreatedEvent(
+                        request.EntityIds,
+                        c.Target.Id,
+                        c.Source?.Id ?? Guid.Empty
+                    )
+                );
+            }
 
             return Results.Ok();
         });
