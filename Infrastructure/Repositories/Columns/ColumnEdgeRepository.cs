@@ -1,6 +1,7 @@
 ﻿using Dapper;
 using kanban_lia.Infrastructure.Database;
 using kanban_lia.Infrastructure.Schemas;
+using kanban_lia.Models.Domain.Boards;
 using kanban_lia.Models.Domain.Columns;
 
 namespace kanban_lia.Infrastructure.Repositories.Columns
@@ -26,6 +27,19 @@ namespace kanban_lia.Infrastructure.Repositories.Columns
                 }
             );
 
+        }
+        public async Task<IEnumerable<ColumnEdge>> GetByBoardIdAsync(BoardId boardId)
+        {
+            using var connection = _connectionFactory.CreateConnection();
+            var edges = await connection.QueryAsync<ColumnEdge>(
+                $@"
+                    SELECT ce.* FROM {Schema.ColumnEdges.Table} ce
+                    JOIN {Schema.Columns.Table} c1 ON ce.{Schema.ColumnEdges.FromColumnId} = c1.{Schema.Columns.Id}
+                    JOIN {Schema.Columns.Table} c2 ON ce.{Schema.ColumnEdges.ToColumnId} = c2.{Schema.Columns.Id}
+                    WHERE c1.{Schema.Columns.BoardId} = @BoardId OR c2.{Schema.Columns.BoardId} = @BoardId",
+                new { BoardId = boardId.Id }
+            );
+            return edges;
         }
 
         public async Task<IEnumerable<ColumnEdge>> GetByFromColumnIdAsync(ColumnId fromColumnId)

@@ -8,11 +8,11 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace kanban_lia.Endpoints.Columns
 {
-    public class ColumnEdgeEndpoints
+    public static class ColumnEdgeEndpoints
     {
         public static void MapColumnEdgeEndpoints(WebApplication app)
         {
-            var group = app.MapGroup("/api/columnEdges");
+            var group = app.MapGroup("/api/columnedges");
 
             // Create a new column edge
             group.MapPost("/create", async (
