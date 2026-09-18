@@ -53,7 +53,7 @@ namespace kanban_lia.Services.Placements
                     throw new BoardNotFoundException(dto.Dto.BoardId);
                 }
 
-                if (dto.Dto.AfterEntityId.HasValue && dto.Dto.BeforeEntityId.HasValue)
+                if (dto.Dto.AfterEntityId.Any() && dto.Dto.BeforeEntityId.Any())
                 {
                     throw new InvalidDomainException(
                         "Only one of AfterEntityId and BeforeEntityId can be provided.");
@@ -67,11 +67,11 @@ namespace kanban_lia.Services.Placements
 
                 SortKeyLookup lookup;
 
-                if (dto.Dto.AfterEntityId.HasValue)
+                if (dto.Dto.AfterEntityId.Any())
                 {
                     lookup = SortKeyLookup.After;
                 }
-                else if (dto.Dto.BeforeEntityId.HasValue)
+                else if (dto.Dto.BeforeEntityId.Any())
                 {
                     lookup = SortKeyLookup.Before;
                 }
@@ -83,7 +83,7 @@ namespace kanban_lia.Services.Placements
                 EntityId? afterEntityId;
                 EntityId? beforeEntityId;
 
-                if (dto.Dto.AfterEntityId.HasValue)
+                if (dto.Dto.AfterEntityId.Any())
                 {
                     afterEntityId = new EntityId(dto.Dto.AfterEntityId.Value);
                 }

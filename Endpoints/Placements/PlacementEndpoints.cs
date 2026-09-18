@@ -162,8 +162,8 @@ public static class PlacementEndpoints
                     entityIds,
                     targetColumn.BoardId,
                     pair.Target,
-                    request.AfterEntityId,
-                    request.BeforeEntityId
+                    request.AfterEntityId?[],
+                    request.BeforeEntityId?[]
                 );
 
                 var operationDto = new PlacementOperationDto(
