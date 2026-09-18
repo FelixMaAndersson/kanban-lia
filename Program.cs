@@ -27,10 +27,12 @@ builder.Services.AddSingleton<DbConnectionFactory>();
 builder.Services.AddScoped<IBoardRepository, BoardRepository>();
 builder.Services.AddScoped<IColumnRepository, ColumnRepository>();
 builder.Services.AddScoped<IPlacementRepository, PlacementRepository>();
+builder.Services.AddScoped<IColumnEdgeRepository, ColumnEdgeRepository>();
 
 builder.Services.AddScoped<IBoardService, BoardService>();
 builder.Services.AddScoped<IColumnService, ColumnService>();
 builder.Services.AddScoped<IPlacementService, PlacementService>();
+builder.Services.AddScoped<IColumnEdgeService, ColumnEdgeService>();
 
 builder.Services.AddAutoMapper(cfg =>
 {
@@ -108,5 +110,6 @@ app.MapHub<BoardHub>("/hubs/board");
 BoardEndpoints.MapBoardEndpoints(app);
 ColumnEndpoints.MapColumnEndpoints(app);
 PlacementEndpoints.MapPlacementEndpoints(app);
+ColumnEdgeEndpoints.MapColumnEdgeEndpoints(app);
 
 await app.RunAsync();

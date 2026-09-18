@@ -14,72 +14,101 @@ namespace kanban_lia.Infrastructure.Repositories.Columns
         public async Task CreateAsync(ColumnEdge columnEdge)
         {
             using var connection = _connectionFactory.CreateConnection();
+
             await connection.ExecuteAsync(
                 $@"
-                    INSERT INTO {Schema.ColumnEdges.Table} 
-                               ({Schema.ColumnEdges.FromColumnId}, 
-                                {Schema.ColumnEdges.ToColumnId}) 
-                    VALUES (@FromColumnId, @ToColumnId)",
+            INSERT INTO {Schema.ColumnEdges.Table}
+                       ({Schema.ColumnEdges.FromColumnId},
+                        {Schema.ColumnEdges.ToColumnId})
+            VALUES     (@FromColumnId, @ToColumnId)",
                 new
                 {
                     FromColumnId = columnEdge.FromColumnId.Id,
                     ToColumnId = columnEdge.ToColumnId.Id
                 }
             );
-
         }
-        public async Task<IEnumerable<ColumnEdge>> GetByBoardIdAsync(BoardId boardId)
+        public async Task<IEnumerable<ColumnEdge>> GetByBoardIdAsync(
+            BoardId boardId)
         {
             using var connection = _connectionFactory.CreateConnection();
+
             var edges = await connection.QueryAsync<ColumnEdge>(
                 $@"
-                    SELECT ce.* FROM {Schema.ColumnEdges.Table} ce
-                    JOIN {Schema.Columns.Table} c1 ON ce.{Schema.ColumnEdges.FromColumnId} = c1.{Schema.Columns.Id}
-                    JOIN {Schema.Columns.Table} c2 ON ce.{Schema.ColumnEdges.ToColumnId} = c2.{Schema.Columns.Id}
-                    WHERE c1.{Schema.Columns.BoardId} = @BoardId OR c2.{Schema.Columns.BoardId} = @BoardId",
-                new { BoardId = boardId.Id }
+            SELECT  ce.{Schema.ColumnEdges.FromColumnId},
+                    ce.{Schema.ColumnEdges.ToColumnId}
+            FROM    {Schema.ColumnEdges.Table} AS ce
+            JOIN    {Schema.Columns.Table} AS c1
+                    ON ce.{Schema.ColumnEdges.FromColumnId} = c1.{Schema.Columns.Id}
+            JOIN    {Schema.Columns.Table} AS c2
+                    ON ce.{Schema.ColumnEdges.ToColumnId} = c2.{Schema.Columns.Id}
+            WHERE   c1.{Schema.Columns.BoardId} = @BoardId
+               OR   c2.{Schema.Columns.BoardId} = @BoardId",
+                new
+                {
+                    BoardId = boardId.Id
+                }
             );
+
             return edges;
         }
 
-        public async Task<IEnumerable<ColumnEdge>> GetByFromColumnIdAsync(ColumnId fromColumnId)
+        public async Task<IEnumerable<ColumnEdge>> GetByFromColumnIdAsync(
+            ColumnId fromColumnId)
         {
             using var connection = _connectionFactory.CreateConnection();
+
             var edges = await connection.QueryAsync<ColumnEdge>(
                 $@"
-                    SELECT * FROM {Schema.ColumnEdges.Table} 
-                    WHERE {Schema.ColumnEdges.FromColumnId} = @FromColumnId",
-                new { FromColumnId = fromColumnId.Id }
+            SELECT  {Schema.ColumnEdges.FromColumnId},
+                    {Schema.ColumnEdges.ToColumnId}
+            FROM    {Schema.ColumnEdges.Table}
+            WHERE   {Schema.ColumnEdges.FromColumnId} = @FromColumnId",
+                new
+                {
+                    FromColumnId = fromColumnId.Id
+                }
             );
+
             return edges;
         }
 
-        public async Task<IEnumerable<ColumnEdge>> GetByToColumnIdAsync(ColumnId toColumnId)
+        public async Task<IEnumerable<ColumnEdge>> GetByToColumnIdAsync(
+            ColumnId toColumnId)
         {
             using var connection = _connectionFactory.CreateConnection();
+
             var edges = await connection.QueryAsync<ColumnEdge>(
                 $@"
-                    SELECT * FROM {Schema.ColumnEdges.Table} 
-                    WHERE {Schema.ColumnEdges.ToColumnId} = @ToColumnId",
-                new { ToColumnId = toColumnId.Id }
+            SELECT  {Schema.ColumnEdges.FromColumnId},
+                    {Schema.ColumnEdges.ToColumnId}
+            FROM    {Schema.ColumnEdges.Table}
+            WHERE   {Schema.ColumnEdges.ToColumnId} = @ToColumnId",
+                new
+                {
+                    ToColumnId = toColumnId.Id
+                }
             );
+
             return edges;
         }
 
         public async Task<bool> DeleteAsync(ColumnEdge columnEdge)
         {
             using var connection = _connectionFactory.CreateConnection();
+
             var rowsAffected = await connection.ExecuteAsync(
                 $@"
-                    DELETE FROM {Schema.ColumnEdges.Table} 
-                    WHERE {Schema.ColumnEdges.FromColumnId} = @FromColumnId 
-                    AND {Schema.ColumnEdges.ToColumnId} = @ToColumnId",
+            DELETE FROM {Schema.ColumnEdges.Table}
+            WHERE       {Schema.ColumnEdges.FromColumnId} = @FromColumnId
+              AND       {Schema.ColumnEdges.ToColumnId} = @ToColumnId",
                 new
                 {
                     FromColumnId = columnEdge.FromColumnId.Id,
                     ToColumnId = columnEdge.ToColumnId.Id
                 }
             );
+
             return rowsAffected > 0;
         }
     }

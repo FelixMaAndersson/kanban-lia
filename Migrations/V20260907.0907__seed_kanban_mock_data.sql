@@ -3,7 +3,7 @@
 -- Board
 -- =========================================
 
-DECLARE @BoardId UNIQUEIDENTIFIER =
+DECLARE @BoardId1 UNIQUEIDENTIFIER =
     '11111111-1111-1111-1111-111111111111';
 
 INSERT INTO Boards
@@ -13,22 +13,40 @@ INSERT INTO Boards
 )
 VALUES
 (
-    @BoardId,
-    'Mock Board'
+    @BoardId1,
+    'Board 1'
 );
 
 
--- =========================================
--- Columns
--- =========================================
+DECLARE @BoardId2 UNIQUEIDENTIFIER =
+    '11111111-1111-1111-1111-111111111112';
 
-DECLARE @TodoColumnId UNIQUEIDENTIFIER =
+INSERT INTO Boards
+(
+    Id,
+    Title
+)
+VALUES
+(
+    @BoardId2,
+    'Board 2'
+);
+
+
+
+-- =========================================
+-- Columns Board 1
+-- =========================================
+DECLARE @InboxColumnId1 UNIQUEIDENTIFIER =
+    '22222222-2222-2222-2222-222222222220';
+
+DECLARE @TodoColumnId1 UNIQUEIDENTIFIER =
     '22222222-2222-2222-2222-222222222221';
 
-DECLARE @DoingColumnId UNIQUEIDENTIFIER =
+DECLARE @DoingColumnId1 UNIQUEIDENTIFIER =
     '22222222-2222-2222-2222-222222222222';
 
-DECLARE @DoneColumnId UNIQUEIDENTIFIER =
+DECLARE @DoneColumnId1 UNIQUEIDENTIFIER =
     '22222222-2222-2222-2222-222222222223';
 
 
@@ -41,9 +59,9 @@ INSERT INTO Columns
 )
 VALUES
 (
-    @TodoColumnId,
-    @BoardId,
-    'Todo',
+    @InboxColumnId1,
+    @BoardId1,
+    'Inbox',
     0
 );
 
@@ -56,9 +74,9 @@ INSERT INTO Columns
 )
 VALUES
 (
-    @DoingColumnId,
-    @BoardId,
-    'Doing',
+    @TodoColumnId1,
+    @BoardId1,
+    'Todo',
     1
 );
 
@@ -71,160 +89,159 @@ INSERT INTO Columns
 )
 VALUES
 (
-    @DoneColumnId,
-    @BoardId,
+    @DoingColumnId1,
+    @BoardId1,
+    'Doing',
+    2
+);
+
+INSERT INTO Columns
+(
+    Id,
+    BoardId,
+    Title,
+    Position
+)
+VALUES
+(
+    @DoneColumnId1,
+    @BoardId1,
+    'Done',
+    3
+);
+
+
+-- =========================================
+-- Columns Board 2
+-- =========================================
+DECLARE @InboxColumnId2 UNIQUEIDENTIFIER =
+    '22222222-2222-2222-2222-222222222224';
+
+DECLARE @TodoColumnId2 UNIQUEIDENTIFIER =
+    '22222222-2222-2222-2222-222222222225';
+
+DECLARE @DoneColumnId2 UNIQUEIDENTIFIER =
+    '22222222-2222-2222-2222-222222222226';
+
+    INSERT INTO Columns
+(
+    Id,
+    BoardId,
+    Title,
+    Position
+)
+VALUES
+(
+    @InboxColumnId2,
+    @BoardId2,
+    'Inbox',
+    0
+);
+
+INSERT INTO Columns
+(
+    Id,
+    BoardId,
+    Title,
+    Position
+)
+VALUES
+(
+    @TodoColumnId2,
+    @BoardId2,
+    'Todo',
+    1
+);
+
+INSERT INTO Columns
+(
+    Id,
+    BoardId,
+    Title,
+    Position
+)
+VALUES
+(
+    @DoneColumnId2,
+    @BoardId2,
     'Done',
     2
 );
 
+-- =========================================
+-- Roots
+-- =========================================
+
+INSERT INTO BoardRoots
+(
+    BoardId,
+    EntityId
+)
+VALUES
+(
+    '11111111-1111-1111-1111-111111111111',
+    'c3550d6e-2d34-f111-ae9c-3cecef9b8585'
+);
+
+INSERT INTO BoardRoots
+(
+    BoardId,
+    EntityId
+)
+VALUES
+(
+    '11111111-1111-1111-1111-111111111112',
+    'c3550d6e-2d34-f111-ae9c-3cecef9b8585'
+);
 
 -- =========================================
--- Placements
+-- Edges
 -- =========================================
 
--- Entity 1: Todo -> Doing
-
-INSERT INTO Placements
+-- Board 1: Inbox (0) -> Board 2: Inbox (0)
+INSERT INTO ColumnEdges
 (
-    EntityId,
-    BoardId,
-    ColumnId,
-    SortKey,
-    Timestamp
+    FromColumnId,
+    ToColumnId
 )
 VALUES
 (
-    '3f2504e0-4f89-41d3-9a0c-0305e82c3301',
-    @BoardId,
-    @TodoColumnId,
-    'a0',
-    '2026-09-01T10:00:00'
+    @InboxColumnId1,
+    @InboxColumnId2
 );
 
-INSERT INTO Placements
+-- Board 1: Todo (1) -> Board 2: Todo (1)
+INSERT INTO ColumnEdges
 (
-    EntityId,
-    BoardId,
-    ColumnId,
-    SortKey,
-    Timestamp
+    FromColumnId,
+    ToColumnId
 )
 VALUES
 (
-    '3f2504e0-4f89-41d3-9a0c-0305e82c3301',
-    @BoardId,
-    @DoingColumnId,
-    'a0',
-    '2026-09-01T11:00:00'
+    @TodoColumnId1,
+    @TodoColumnId2
 );
 
-
--- Entity 2: Todo
-
-INSERT INTO Placements
+-- Board 1: Doing (2) -> Board 2: Todo (1)
+INSERT INTO ColumnEdges
 (
-    EntityId,
-    BoardId,
-    ColumnId,
-    SortKey,
-    Timestamp
+    FromColumnId,
+    ToColumnId
 )
 VALUES
 (
-    '7c9e6679-7425-40de-944b-e07fc1f90ae2',
-    @BoardId,
-    @TodoColumnId,
-    'a0',
-    '2026-09-01T10:15:00'
+    @DoingColumnId1,
+    @TodoColumnId2
 );
 
-
--- Entity 3: Todo -> Doing -> Done
-
-INSERT INTO Placements
+-- Board 1: Done (3) -> Board 2: Done (2)
+INSERT INTO ColumnEdges
 (
-    EntityId,
-    BoardId,
-    ColumnId,
-    SortKey,
-    Timestamp
+    FromColumnId,
+    ToColumnId
 )
 VALUES
 (
-    '550e8400-e29b-41d4-a716-446655440003',
-    @BoardId,
-    @TodoColumnId,
-    'a1',
-    '2026-09-01T10:30:00'
-);
-
-INSERT INTO Placements
-(
-    EntityId,
-    BoardId,
-    ColumnId,
-    SortKey,
-    Timestamp
-)
-VALUES
-(
-    '550e8400-e29b-41d4-a716-446655440003',
-    @BoardId,
-    @DoingColumnId,
-    'a1',
-    '2026-09-01T11:30:00'
-);
-
-INSERT INTO Placements
-(
-    EntityId,
-    BoardId,
-    ColumnId,
-    SortKey,
-    Timestamp
-)
-VALUES
-(
-    '550e8400-e29b-41d4-a716-446655440003',
-    @BoardId,
-    @DoneColumnId,
-    'a0',
-    '2026-09-01T12:30:00'
-);
-
-
--- Entity 4: Doing -> Todo
-
-INSERT INTO Placements
-(
-    EntityId,
-    BoardId,
-    ColumnId,
-    SortKey,
-    Timestamp
-)
-VALUES
-(
-    '6ba7b810-9dad-41d1-80b4-00c04fd43004',
-    @BoardId,
-    @DoingColumnId,
-    'a2',
-    '2026-09-01T10:45:00'
-);
-
-INSERT INTO Placements
-(
-    EntityId,
-    BoardId,
-    ColumnId,
-    SortKey,
-    Timestamp
-)
-VALUES
-(
-    '6ba7b810-9dad-41d1-80b4-00c04fd43004',
-    @BoardId,
-    @TodoColumnId,
-    'a1',
-    '2026-09-01T13:00:00'
+    @DoneColumnId1,
+    @DoneColumnId2
 );
