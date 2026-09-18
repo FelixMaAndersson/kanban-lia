@@ -28,16 +28,39 @@ public static class PlacementEndpoints
     IColumnEdgeRepository columnEdgeRepository,
     IHubContext<BoardHub> hub) =>
         {
+
+            // Hello David, first we get the entity ids that we need
             var entityIds = request.EntityIds
                 .Select(id => new EntityId(id))
                 .ToList();
 
+            // then the board Id
             var boardId = new BoardId(request.BoardId);
 
-            var targetColumnIds = await GetConnectedColumns(
+            // then all the IDs for all the columns we have edges to.
+            var connectedTargetColumnIds = await GetConnectedColumns(
                 new ColumnId(request.ColumnId),
                 columnEdgeRepository);
 
+
+            // the we gets the column objects by looping over those IDs
+            var connectedTargetColumns = new List<Column>();
+
+            foreach (var columnId in connectedTargetColumnIds)
+            {
+                var column =
+                    await columnRepository.GetByIdAsync(columnId);
+
+                if (column is null)
+                {
+                    throw new ColumnNotFoundException(columnId);
+                }
+
+                connectedTargetColumns.Add(column);
+
+            }
+
+            // the enitityIds gives us all the current placements.
             var currentPlacements = await placementService.GetCurrentAsync(
                 new GetPlacementDto(
                     entityIds,
@@ -45,7 +68,7 @@ public static class PlacementEndpoints
                 )
             );
 
-
+            // we use the current placements to find all source columnsIds, inclouding all connected columns on other boards.
             var sourceColumnIds = new List<ColumnId>();
 
             foreach (var placement in currentPlacements)
@@ -57,43 +80,71 @@ public static class PlacementEndpoints
                 sourceColumnIds.AddRange(connectedSourceColumns);
             }
 
+            //you know this one
             sourceColumnIds = [.. sourceColumnIds.Distinct()];
 
+            // we get the source column objects the same way we got the target columns.
+            var sourceColumns = new List<Column>();
 
-
-            var columnPairs =
-                new List<(ColumnId Target, ColumnId? Source)>();
-
-            foreach (var targetColumnId in targetColumnIds)
+            foreach (var sourceColumnId in sourceColumnIds)
             {
-                var targetColumn =
-                    await columnRepository.GetByIdAsync(targetColumnId);
-
-                if (targetColumn is null)
+                var column = await columnRepository.GetByIdAsync(sourceColumnId);
+                if (column is not null)
                 {
-                    throw new ColumnNotFoundException(targetColumnId);
+                    sourceColumns.Add(column);
                 }
-
-                ColumnId? matchingSourceId = null;
-
-                foreach (var sourceColumnId in sourceColumnIds)
-                {
-                    var sourceColumn =
-                        await columnRepository.GetByIdAsync(sourceColumnId);
-
-                    if (sourceColumn?.BoardId == targetColumn.BoardId)
-                    {
-                        matchingSourceId = sourceColumnId;
-                        break;
-                    }
-                }
-
-                columnPairs.Add((
-                    Target: targetColumnId,
-                    Source: matchingSourceId
-                ));
             }
 
+            //a board kan have several posible targets. we group by boardId so we can choose a taget per board
+            var targetGroups = connectedTargetColumns.GroupBy(column => column.BoardId);
+
+            // this is old news; we need to have them in pairs with their target and all their possible sources.
+            var columnPairs = new List<(ColumnId Target, List<ColumnId> Sources)>();
+
+            // this is why we needed to deconstruct all the loops and what nots. We want to place a placement
+            // to the left when comming from the left (inbox -> todo = inbox -> todo) and to the right
+            // when comming from the right (done -> todo = done -> doing)
+            foreach (var targetGroup in targetGroups)
+            {
+
+                // we start of by finding the sources on the board we want to create our column pairs.
+                var matchingSources = sourceColumns
+                    .Where(source => source.BoardId == targetGroup.Key)
+                    .ToList();
+
+                Column targetColumn;
+
+                // if the group only has 1 target in it, it means that there is a 1-1 relationship and we can just
+                // place our placement in the column with the edge (eg.g. 'done' in our case).
+                if (targetGroup.Count() == 1)
+                {
+                    targetColumn = targetGroup.First();
+                }
+
+                // if that's not the case we need to take charge and do something! We start by ordering from left to right
+                // (0,1,2,3,4,5 = 0 the left most and 5 the right most) 
+                else
+                {
+                    var sourcePosition = matchingSources
+                        .OrderBy(source => source.Position)
+                        .First()
+                        .Position;
+
+                    // this is the most confusing bit of code, where we calculates which target is the closest to our source.
+                    // that's why we ca use the same for both from left and from right, since we just place our placement in the 
+                    // target nearest our source.
+                    targetColumn = targetGroup
+                        .OrderBy(target => Math.Abs(target.Position - sourcePosition))
+                        .First();
+                }
+                columnPairs.Add((
+                    Target: targetColumn.Id,
+                    Sources: [.. matchingSources.Select(source => source.Id)]
+                        ));
+            }
+
+            // the rest of the code is basically the same, but a bit more
+            // convoluted since we now have even more nested lists.
             var placementOperations =
                 new List<PlacementOperationDto>();
 
@@ -117,28 +168,41 @@ public static class PlacementEndpoints
 
                 var operationDto = new PlacementOperationDto(
                     createDto,
-                    pair.Source
+                    pair.Sources
                 );
 
                 placementOperations.Add(operationDto);
             }
 
-            var changes = columnPairs
-            .Select(pair => new PlacementChange(
-                pair.Source?.Id ?? null,
-                pair.Target.Id
-            )).ToList();
+            var changes = new List<PlacementChange>();
+
+            foreach (var pair in columnPairs)
+            {
+                if (pair.Sources.Count == 0)
+                {
+                    changes.Add(new PlacementChange(null, pair.Target.Id));
+                    continue;
+                }
+
+                foreach (var source in pair.Sources)
+                {
+                    changes.Add(new PlacementChange(
+                        source.Id,
+                        pair.Target.Id
+                        ));
+                }
+            }
 
             await placementService.CreateAsync(placementOperations);
 
 
-                await hub.Clients.All.SendAsync(
-                    "PlacementCreated",
-                    new PlacementCreatedEvent(
-                        request.EntityIds,
-                        changes
-                    )
-                );
+            await hub.Clients.All.SendAsync(
+                "PlacementCreated",
+                new PlacementCreatedEvent(
+                    request.EntityIds,
+                    changes
+                )
+            );
 
             return Results.Ok();
         });
