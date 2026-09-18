@@ -3,5 +3,5 @@ using kanban_lia.Models.Domain.Placements.DTOs;
 
 namespace kanban_lia.Services.Placements.DTOs
 {
-    public record PlacementOperationDto(CreatePlacementDto Dto, ColumnId? SourceColumnId);
+    public record PlacementOperationDto(CreatePlacementDto Dto, IEnumerable<ColumnId> SourceColumnIds);
 }
