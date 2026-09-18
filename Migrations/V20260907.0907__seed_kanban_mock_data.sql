@@ -198,6 +198,18 @@ VALUES
 -- Edges
 -- =========================================
 
+-- Board 1: Inbox (0) -> Board 2: Inbox (0)
+INSERT INTO ColumnEdges
+(
+    FromColumnId,
+    ToColumnId
+)
+VALUES
+(
+    @InboxColumnId1,
+    @InboxColumnId2
+);
+
 -- Board 1: Todo (1) -> Board 2: Todo (1)
 INSERT INTO ColumnEdges
 (

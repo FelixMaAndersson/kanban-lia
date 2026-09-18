@@ -57,9 +57,7 @@ public static class PlacementEndpoints
                 sourceColumnIds.AddRange(connectedSourceColumns);
             }
 
-            sourceColumnIds = sourceColumnIds
-                .Distinct()
-                .ToList();
+            sourceColumnIds = [.. sourceColumnIds.Distinct()];
 
 
 
