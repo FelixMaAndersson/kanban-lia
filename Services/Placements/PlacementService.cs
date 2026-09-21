@@ -67,7 +67,6 @@ namespace kanban_lia.Services.Placements
 
                 EntityId? afterEntityId = null;
                 EntityId? beforeEntityId = null;
-
                 SortKeyLookup lookup;
 
                 foreach (var entityId in dto.Dto.AfterEntityIds)
@@ -109,15 +108,15 @@ namespace kanban_lia.Services.Placements
                         }
                     }
 
-                if (beforeEntityId is not null)
-                {
-                    lookup = SortKeyLookup.Before;
-                }
-                else
-                {
-                    lookup = SortKeyLookup.Last;
-                }
+                    if (beforeEntityId is not null)
+                    {
+                        lookup = SortKeyLookup.Before;
+                    }
 
+                    else
+                    {
+                        lookup = SortKeyLookup.Last;
+                    }
                 }
 
                 var range = await _repository.GetSortKeyRangeAsync(
