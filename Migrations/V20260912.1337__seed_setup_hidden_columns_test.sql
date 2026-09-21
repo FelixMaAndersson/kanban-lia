@@ -18,10 +18,10 @@ VALUES
 -- Columns - Board 1
 -- =========================================
 
-DECLARE @RejectedColumnId1 UNIQUEIDENTIFIER =
+DECLARE @InboxColumnId1 UNIQUEIDENTIFIER =
     '22222222-2222-2222-2222-222222222220';
 
-DECLARE @InboxColumnId1 UNIQUEIDENTIFIER =
+DECLARE @RejectedColumnId1 UNIQUEIDENTIFIER =
     '22222222-2222-2222-2222-222222222221';
 
 DECLARE @TodoColumnId1 UNIQUEIDENTIFIER =
@@ -42,8 +42,8 @@ DECLARE @ReleasedColumnId1 UNIQUEIDENTIFIER =
 
 INSERT INTO Columns (Id, BoardId, Title, Position)
 VALUES
-    (@RejectedColumnId1,   @BoardId1, 'Rejected',     0),
-    (@InboxColumnId1,      @BoardId1, 'Inbox',        1),
+    (@InboxColumnId1,      @BoardId1, 'Inbox',        0),
+    (@RejectedColumnId1,   @BoardId1, 'Rejected',     1),
     (@TodoColumnId1,       @BoardId1, 'Todo',         2),
     (@DoingColumnId1,      @BoardId1, 'Doing',        3),
     (@SendToTestColumnId1, @BoardId1, 'Send to Test', 4),
