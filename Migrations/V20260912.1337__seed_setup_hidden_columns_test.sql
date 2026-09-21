@@ -104,51 +104,43 @@ VALUES
 -- Inbox <-> Inbox
 INSERT INTO ColumnEdges (FromColumnId, ToColumnId)
 VALUES
-    (@InboxColumnId1, @InboxColumnId2),
-    (@InboxColumnId2, @InboxColumnId1);
+    (@InboxColumnId1, @InboxColumnId2);
 
 -- Todo <-> Inbox
 INSERT INTO ColumnEdges (FromColumnId, ToColumnId)
 VALUES
-    (@TodoColumnId1, @InboxColumnId2),
-    (@InboxColumnId2, @TodoColumnId1);
+    (@TodoColumnId1, @InboxColumnId2);
 
 -- Doing <-> Inbox
 INSERT INTO ColumnEdges (FromColumnId, ToColumnId)
 VALUES
-    (@DoingColumnId1, @InboxColumnId2),
-    (@InboxColumnId2, @DoingColumnId1);
+    (@DoingColumnId1, @InboxColumnId2);
 
 -- Send to Test <-> To Test
 INSERT INTO ColumnEdges (FromColumnId, ToColumnId)
 VALUES
-    (@SendToTestColumnId1, @ToTestColumnId2),
-    (@ToTestColumnId2, @SendToTestColumnId1);
+    (@SendToTestColumnId1, @ToTestColumnId2);
 
 
 -- Rejected <-> Reject
 INSERT INTO ColumnEdges (FromColumnId, ToColumnId)
 VALUES
-    (@RejectedColumnId1, @RejectColumnId2),
-    (@RejectColumnId2, @RejectedColumnId1);
+    (@RejectedColumnId1, @RejectColumnId2);
 
 
 -- Testing <-> Testing
 INSERT INTO ColumnEdges (FromColumnId, ToColumnId)
 VALUES
-    (@TestingColumnId1, @TestingColumnId2),
-    (@TestingColumnId2, @TestingColumnId1);
+    (@TestingColumnId1, @TestingColumnId2);
 
 
 -- Testing <-> Deployment
 INSERT INTO ColumnEdges (FromColumnId, ToColumnId)
 VALUES
-    (@TestingColumnId1, @DeploymentColumnId2),
-    (@DeploymentColumnId2, @TestingColumnId1);
+    (@TestingColumnId1, @DeploymentColumnId2);
 
 
 -- Released <-> Released
 INSERT INTO ColumnEdges (FromColumnId, ToColumnId)
 VALUES
-    (@ReleasedColumnId1, @ReleasedColumnId2),
-    (@ReleasedColumnId2, @ReleasedColumnId1);
+    (@ReleasedColumnId1, @ReleasedColumnId2);
