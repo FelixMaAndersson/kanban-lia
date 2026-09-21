@@ -53,7 +53,7 @@ namespace kanban_lia.Services.Placements
                     throw new BoardNotFoundException(dto.Dto.BoardId);
                 }
 
-                if (dto.Dto.AfterEntityId.HasValue && dto.Dto.BeforeEntityId.HasValue)
+                if (dto.Dto.AfterEntityIds.Any() && dto.Dto.BeforeEntityIds.Any())
                 {
                     throw new InvalidDomainException(
                         "Only one of AfterEntityId and BeforeEntityId can be provided.");
@@ -65,40 +65,57 @@ namespace kanban_lia.Services.Placements
                         "The column does not belong to the specified board.");
                 }
 
+                EntityId? afterEntityId = null;
+                EntityId? beforeEntityId = null;
                 SortKeyLookup lookup;
 
-                if (dto.Dto.AfterEntityId.HasValue)
+                foreach (var entityId in dto.Dto.AfterEntityIds)
+                {
+                    var currentPlacements = await _repository.GetCurrentAsync(
+                        [entityId],
+                        board.Id
+                        );
+
+                    var placement = currentPlacements.FirstOrDefault();
+
+                    if (placement?.ColumnId == column.Id)
+                    {
+                        afterEntityId = entityId;
+                    }
+                }
+
+                if (afterEntityId is not null)
                 {
                     lookup = SortKeyLookup.After;
                 }
-                else if (dto.Dto.BeforeEntityId.HasValue)
-                {
-                    lookup = SortKeyLookup.Before;
-                }
-                else
-                {
-                    lookup = SortKeyLookup.Last;
-                }
 
-                EntityId? afterEntityId;
-                EntityId? beforeEntityId;
+                else 
+                {
+                    foreach (var entityId in dto.Dto.BeforeEntityIds)
+                    {
+                        var currentPlacement = await _repository.GetCurrentAsync(
+                            [entityId],
+                            board.Id
+                            );
 
-                if (dto.Dto.AfterEntityId.HasValue)
-                {
-                    afterEntityId = new EntityId(dto.Dto.AfterEntityId.Value);
-                }
-                else
-                {
-                    afterEntityId = null;
-                }
+                        var placement = currentPlacement.FirstOrDefault();
 
-                if (dto.Dto.BeforeEntityId.HasValue)
-                {
-                    beforeEntityId = new EntityId(dto.Dto.BeforeEntityId.Value);
-                }
-                else
-                {
-                    beforeEntityId = null;
+                        if (placement?.ColumnId == column.Id)
+                        {
+                            beforeEntityId = entityId;
+                            break;
+                        }
+                    }
+
+                    if (beforeEntityId is not null)
+                    {
+                        lookup = SortKeyLookup.Before;
+                    }
+
+                    else
+                    {
+                        lookup = SortKeyLookup.Last;
+                    }
                 }
 
                 var range = await _repository.GetSortKeyRangeAsync(
@@ -126,6 +143,8 @@ namespace kanban_lia.Services.Placements
                         sortKey);
 
                     placements.Add(placement);
+
+                    previous = sortKey;
                 }
 
                 await _repository.CreateAsync(placements);

@@ -25,6 +25,18 @@ namespace kanban_lia.Mappings
                     opt => opt.MapFrom(src =>
                         src.EntityIds
                             .Select(id => new EntityId(id))
+                            .ToArray()))
+                .ForCtorParam(
+                    nameof(CreatePlacementDto.AfterEntityIds),
+                    opt => opt.MapFrom(src =>
+                        src.AfterEntityIds
+                            .Select(id => new EntityId(id))
+                            .ToArray()))
+                .ForCtorParam(
+                    nameof(CreatePlacementDto.BeforeEntityIds),
+                    opt => opt.MapFrom(src =>
+                        src.BeforeEntityIds
+                            .Select(id => new EntityId(id))
                             .ToArray()));
 
 
