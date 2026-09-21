@@ -53,7 +53,7 @@ namespace kanban_lia.Services.Placements
                     throw new BoardNotFoundException(dto.Dto.BoardId);
                 }
 
-                if (dto.Dto.AfterEntityId.Any() && dto.Dto.BeforeEntityId.Any())
+                if (dto.Dto.AfterEntityIds.Any() && dto.Dto.BeforeEntityIds.Any())
                 {
                     throw new InvalidDomainException(
                         "Only one of AfterEntityId and BeforeEntityId can be provided.");
@@ -65,13 +65,41 @@ namespace kanban_lia.Services.Placements
                         "The column does not belong to the specified board.");
                 }
 
+                EntityId? afterEntityId;
+                EntityId? beforeEntityId;
+
                 SortKeyLookup lookup;
 
-                if (dto.Dto.AfterEntityId.Any())
+                foreach (Guid entityId in dto.Dto.AfterEntityIds)
+                {
+                    var placement = await _repository.GetCurrentAsync(
+                        [entityId],
+                        board.Id
+                        );
+
+                    if (placement?.ColumnId == column.Id)
+                    {
+                        afterEntityId = entityId;
+                        break;
+                    }
+                }
+
+                if (afterEntityId is not null)
                 {
                     lookup = SortKeyLookup.After;
                 }
-                else if (dto.Dto.BeforeEntityId.Any())
+
+                else 
+                {
+                    foreach (var entityId in dto.Dto.BeforeEntityIds)
+                    {
+                        var placement = await _repository.GetCurrentAsync(
+                            entityId,
+                            board.Id
+                            );
+                    }
+
+                if (beforeEntityId is not null)
                 {
                     lookup = SortKeyLookup.Before;
                 }
@@ -80,31 +108,12 @@ namespace kanban_lia.Services.Placements
                     lookup = SortKeyLookup.Last;
                 }
 
-                EntityId? afterEntityId;
-                EntityId? beforeEntityId;
-
-                if (dto.Dto.AfterEntityId.Any())
-                {
-                    afterEntityId = new EntityId(dto.Dto.AfterEntityId.Value);
-                }
-                else
-                {
-                    afterEntityId = null;
-                }
-
-                if (dto.Dto.BeforeEntityId.HasValue)
-                {
-                    beforeEntityId = new EntityId(dto.Dto.BeforeEntityId.Value);
-                }
-                else
-                {
-                    beforeEntityId = null;
                 }
 
                 var range = await _repository.GetSortKeyRangeAsync(
                     column.Id,
                     lookup,
-                    afterEntityId,
+                    null,
                     beforeEntityId);
 
                 var placements = new List<Placement>();
