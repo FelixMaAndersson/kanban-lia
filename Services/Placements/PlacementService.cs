@@ -81,7 +81,6 @@ namespace kanban_lia.Services.Placements
                     if (placement?.ColumnId == column.Id)
                     {
                         afterEntityId = entityId;
-                        break;
                     }
                 }
 
@@ -144,6 +143,8 @@ namespace kanban_lia.Services.Placements
                         sortKey);
 
                     placements.Add(placement);
+
+                    previous = sortKey;
                 }
 
                 await _repository.CreateAsync(placements);

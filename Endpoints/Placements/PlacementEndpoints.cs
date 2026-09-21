@@ -95,6 +95,19 @@ public static class PlacementEndpoints
                     .Where(source => source.BoardId == targetGroup.Key)
                     .ToList();
 
+                var currentPlacementsOnTargetBoard =
+                    await placementService.GetCurrentAsync(
+                        new GetPlacementDto(
+                            entityIds,
+                            targetGroup.Key
+                        )
+                    );
+
+                var currentSource = matchingSources
+                    .FirstOrDefault(source =>
+                        currentPlacementsOnTargetBoard.Any(placement =>
+                            placement.ColumnId == source.Id));
+
                 Column targetColumn;
 
                 if (targetGroup.Count() == 1)
@@ -104,15 +117,18 @@ public static class PlacementEndpoints
 
                 else
                 {
-                    var sourcePosition = matchingSources
-                        .OrderBy(source => source.Position)
-                        .First()
-                        .Position;
+                    var sourcePosition = currentSource is not null
+                        ? currentSource.Position
+                        : matchingSources
+                            .OrderBy(source => source.Position)
+                            .First()
+                            .Position;
 
                     targetColumn = targetGroup
                         .OrderBy(target => Math.Abs(target.Position - sourcePosition))
                         .First();
                 }
+
                 columnPairs.Add((
                     Target: targetColumn.Id,
                     Sources: [.. matchingSources.Select(source => source.Id)]
