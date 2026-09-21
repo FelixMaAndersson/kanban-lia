@@ -18,16 +18,16 @@ VALUES
 -- Columns - Board 1
 -- =========================================
 
-DECLARE @InboxColumnId1 UNIQUEIDENTIFIER =
+DECLARE @RejectedColumnId1 UNIQUEIDENTIFIER =
     '22222222-2222-2222-2222-222222222220';
 
-DECLARE @TodoColumnId1 UNIQUEIDENTIFIER =
+DECLARE @InboxColumnId1 UNIQUEIDENTIFIER =
     '22222222-2222-2222-2222-222222222221';
 
-DECLARE @DoingColumnId1 UNIQUEIDENTIFIER =
+DECLARE @TodoColumnId1 UNIQUEIDENTIFIER =
     '22222222-2222-2222-2222-222222222222';
 
-DECLARE @RejectedColumnId1 UNIQUEIDENTIFIER =
+DECLARE @DoingColumnId1 UNIQUEIDENTIFIER =
     '22222222-2222-2222-2222-222222222223';
 
 DECLARE @SendToTestColumnId1 UNIQUEIDENTIFIER =
@@ -42,10 +42,10 @@ DECLARE @ReleasedColumnId1 UNIQUEIDENTIFIER =
 
 INSERT INTO Columns (Id, BoardId, Title, Position)
 VALUES
-    (@InboxColumnId1,      @BoardId1, 'Inbox',        0),
-    (@TodoColumnId1,       @BoardId1, 'Todo',         1),
-    (@DoingColumnId1,      @BoardId1, 'Doing',        2),
-    (@RejectedColumnId1,   @BoardId1, 'Rejected',     3),
+    (@RejectedColumnId1,   @BoardId1, 'Rejected',     0),
+    (@InboxColumnId1,      @BoardId1, 'Inbox',        1),
+    (@TodoColumnId1,       @BoardId1, 'Todo',         2),
+    (@DoingColumnId1,      @BoardId1, 'Doing',        3),
     (@SendToTestColumnId1, @BoardId1, 'Send to Test', 4),
     (@TestingColumnId1,    @BoardId1, 'Testing',      5),
     (@ReleasedColumnId1,   @BoardId1, 'Released',     6);
@@ -106,6 +106,18 @@ INSERT INTO ColumnEdges (FromColumnId, ToColumnId)
 VALUES
     (@InboxColumnId1, @InboxColumnId2),
     (@InboxColumnId2, @InboxColumnId1);
+
+-- Todo <-> Inbox
+INSERT INTO ColumnEdges (FromColumnId, ToColumnId)
+VALUES
+    (@TodoColumnId1, @InboxColumnId2),
+    (@InboxColumnId2, @TodoColumnId1);
+
+-- Doing <-> Inbox
+INSERT INTO ColumnEdges (FromColumnId, ToColumnId)
+VALUES
+    (@DoingColumnId1, @InboxColumnId2),
+    (@InboxColumnId2, @DoingColumnId1);
 
 -- Send to Test <-> To Test
 INSERT INTO ColumnEdges (FromColumnId, ToColumnId)
