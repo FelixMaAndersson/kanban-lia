@@ -10,7 +10,7 @@ namespace kanban_lia.Mappings
     {
         public ColumnEdgeProfile()
         {
-            CreateMap<CreateColumnEdgeRequest, CreateColumnEdgeDto>()
+            CreateMap<ColumnEdgeRequest, CreateColumnEdgeDto>()
                 .ForCtorParam(
                     nameof(CreateColumnEdgeDto.FromColumnId),
                     opt => opt.MapFrom(src => new ColumnId(src.FromColumnId)))

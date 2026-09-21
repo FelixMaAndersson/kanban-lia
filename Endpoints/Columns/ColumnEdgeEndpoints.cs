@@ -16,7 +16,7 @@ namespace kanban_lia.Endpoints.Columns
 
             // Create a new column edge
             group.MapPost("/create", async (
-                [FromBody] CreateColumnEdgeRequest request,
+                [FromBody] ColumnEdgeRequest request,
                 IColumnEdgeService columnEdgeService,
                 IMapper mapper) =>
             {
@@ -37,6 +37,21 @@ namespace kanban_lia.Endpoints.Columns
                 var columnEdges = await columnEdgeService.GetByBoardIdAsync(boardId);
 
                 return Results.Ok(columnEdges);
+            });
+
+            // Delete a column edge
+            group.MapDelete("/delete", async (
+                [FromBody] ColumnEdgeRequest request,
+                IColumnEdgeService columnEdgeService) =>
+            {
+                var edge = ColumnEdge.Create(
+                    new ColumnId(request.FromColumnId),
+                    new ColumnId(request.ToColumnId)
+                );
+
+                var result = await columnEdgeService.DeleteAsync(edge);
+
+                return Results.Ok(result);
             });
         }
     }
