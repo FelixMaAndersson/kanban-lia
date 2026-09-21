@@ -33,6 +33,9 @@ public static class PlacementEndpoints
 
             var boardId = new BoardId(request.BoardId);
 
+            if (!await columnRepository.CanBeWrittenAsync(new ColumnId(request.ColumnId)))
+                return Results.Unauthorized();
+
             var connectedTargetColumnIds = await GetConnectedColumns(
                 new ColumnId(request.ColumnId),
                 columnEdgeRepository);

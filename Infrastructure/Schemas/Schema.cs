@@ -17,9 +17,10 @@ namespace kanban_lia.Infrastructure.Schemas
         {
             public const string Table = "Columns";
             public const string Id = nameof(Column.Id);
+            public const string BoardId = nameof(Column.BoardId);
             public const string Title = nameof(Column.Title);
             public const string Position = nameof(Column.Position);
-            public const string BoardId = nameof(Column.BoardId);
+            public const string RequestWritable = nameof(Column.RequestWritable);
         }
 
         public static class ColumnEdges

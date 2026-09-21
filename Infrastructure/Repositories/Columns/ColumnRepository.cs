@@ -19,14 +19,16 @@ namespace kanban_lia.Infrastructure.Repositories.Columns
                                ({Schema.Columns.Id}, 
                                 {Schema.Columns.BoardId}, 
                                 {Schema.Columns.Title}, 
-                                {Schema.Columns.Position}) 
-                    VALUES (@Id, @BoardId, @Title, @Position)",
+                                {Schema.Columns.Position}, 
+                                {Schema.Columns.RequestWritable}) 
+                    VALUES (@Id, @BoardId, @Title, @Position, @RequestWritable)",
                 new
                 {
                     column.Id.Id,
                     BoardId = column.BoardId.Id,
                     column.Title,
-                    column.Position
+                    column.Position,
+                    column.RequestWritable
                 }
             );
 
@@ -50,9 +52,10 @@ namespace kanban_lia.Infrastructure.Repositories.Columns
             var columns = await connection.QueryAsync<Column>(
                 $@"
                     SELECT  {Schema.Columns.Id}, 
+                            {Schema.Columns.BoardId},
                             {Schema.Columns.Title}, 
-                            {Schema.Columns.Position}, 
-                            {Schema.Columns.BoardId} 
+                            {Schema.Columns.Position},
+                            {Schema.Columns.RequestWritable}
                     FROM    {Schema.Columns.Table} 
                             WHERE {Schema.Columns.BoardId} = @Id
                          ORDER BY {Schema.Columns.Position}",
@@ -71,9 +74,10 @@ namespace kanban_lia.Infrastructure.Repositories.Columns
             var column = await connection.QuerySingleOrDefaultAsync<Column>(
                 $@"
                     SELECT  {Schema.Columns.Id}, 
+                            {Schema.Columns.BoardId},
                             {Schema.Columns.Title}, 
                             {Schema.Columns.Position}, 
-                            {Schema.Columns.BoardId} 
+                            {Schema.Columns.RequestWritable}
                     FROM    {Schema.Columns.Table}
                             WHERE {Schema.Columns.Id} = @Id",
                 new
@@ -83,6 +87,49 @@ namespace kanban_lia.Infrastructure.Repositories.Columns
             );
 
             return column;
+        }
+
+        public async Task<bool> CanBeWrittenAsync(ColumnId id)
+        {
+            using var connection = _connectionFactory.CreateConnection();
+            var column = await connection.QuerySingleOrDefaultAsync<Column>(
+                $@"
+                    SELECT  {Schema.Columns.Id}, 
+                            {Schema.Columns.BoardId},
+                            {Schema.Columns.Title}, 
+                            {Schema.Columns.Position},
+                            {Schema.Columns.RequestWritable}
+                    FROM    {Schema.Columns.Table}
+                            WHERE {Schema.Columns.Id} = @Id",
+                new
+                {
+                    id.Id
+                }
+            );
+
+            if (column == null)
+            {
+                throw new InvalidOperationException($"Column with id {id.Id} not found.");
+            }
+
+            return column.RequestWritable;
+        }
+
+        public async Task<bool> SetRequestWritableAsync(ColumnId id, bool requestWritable)
+        {
+            using var connection = _connectionFactory.CreateConnection();
+            var rowsAffected = await connection.ExecuteAsync(
+                $@"
+                    UPDATE {Schema.Columns.Table} 
+                       SET {Schema.Columns.RequestWritable} = @RequestWritable
+                     WHERE {Schema.Columns.Id}     = @Id",
+                new
+                {
+                    id.Id,
+                    RequestWritable = requestWritable
+                }
+            );
+            return rowsAffected > 0;
         }
 
         public async Task<bool> RenameAsync(ColumnId id, string title)
