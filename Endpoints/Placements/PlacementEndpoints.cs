@@ -21,11 +21,11 @@ public static class PlacementEndpoints
         var group = app.MapGroup("/api/placements");
 
         group.MapPost("/create", async (
-    [FromBody] CreatePlacementRequest request,
-    IPlacementService placementService,
-    IColumnRepository columnRepository,
-    IColumnEdgeRepository columnEdgeRepository,
-    IHubContext<BoardHub> hub) =>
+            [FromBody] CreatePlacementRequest request,
+            IPlacementService placementService,
+            IColumnRepository columnRepository,
+            IColumnEdgeRepository columnEdgeRepository,
+            IHubContext<BoardHub> hub) =>
         {
             var entityIds = request.EntityIds
                 .Select(id => new EntityId(id))

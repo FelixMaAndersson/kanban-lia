@@ -122,7 +122,7 @@ namespace kanban_lia.Services.Placements
                 var range = await _repository.GetSortKeyRangeAsync(
                     column.Id,
                     lookup,
-                    null,
+                    afterEntityId,
                     beforeEntityId);
 
                 var placements = new List<Placement>();
