@@ -4,5 +4,5 @@ using kanban_lia.Models.Domain.Placements;
 
 namespace kanban_lia.Services.Placements.DTOs
 {
-    public record CreatePlacementDto(IEnumerable<EntityId> EntityIds, BoardId BoardId, ColumnId ColumnId, IEnumerable<Guid> AfterEntityIds, IEnumerable<Guid> BeforeEntityIds);
+    public record CreatePlacementDto(IEnumerable<EntityId> EntityIds, BoardId BoardId, ColumnId ColumnId, IEnumerable<EntityId> AfterEntityIds, IEnumerable<EntityId> BeforeEntityIds);
 }

@@ -65,17 +65,19 @@ namespace kanban_lia.Services.Placements
                         "The column does not belong to the specified board.");
                 }
 
-                EntityId? afterEntityId;
-                EntityId? beforeEntityId;
+                EntityId? afterEntityId = null;
+                EntityId? beforeEntityId = null;
 
                 SortKeyLookup lookup;
 
-                foreach (Guid entityId in dto.Dto.AfterEntityIds)
+                foreach (var entityId in dto.Dto.AfterEntityIds)
                 {
-                    var placement = await _repository.GetCurrentAsync(
+                    var currentPlacements = await _repository.GetCurrentAsync(
                         [entityId],
                         board.Id
                         );
+
+                    var placement = currentPlacements.FirstOrDefault();
 
                     if (placement?.ColumnId == column.Id)
                     {
@@ -93,10 +95,18 @@ namespace kanban_lia.Services.Placements
                 {
                     foreach (var entityId in dto.Dto.BeforeEntityIds)
                     {
-                        var placement = await _repository.GetCurrentAsync(
-                            entityId,
+                        var currentPlacement = await _repository.GetCurrentAsync(
+                            [entityId],
                             board.Id
                             );
+
+                        var placement = currentPlacement.FirstOrDefault();
+
+                        if (placement?.ColumnId == column.Id)
+                        {
+                            beforeEntityId = entityId;
+                            break;
+                        }
                     }
 
                 if (beforeEntityId is not null)
