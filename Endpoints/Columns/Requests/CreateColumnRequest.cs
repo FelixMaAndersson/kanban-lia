@@ -1,4 +1,4 @@
 ﻿namespace kanban_lia.Endpoints.Columns.Requests
 {
-    public record CreateColumnRequest(string Title, int Position, Guid BoardId);
+    public record CreateColumnRequest(Guid BoardId, string Title, int Position, bool RequestWritable);
 }

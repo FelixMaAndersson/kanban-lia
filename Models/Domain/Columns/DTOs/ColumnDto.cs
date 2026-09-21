@@ -4,8 +4,9 @@ namespace kanban_lia.Models.Domain.Columns.DTOs
 {
     public record ColumnDto(
         ColumnId Id,
+        BoardId BoardId,
         string Title,
         int Position,
-        BoardId BoardId
+        bool RequestWritable
     );
 }

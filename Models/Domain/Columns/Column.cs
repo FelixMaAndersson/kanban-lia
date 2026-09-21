@@ -7,19 +7,21 @@ namespace kanban_lia.Models.Domain.Columns
     public class Column
     {
         public ColumnId Id { get; }
+        public BoardId BoardId { get; }
         public string Title { get; private set; }
         public int Position { get; }
-        public BoardId BoardId { get; }
+        public bool RequestWritable { get; private set; }
 
-        private Column(Guid id, string title, int position, Guid boardId)
+        private Column(Guid id, Guid boardId, string title, int position, bool requestWritable)
         {
             Id = new ColumnId(id);
+            BoardId = new BoardId(boardId);
             Title = title;
             Position = position;
-            BoardId = new BoardId(boardId);
+            RequestWritable = requestWritable;
         }
 
-        public static Column Create(ColumnId? id, string title, int position, BoardId boardId)
+        public static Column Create(ColumnId? id, BoardId boardId, string title, int position)
         {
             if (string.IsNullOrWhiteSpace(title))
             {
@@ -36,7 +38,12 @@ namespace kanban_lia.Models.Domain.Columns
                 throw new InvalidDomainException("Column position cannot be negative");
             }
 
-            return new Column((id?.Id ?? Guid.NewGuid()), title, position, boardId.Id);
+            return new Column((id?.Id ?? Guid.NewGuid()), boardId.Id, title, position, true);
+        }
+
+        public void SetRequestWritable(bool writable)
+        {
+            RequestWritable = writable;
         }
 
         public void Rename(string title)

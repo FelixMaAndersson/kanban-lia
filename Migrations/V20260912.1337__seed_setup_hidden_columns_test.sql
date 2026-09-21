@@ -10,8 +10,8 @@ DECLARE @BoardId2 UNIQUEIDENTIFIER =
 
 INSERT INTO Boards (Id, Title)
 VALUES
-    (@BoardId1, 'Board 1'),
-    (@BoardId2, 'Board 2');
+    (@BoardId1, 'Developement'),
+    (@BoardId2, 'Testing');
 
 
 -- =========================================
@@ -40,15 +40,15 @@ DECLARE @ReleasedColumnId1 UNIQUEIDENTIFIER =
     '22222222-2222-2222-2222-222222222226';
 
 
-INSERT INTO Columns (Id, BoardId, Title, Position)
+INSERT INTO Columns (Id, BoardId, Title, Position, RequestWritable)
 VALUES
-    (@InboxColumnId1,      @BoardId1, 'Inbox',        0),
-    (@RejectedColumnId1,   @BoardId1, 'Rejected',     1),
-    (@TodoColumnId1,       @BoardId1, 'Todo',         2),
-    (@DoingColumnId1,      @BoardId1, 'Doing',        3),
-    (@SendToTestColumnId1, @BoardId1, 'Send to Test', 4),
-    (@TestingColumnId1,    @BoardId1, 'Testing',      5),
-    (@ReleasedColumnId1,   @BoardId1, 'Released',     6);
+    (@InboxColumnId1,      @BoardId1, 'Inbox',        0, 1),
+    (@RejectedColumnId1,   @BoardId1, 'Rejected',     1, 0),
+    (@TodoColumnId1,       @BoardId1, 'Todo',         2, 1),
+    (@DoingColumnId1,      @BoardId1, 'Doing',        3, 1),
+    (@SendToTestColumnId1, @BoardId1, 'Send to Test', 4, 1),
+    (@TestingColumnId1,    @BoardId1, 'Testing',      5, 1),
+    (@ReleasedColumnId1,   @BoardId1, 'Released',     6, 1);
 
 
 -- =========================================
@@ -74,14 +74,14 @@ DECLARE @ReleasedColumnId2 UNIQUEIDENTIFIER =
     '22222222-2222-2222-2222-222222222232';
 
 
-INSERT INTO Columns (Id, BoardId, Title, Position)
+INSERT INTO Columns (Id, BoardId, Title, Position, RequestWritable)
 VALUES
-    (@InboxColumnId2,      @BoardId2, 'Inbox',      0),
-    (@ToTestColumnId2,     @BoardId2, 'To Test',    1),
-    (@RejectColumnId2,     @BoardId2, 'Reject',     2),
-    (@TestingColumnId2,    @BoardId2, 'Testing',    3),
-    (@DeploymentColumnId2, @BoardId2, 'Deployment', 4),
-    (@ReleasedColumnId2,   @BoardId2, 'Released',   5);
+    (@InboxColumnId2,      @BoardId2, 'Inbox',      0, 1),
+    (@ToTestColumnId2,     @BoardId2, 'To Test',    1, 1),
+    (@RejectColumnId2,     @BoardId2, 'Reject',     2, 1),
+    (@TestingColumnId2,    @BoardId2, 'Testing',    3, 1),
+    (@DeploymentColumnId2, @BoardId2, 'Deployment', 4, 1),
+    (@ReleasedColumnId2,   @BoardId2, 'Released',   5, 1);
 
 
 -- =========================================

@@ -10,6 +10,7 @@ namespace kanban_lia.Services.Columns
         Task CreateAsync(CreateColumnDto dto);
         Task<IEnumerable<ColumnDto>> GetByBoardIdAsync(BoardId boardId);
         Task<ColumnDto?> GetByIdAsync(ColumnId id);
+        Task<bool> SetRequestWritableAsync(ColumnId id, bool requestWritable);
         Task<bool> RenameAsync(RenameColumnDto dto);
         Task<bool> DeleteAsync(ColumnId id);
     }

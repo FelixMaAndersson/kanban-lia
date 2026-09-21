@@ -15,7 +15,7 @@ namespace kanban_lia.Services.Columns
 
         public async Task CreateAsync(CreateColumnDto dto)
         {
-            var newColumn = Column.Create(dto.Id, dto.Title, dto.Position, dto.BoardId);
+            var newColumn = Column.Create(dto.Id, dto.BoardId, dto.Title, dto.Position);
 
             await _repository.CreateAsync(newColumn);
         }
@@ -23,7 +23,7 @@ namespace kanban_lia.Services.Columns
         public async Task<IEnumerable<ColumnDto>> GetByBoardIdAsync(BoardId boardId)
         {
             var columns = await _repository.GetByBoardIdAsync(boardId);
-            
+
             return columns.Select(_mapper.Map<ColumnDto>);
         }
 
@@ -37,6 +37,16 @@ namespace kanban_lia.Services.Columns
             }
 
             return _mapper.Map<ColumnDto>(column);
+        }
+
+        public async Task<bool> SetRequestWritableAsync(ColumnId id, bool requestWritable)
+        {
+            var changed = await _repository.SetRequestWritableAsync(id, requestWritable);
+            if (!changed)
+            {
+                throw new ColumnNotFoundException(id);
+            }
+            return changed;
         }
 
         public async Task<bool> RenameAsync(RenameColumnDto dto)
