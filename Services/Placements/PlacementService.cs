@@ -153,10 +153,25 @@ namespace kanban_lia.Services.Placements
 
                 foreach (var placement in placements)
                 {
-                    await _integrationEventPublisher.PublishPlacementCreatedAsync(
-                        entityId: placement.EntityId.Id,
-                        columnId: placement.ColumnId.Id,
-                        cancellationToken: cancellationToken);
+                    if (dto.SourceColumnIds.Count() == 0)
+                    {
+                        await _integrationEventPublisher.PublishPlacementCreatedAsync(
+                            entityId: placement.EntityId.Id,
+                            columnId: placement.ColumnId.Id,
+                            sourceColumnId: null,
+                            cancellationToken: cancellationToken);
+                    }
+                    else
+                    {
+                        foreach (var sourceColumnId in dto.SourceColumnIds)
+                        {
+                            await _integrationEventPublisher.PublishPlacementCreatedAsync(
+                                entityId: placement.EntityId.Id,
+                                columnId: placement.ColumnId.Id,
+                                sourceColumnId: sourceColumnId.Id,
+                                cancellationToken: cancellationToken);
+                        }
+                    }
                 }
             } 
         }

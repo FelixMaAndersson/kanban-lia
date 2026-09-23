@@ -5,5 +5,6 @@ public interface IIntegrationEventPublisher
     Task PublishPlacementCreatedAsync(
         Guid entityId,
         Guid columnId,
+        Guid? sourceColumnId,
         CancellationToken cancellationToken);
 }
