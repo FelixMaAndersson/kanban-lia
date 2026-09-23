@@ -13,6 +13,7 @@ using kanban_lia.Models.Domain.Placements.DTOs;
 using kanban_lia.Models.Events;
 using kanban_lia.Services.Boards.Exceptions;
 using kanban_lia.Services.Columns.Exceptions;
+using kanban_lia.Services.IntegrationEvents;
 using kanban_lia.Services.Placements.DTOs;
 using Microsoft.AspNetCore.SignalR;
 using static kanban_lia.Infrastructure.Schemas.Schema;
@@ -27,13 +28,15 @@ namespace kanban_lia.Services.Placements
         private readonly IHubContext<BoardHub> _hub = hub;
         private readonly IBoardRepository _boardRepository = boardRepository;
 
+        private readonly IIntegrationEventPublisher? _integrationEventPublisher;
+
         public record PlacementCreatedEvent(
             Guid EntityId,
             Guid? SourceColumnId,
             Guid TargetColumnId
         );
 
-        public async Task CreateAsync(IEnumerable<PlacementOperationDto> dtos)
+        public async Task CreateAsync(IEnumerable<PlacementOperationDto> dtos, CancellationToken cancellationToken)
         {
             foreach (var dto in dtos)
             {
@@ -89,7 +92,7 @@ namespace kanban_lia.Services.Placements
                     lookup = SortKeyLookup.After;
                 }
 
-                else 
+                else
                 {
                     foreach (var entityId in dto.Dto.BeforeEntityIds)
                     {
@@ -148,7 +151,15 @@ namespace kanban_lia.Services.Placements
                 }
 
                 await _repository.CreateAsync(placements);
-            }
+
+                foreach (var entityId in entityIds)
+                {
+                    await _integrationEventPublisher.PublishPlacementCreatedAsync(
+                            EntityId: entityId,
+                            ColumnId: column.Id),
+                        cancellationToken);
+                }
+            } 
         }
 
         public async Task<IEnumerable<PlacementDto>> GetCurrentAsync(GetPlacementDto dto)

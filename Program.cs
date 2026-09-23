@@ -13,6 +13,8 @@ using kanban_lia.Services.Boards.Exceptions;
 using kanban_lia.Services.Columns;
 using kanban_lia.Services.Columns.Exceptions;
 using kanban_lia.Services.Placements;
+using kanban_lia.Infrastructure.Messaging;
+using kanban_lia.Services.IntegrationEvents;
 
 using Microsoft.AspNetCore.Diagnostics;
 
@@ -56,6 +58,9 @@ builder.Services.ConfigureHttpJsonOptions(options =>
     options.SerializerOptions.Converters.Add(new BoardIdJsonConverter());
     options.SerializerOptions.Converters.Add(new ColumnIdJsonConverter());
 });
+
+builder.Services.Configure<RabbitMqOptions>(builder.Configuration.GetSection("RabbitMq"));
+builder.Services.AddSingleton<IIntegrationEventPublisher, RabbitMqIntegrationEventPublisher>();
 
 var app = builder.Build();
 
