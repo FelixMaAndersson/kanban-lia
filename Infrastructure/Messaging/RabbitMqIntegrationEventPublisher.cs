@@ -27,6 +27,7 @@ public sealed class RabbitMqIntegrationEventPublisher
     public async Task PublishPlacementCreatedAsync(
         Guid entityId,
         Guid columnId,
+        Guid? sourceColumnId,
         CancellationToken cancellationToken)
     {
         var integrationEvent =
@@ -36,7 +37,8 @@ public sealed class RabbitMqIntegrationEventPublisher
                 Source: PlacementBackend,
                 Payload: new PlacementCreatedPayload(
                     EntityId: entityId,
-                    ColumnId: columnId));
+                    ColumnId: columnId,
+                    SourceColumnId: sourceColumnId));
 
         var body = JsonSerializer.SerializeToUtf8Bytes(
             integrationEvent);
