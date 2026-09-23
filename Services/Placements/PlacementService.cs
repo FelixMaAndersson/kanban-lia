@@ -20,15 +20,14 @@ using static kanban_lia.Infrastructure.Schemas.Schema;
 
 namespace kanban_lia.Services.Placements
 {
-    public class PlacementService(IPlacementRepository repository, IColumnRepository columnRepository, IBoardRepository boardRepository, IMapper mapper, IHubContext<BoardHub> hub) : IPlacementService
+    public class PlacementService(IPlacementRepository repository, IColumnRepository columnRepository, IBoardRepository boardRepository, IMapper mapper, IHubContext<BoardHub> hub, IIntegrationEventPublisher integrationEventPublisher) : IPlacementService
     {
         private readonly IPlacementRepository _repository = repository;
         private readonly IColumnRepository _columnRepository = columnRepository;
         private readonly IMapper _mapper = mapper;
         private readonly IHubContext<BoardHub> _hub = hub;
         private readonly IBoardRepository _boardRepository = boardRepository;
-
-        private readonly IIntegrationEventPublisher? _integrationEventPublisher;
+        private readonly IIntegrationEventPublisher _integrationEventPublisher = integrationEventPublisher;
 
         public record PlacementCreatedEvent(
             Guid EntityId,
@@ -40,7 +39,7 @@ namespace kanban_lia.Services.Placements
         {
             foreach (var dto in dtos)
             {
-                var entityIds = dto.Dto.EntityIds;
+                var entityIds = dto.Dto.EntityIds.ToArray();
 
                 var column = await _columnRepository.GetByIdAsync(dto.Dto.ColumnId);
 
@@ -152,12 +151,12 @@ namespace kanban_lia.Services.Placements
 
                 await _repository.CreateAsync(placements);
 
-                foreach (var entityId in entityIds)
+                foreach (var placement in placements)
                 {
                     await _integrationEventPublisher.PublishPlacementCreatedAsync(
-                            EntityId: entityId,
-                            ColumnId: column.Id),
-                        cancellationToken);
+                        entityId: placement.EntityId.Id,
+                        columnId: placement.ColumnId.Id,
+                        cancellationToken: cancellationToken);
                 }
             } 
         }

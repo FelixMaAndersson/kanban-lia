@@ -93,7 +93,7 @@ namespace kanban_lia.Integration.Tests
                     entityId1,
                     columnId,
                     null,
-                    null));
+                    null), placementService.Get_integrationEventPublisher1());
 
             // Act
             await placementService.CreateAsync(
@@ -101,7 +101,7 @@ namespace kanban_lia.Integration.Tests
                     entityId2,
                     columnId,
                     entityId1,
-                    null));
+                    null), placementService.Get_integrationEventPublisher1());
 
             // Assert
             var placement1 = await repository.GetCurrentAsync(
@@ -150,7 +150,7 @@ namespace kanban_lia.Integration.Tests
                     entityId1,
                     columnId,
                     null,
-                    null));
+                    null), placementService.Get_integrationEventPublisher1());
 
             // Act
             await placementService.CreateAsync(
@@ -158,7 +158,7 @@ namespace kanban_lia.Integration.Tests
                     entityId2,
                     columnId,
                     null,
-                    entityId1));
+                    entityId1), placementService.Get_integrationEventPublisher1());
 
             // Assert
             var placement1 = await repository.GetCurrentAsync(
@@ -205,7 +205,7 @@ namespace kanban_lia.Integration.Tests
                     entityId1,
                     columnId,
                     null,
-                    null));
+                    null), placementService.Get_integrationEventPublisher1());
 
             // Assert
             var placement1 = await repository.GetCurrentAsync(
@@ -241,7 +241,7 @@ namespace kanban_lia.Integration.Tests
 
             // Act & Assert
             await Assert.ThrowsAsync<InvalidDomainException>(
-                () => placementService.CreateAsync(dto));
+                () => placementService.CreateAsync(dto, placementService.Get_integrationEventPublisher1()));
         }
 
         [Fact]
@@ -272,7 +272,7 @@ namespace kanban_lia.Integration.Tests
                     entityId1,
                     columnId,
                     null,
-                    null));
+                    null), placementService.Get_integrationEventPublisher1());
 
             // Act
             await placementService.CreateAsync(
@@ -280,7 +280,7 @@ namespace kanban_lia.Integration.Tests
                     entityId2,
                     columnId,
                     null,
-                    null));
+                    null), placementService.Get_integrationEventPublisher1());
 
             // Assert
             var placement1 = await repository.GetCurrentAsync(
@@ -326,7 +326,7 @@ namespace kanban_lia.Integration.Tests
 
             // Act & Assert
             await Assert.ThrowsAsync<ColumnNotFoundException>(
-                () => placementService.CreateAsync(dto));
+                () => placementService.CreateAsync(dto, placementService.Get_integrationEventPublisher1()));
         }
     }
 }

@@ -194,8 +194,8 @@ public static class PlacementEndpoints
                 new PlacementCreatedEvent(
                     request.EntityIds,
                     changes
-                )
-            );
+                ),
+            cancellationToken);
 
             return Results.Ok();
         });
