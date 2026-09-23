@@ -23,6 +23,7 @@ public static class PlacementEndpoints
         group.MapPost("/create", async (
             [FromBody] CreatePlacementRequest request,
             IPlacementService placementService,
+            CancellationToken cancellationToken,
             IColumnRepository columnRepository,
             IColumnEdgeRepository columnEdgeRepository,
             IHubContext<BoardHub> hub) =>
@@ -186,15 +187,15 @@ public static class PlacementEndpoints
                 }
             }
 
-            await placementService.CreateAsync(placementOperations);
+            await placementService.CreateAsync(placementOperations, cancellationToken);
 
             await hub.Clients.All.SendAsync(
                 "PlacementCreated",
                 new PlacementCreatedEvent(
                     request.EntityIds,
                     changes
-                )
-            );
+                ),
+            cancellationToken);
 
             return Results.Ok();
         });
