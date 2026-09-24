@@ -9,6 +9,7 @@ namespace kanban_lia.Infrastructure.Messaging;
 public sealed class RabbitMqIntegrationEventPublisher
     : IIntegrationEventPublisher, IAsyncDisposable
 {
+    private const string ColumnHasNoEdge = "ColumnHasNoEdge";
     private const string PlacementCreated = "PlacementCreated";
     private const string PlacementBackend = "PlacementBackend";
 
@@ -24,6 +25,47 @@ public sealed class RabbitMqIntegrationEventPublisher
         _options = options.Value;
     }
 
+    public async Task PublishColumnHasNoEdgeAsync(
+        Guid columnId,
+        CancellationToken cancellationToken)
+    {
+        var integrationEvent =
+        new IntegrationEvent<ColumnHasNoEdgePayload>(
+            EventId: Guid.NewGuid().ToString(),
+            EventType: ColumnHasNoEdge,
+            Source: PlacementBackend,
+            Payload: new ColumnHasNoEdgePayload(
+                ColumnId: columnId));
+
+        var body = JsonSerializer.SerializeToUtf8Bytes(
+        integrationEvent);
+
+        await _channelLock.WaitAsync(cancellationToken);
+
+        try
+        {
+            await EnsureConnectedAsync();
+
+            var properties = new BasicProperties
+            {
+                ContentType = "application/json",
+                DeliveryMode = DeliveryModes.Persistent,
+                MessageId = integrationEvent.EventId,
+                Type = integrationEvent.EventType
+            };
+
+            await _channel!.BasicPublishAsync(
+                exchange: _options.ExchangeName,
+                routingKey: "column.no-edge",
+                mandatory: false,
+                basicProperties: properties,
+                body: body);
+        }
+        finally
+        {
+            _channelLock.Release();
+        }
+    }
     public async Task PublishPlacementCreatedAsync(
         Guid entityId,
         Guid columnId,
@@ -110,4 +152,5 @@ public sealed class RabbitMqIntegrationEventPublisher
 
         _channelLock.Dispose();
     }
+
 }
