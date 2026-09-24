@@ -7,4 +7,8 @@ public interface IIntegrationEventPublisher
         Guid columnId,
         Guid? sourceColumnId,
         CancellationToken cancellationToken);
+
+    Task PublishColumnHasNoEdgeAsync(
+        Guid columnId,
+        CancellationToken cancellationToken);
 }

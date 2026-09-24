@@ -17,13 +17,14 @@ public static class ColumnEndpoints
 
         // Create a new column
         group.MapPost("/create", async (
-            [FromBody]CreateColumnRequest request,
+            [FromBody] CreateColumnRequest request,
             IColumnService columnService,
-            IMapper mapper) =>
+            IMapper mapper,
+            CancellationToken cancellationToken) =>
         {
             var dto = mapper.Map<CreateColumnDto>(request);
 
-            await columnService.CreateAsync(dto);
+            await columnService.CreateAsync(dto, cancellationToken);
 
             return Results.Ok();
         });
@@ -52,7 +53,7 @@ public static class ColumnEndpoints
 
         // Rename a column
         group.MapPut("/rename", async (
-            [FromBody]RenameColumnRequest request,
+            [FromBody] RenameColumnRequest request,
             IColumnService columnService,
             IMapper mapper) =>
         {
