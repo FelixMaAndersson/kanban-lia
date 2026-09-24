@@ -1,9 +1,11 @@
 using kanban_lia.Endpoints.Boards;
 using kanban_lia.Endpoints.Columns;
 using kanban_lia.Endpoints.Placements;
+using kanban_lia.Endpoints.RandomWords;
 using kanban_lia.Hubs;
 using kanban_lia.Infrastructure.Database;
 using kanban_lia.Infrastructure.JsonConverters;
+using kanban_lia.Infrastructure.Messaging;
 using kanban_lia.Infrastructure.Repositories.Boards;
 using kanban_lia.Infrastructure.Repositories.Columns;
 using kanban_lia.Infrastructure.Repositories.Placements;
@@ -12,10 +14,8 @@ using kanban_lia.Services.Boards;
 using kanban_lia.Services.Boards.Exceptions;
 using kanban_lia.Services.Columns;
 using kanban_lia.Services.Columns.Exceptions;
-using kanban_lia.Services.Placements;
-using kanban_lia.Infrastructure.Messaging;
 using kanban_lia.Services.IntegrationEvents;
-
+using kanban_lia.Services.Placements;
 using Microsoft.AspNetCore.Diagnostics;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -116,5 +116,6 @@ BoardEndpoints.MapBoardEndpoints(app);
 ColumnEndpoints.MapColumnEndpoints(app);
 PlacementEndpoints.MapPlacementEndpoints(app);
 ColumnEdgeEndpoints.MapColumnEdgeEndpoints(app);
+RandomWordEndpoints.MapRandomWordEndpoints(app);
 
 await app.RunAsync();
