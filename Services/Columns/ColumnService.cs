@@ -21,7 +21,7 @@ namespace kanban_lia.Services.Columns
         private readonly IColumnEdgeRepository _columnEdgeRepository = columnEdgeRepository;
         private readonly IIntegrationEventPublisher _integrationEventPublisher = integrationEventPublisher;
 
-        public async Task CreateAsync(CreateColumnDto dto, CancellationToken cancellationToken)
+        public async Task CreateAsync(CreateColumnDto dto, Guid? causationEventId, CancellationToken cancellationToken)
         {
             var newColumn = Column.Create(dto.Id, dto.BoardId, dto.Title, dto.Position);
 
@@ -34,7 +34,7 @@ namespace kanban_lia.Services.Columns
 
             if (!fromEdges.Any() && !toEdges.Any())
             {
-                await _integrationEventPublisher.PublishColumnHasNoEdgeAsync(newColumn.Id.Id, cancellationToken);
+                await _integrationEventPublisher.PublishColumnHasNoEdgeAsync(newColumn.Id.Id, causationEventId, cancellationToken);
             }
         }
 
