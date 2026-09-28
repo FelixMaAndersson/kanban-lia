@@ -26,6 +26,7 @@ public static class ColumnEndpoints
             var dto = mapper.Map<CreateColumnDto>(request);
 
             Guid? causationEventId = null;
+            Guid? sourceAutomationId = null;
 
             if (httpRequest.Headers.TryGetValue(
                     "Idempotency-Key",
@@ -35,7 +36,15 @@ public static class ColumnEndpoints
                 causationEventId = parsedId;
             }
 
-            await columnService.CreateAsync(dto, causationEventId, cancellationToken);
+            if (httpRequest.Headers.TryGetValue(
+                    "Source-Automation-Key",
+                    out var sourceAutomationKey) &&
+                Guid.TryParse(sourceAutomationKey, out var parsedSourceAutomationId))
+            {
+                sourceAutomationId = parsedSourceAutomationId;
+            }
+
+            await columnService.CreateAsync(dto, causationEventId, sourceAutomationId, cancellationToken);
 
             return Results.Ok();
         });
