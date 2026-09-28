@@ -17,6 +17,7 @@ public static class ColumnEndpoints
 
         // Create a new column
         group.MapPost("/create", async (
+            HttpRequest httpRequest,
             [FromBody] CreateColumnRequest request,
             IColumnService columnService,
             IMapper mapper,
@@ -24,7 +25,17 @@ public static class ColumnEndpoints
         {
             var dto = mapper.Map<CreateColumnDto>(request);
 
-            await columnService.CreateAsync(dto, cancellationToken);
+            Guid? causationEventId = null;
+
+            if (httpRequest.Headers.TryGetValue(
+                    "Idempotency-Key",
+                    out var idempotencyKey) &&
+                Guid.TryParse(idempotencyKey, out var parsedId))
+            {
+                causationEventId = parsedId;
+            }
+
+            await columnService.CreateAsync(dto, causationEventId, cancellationToken);
 
             return Results.Ok();
         });

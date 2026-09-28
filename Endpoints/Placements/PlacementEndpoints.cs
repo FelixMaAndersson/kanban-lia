@@ -21,6 +21,7 @@ public static class PlacementEndpoints
         var group = app.MapGroup("/api/placements");
 
         group.MapPost("/create", async (
+            HttpRequest httpRequest,
             [FromBody] CreatePlacementRequest request,
             IPlacementService placementService,
             CancellationToken cancellationToken,
@@ -187,7 +188,17 @@ public static class PlacementEndpoints
                 }
             }
 
-            await placementService.CreateAsync(placementOperations, cancellationToken);
+            Guid? causationEventId = null;
+
+            if (httpRequest.Headers.TryGetValue(
+                    "Idempotency-Key",
+                    out var idempotencyKey) &&
+                Guid.TryParse(idempotencyKey, out var parsedId))
+            {
+                causationEventId = parsedId;
+            }
+
+            await placementService.CreateAsync(placementOperations, causationEventId, cancellationToken);
 
             await hub.Clients.All.SendAsync(
                 "PlacementCreated",

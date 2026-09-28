@@ -6,9 +6,11 @@ public interface IIntegrationEventPublisher
         Guid entityId,
         Guid columnId,
         Guid? sourceColumnId,
+        Guid? causationEventId,
         CancellationToken cancellationToken);
 
     Task PublishColumnHasNoEdgeAsync(
         Guid columnId,
+        Guid? causationEventId,
         CancellationToken cancellationToken);
 }

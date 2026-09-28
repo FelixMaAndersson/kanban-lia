@@ -8,7 +8,7 @@ namespace kanban_lia.Services.Placements
 {
     public interface IPlacementService
     {
-        Task CreateAsync(IEnumerable<PlacementOperationDto> dtos, CancellationToken cancellationToken);
+        Task CreateAsync(IEnumerable<PlacementOperationDto> dtos, Guid? causationEventId, CancellationToken cancellationToken);
         Task<IEnumerable<PlacementDto>> GetCurrentAsync(GetPlacementDto dto);
         Task<IEnumerable<PlacementDto>> GetCurrentByBoardAsync(BoardId boardId);
         Task<IEnumerable<PlacementDto>> GetCurrentByColumnAsync(ColumnId columnId, BoardId boardId);

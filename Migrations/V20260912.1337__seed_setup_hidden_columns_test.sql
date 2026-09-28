@@ -10,7 +10,7 @@ DECLARE @BoardId2 UNIQUEIDENTIFIER =
 
 INSERT INTO Boards (Id, Title)
 VALUES
-    (@BoardId1, 'Developement'),
+    (@BoardId1, 'Development'),
     (@BoardId2, 'Testing');
 
 
