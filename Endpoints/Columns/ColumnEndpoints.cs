@@ -28,9 +28,9 @@ public static class ColumnEndpoints
             Guid? causationEventId = null;
 
             if (httpRequest.Headers.TryGetValue(
-                    "Idempotency-Key",
-                    out var idempotencyKey) &&
-                Guid.TryParse(idempotencyKey, out var parsedId))
+                    "X-Causation-Id",
+                    out var causationHeader) &&
+                Guid.TryParse(causationHeader, out var parsedId))
             {
                 causationEventId = parsedId;
             }
