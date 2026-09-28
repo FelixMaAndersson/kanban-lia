@@ -115,11 +115,16 @@ public static class PlacementEndpoints
 
                 Column targetColumn;
 
-                if (targetGroup.Count() == 1)
+                if (matchingSources.Count == 0)
+                {
+                    targetColumn = targetGroup
+                        .OrderBy(target => target.Position)
+                        .First();
+                }
+                else if (targetGroup.Count() == 1)
                 {
                     targetColumn = targetGroup.First();
                 }
-
                 else
                 {
                     var sourcePosition = currentSource is not null
@@ -133,7 +138,7 @@ public static class PlacementEndpoints
                         .OrderBy(target => Math.Abs(target.Position - sourcePosition))
                         .First();
                 }
-
+             
                 columnPairs.Add((
                     Target: targetColumn.Id,
                     Sources: [.. matchingSources.Select(source => source.Id)]
