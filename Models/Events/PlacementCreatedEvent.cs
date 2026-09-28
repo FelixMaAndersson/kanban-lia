@@ -2,6 +2,7 @@
 {
     public record PlacementCreatedEvent(
         Guid[] EntityIds,
-        IEnumerable<PlacementChange> Changes
+        IEnumerable<PlacementChange> Changes,
+        Guid? SourceAutomationId
     );
 }

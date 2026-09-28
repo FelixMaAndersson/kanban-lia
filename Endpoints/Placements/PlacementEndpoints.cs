@@ -95,7 +95,6 @@ public static class PlacementEndpoints
 
             foreach (var targetGroup in targetGroups)
             {
-
                 var matchingSources = sourceColumns
                     .Where(source => source.BoardId == targetGroup.Key)
                     .ToList();
@@ -194,22 +193,32 @@ public static class PlacementEndpoints
             }
 
             Guid? causationEventId = null;
+            Guid? sourceAutomationId = null;
 
             if (httpRequest.Headers.TryGetValue(
                     "Idempotency-Key",
                     out var idempotencyKey) &&
-                Guid.TryParse(idempotencyKey, out var parsedId))
+                Guid.TryParse(idempotencyKey, out var parsedCausationId))
             {
-                causationEventId = parsedId;
+                causationEventId = parsedCausationId;
             }
 
-            await placementService.CreateAsync(placementOperations, causationEventId, cancellationToken);
+            if (httpRequest.Headers.TryGetValue(
+                    "Source-Automation-Id",
+                    out var automationId) &&
+                Guid.TryParse(automationId, out var parsedAutomationId))
+            {
+                sourceAutomationId = parsedAutomationId;
+            }
+
+            await placementService.CreateAsync(placementOperations, causationEventId, sourceAutomationId, cancellationToken);
 
             await hub.Clients.All.SendAsync(
                 "PlacementCreated",
                 new PlacementCreatedEvent(
                     request.EntityIds,
-                    changes
+                    changes,
+                    sourceAutomationId
                 ),
             cancellationToken);
 

@@ -35,7 +35,7 @@ namespace kanban_lia.Services.Placements
             Guid TargetColumnId
         );
 
-        public async Task CreateAsync(IEnumerable<PlacementOperationDto> dtos, Guid? causationEventId, CancellationToken cancellationToken)
+        public async Task CreateAsync(IEnumerable<PlacementOperationDto> dtos, Guid? causationEventId, Guid? sourceAutomationId, CancellationToken cancellationToken)
         {
             foreach (var dto in dtos)
             {
@@ -160,6 +160,7 @@ namespace kanban_lia.Services.Placements
                             columnId: placement.ColumnId.Id,
                             sourceColumnId: null,
                             causationEventId: causationEventId,
+                            sourceAutomationId: sourceAutomationId,
                             cancellationToken: cancellationToken);
                     }
                     else
@@ -171,6 +172,7 @@ namespace kanban_lia.Services.Placements
                                 columnId: placement.ColumnId.Id,
                                 sourceColumnId: sourceColumnId.Id,
                                 causationEventId: causationEventId,
+                                sourceAutomationId: sourceAutomationId,
                                 cancellationToken: cancellationToken);
                         }
                     }

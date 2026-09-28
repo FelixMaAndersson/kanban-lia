@@ -9,6 +9,9 @@ public sealed record IntegrationEvent<TPayload>(
     [property: JsonPropertyName("causationEventId")]
     Guid? CausationEventId,
 
+    [property: JsonPropertyName("sourceAutomationId")]
+    Guid? SourceAutomationId,
+
     [property: JsonPropertyName("eventType")]
     string EventType,
 

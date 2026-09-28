@@ -28,12 +28,14 @@ public sealed class RabbitMqIntegrationEventPublisher
     public async Task PublishColumnHasNoEdgeAsync(
         Guid columnId,
         Guid? causationEventId,
+        Guid? sourceAutomationId,
         CancellationToken cancellationToken)
     {
         var integrationEvent =
         new IntegrationEvent<ColumnHasNoEdgePayload>(
             EventId: Guid.NewGuid().ToString(),
             CausationEventId: causationEventId,
+            SourceAutomationId: sourceAutomationId,
             EventType: ColumnHasNoEdge,
             Source: PlacementBackend,
             Payload: new ColumnHasNoEdgePayload(
@@ -73,12 +75,14 @@ public sealed class RabbitMqIntegrationEventPublisher
         Guid columnId,
         Guid? sourceColumnId,
         Guid? causationEventId,
+        Guid? sourceAutomationId,
         CancellationToken cancellationToken)
     {
         var integrationEvent =
             new IntegrationEvent<PlacementCreatedPayload>(
                 EventId: Guid.NewGuid().ToString(),
                 CausationEventId: causationEventId,
+                SourceAutomationId: sourceAutomationId,
                 EventType: PlacementCreated,
                 Source: PlacementBackend,
                 Payload: new PlacementCreatedPayload(
