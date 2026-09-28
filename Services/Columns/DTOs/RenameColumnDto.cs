@@ -2,5 +2,7 @@
 
 namespace kanban_lia.Services.Columns.DTOs
 {
-    public record RenameColumnDto(ColumnId Id, string NewTitle);
+    public record RenameColumnDto(
+        ColumnId Id,
+        string NewTitle);
 }

@@ -7,7 +7,9 @@ using kanban_lia.Services.Columns.DTOs;
 
 namespace kanban_lia.Services.Columns
 {
-    public class ColumnEdgeService(IColumnEdgeRepository repository, IMapper mapper) : IColumnEdgeService
+    public class ColumnEdgeService(
+        IColumnEdgeRepository repository,
+        IMapper mapper) : IColumnEdgeService
     {
         private readonly IMapper _mapper = mapper;
         private readonly IColumnEdgeRepository _repository = repository;

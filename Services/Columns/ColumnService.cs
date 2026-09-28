@@ -6,7 +6,6 @@ using kanban_lia.Models.Domain.Columns.DTOs;
 using kanban_lia.Services.Columns.DTOs;
 using kanban_lia.Services.Columns.Exceptions;
 using kanban_lia.Services.IntegrationEvents;
-using static kanban_lia.Infrastructure.Schemas.Schema;
 
 namespace kanban_lia.Services.Columns
 {
@@ -21,7 +20,10 @@ namespace kanban_lia.Services.Columns
         private readonly IColumnEdgeRepository _columnEdgeRepository = columnEdgeRepository;
         private readonly IIntegrationEventPublisher _integrationEventPublisher = integrationEventPublisher;
 
-        public async Task CreateAsync(CreateColumnDto dto, Guid? causationEventId, CancellationToken cancellationToken)
+        public async Task CreateAsync(
+            CreateColumnDto dto,
+            Guid? causationEventId,
+            CancellationToken cancellationToken)
         {
             var newColumn = Column.Create(dto.Id, dto.BoardId, dto.Title, dto.Position);
 
@@ -57,7 +59,9 @@ namespace kanban_lia.Services.Columns
             return _mapper.Map<ColumnDto>(column);
         }
 
-        public async Task<bool> SetRequestWritableAsync(ColumnId id, bool requestWritable)
+        public async Task<bool> SetRequestWritableAsync(
+            ColumnId id,
+            bool requestWritable)
         {
             var changed = await _repository.SetRequestWritableAsync(id, requestWritable);
             if (!changed)

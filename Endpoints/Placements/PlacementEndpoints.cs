@@ -138,7 +138,7 @@ public static class PlacementEndpoints
                         .OrderBy(target => Math.Abs(target.Position - sourcePosition))
                         .First();
                 }
-             
+
                 columnPairs.Add((
                     Target: targetColumn.Id,
                     Sources: [.. matchingSources.Select(source => source.Id)]
@@ -258,8 +258,8 @@ public static class PlacementEndpoints
         });
     }
     private static async Task<List<ColumnId>> GetConnectedColumns(
-    ColumnId columnId,
-    IColumnEdgeRepository columnEdgeRepository)
+        ColumnId columnId,
+        IColumnEdgeRepository columnEdgeRepository)
     {
         var fromEdges =
             await columnEdgeRepository.GetByFromColumnIdAsync(columnId);

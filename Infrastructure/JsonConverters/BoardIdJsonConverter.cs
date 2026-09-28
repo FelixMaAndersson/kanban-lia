@@ -6,7 +6,10 @@ namespace kanban_lia.Infrastructure.JsonConverters;
 
 public class BoardIdJsonConverter : JsonConverter<BoardId>
 {
-    public override BoardId Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    public override BoardId Read(
+        ref Utf8JsonReader reader,
+        Type typeToConvert,
+        JsonSerializerOptions options)
     {
         var value = reader.GetString();
         return value is null
@@ -14,7 +17,10 @@ public class BoardIdJsonConverter : JsonConverter<BoardId>
             : new BoardId(Guid.Parse(value));
     }
 
-    public override void Write(Utf8JsonWriter writer, BoardId value, JsonSerializerOptions options)
+    public override void Write(
+        Utf8JsonWriter writer,
+        BoardId value,
+        JsonSerializerOptions options)
     {
         writer.WriteStringValue(value.Id);
     }

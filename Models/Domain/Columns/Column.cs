@@ -12,7 +12,12 @@ namespace kanban_lia.Models.Domain.Columns
         public int Position { get; }
         public bool RequestWritable { get; private set; }
 
-        private Column(Guid id, Guid boardId, string title, int position, bool requestWritable)
+        private Column(
+            Guid id,
+            Guid boardId,
+            string title,
+            int position,
+            bool requestWritable)
         {
             Id = new ColumnId(id);
             BoardId = new BoardId(boardId);
@@ -21,7 +26,11 @@ namespace kanban_lia.Models.Domain.Columns
             RequestWritable = requestWritable;
         }
 
-        public static Column Create(ColumnId? id, BoardId boardId, string title, int position)
+        public static Column Create(
+            ColumnId? id,
+            BoardId boardId,
+            string title,
+            int position)
         {
             if (string.IsNullOrWhiteSpace(title))
             {

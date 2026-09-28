@@ -6,24 +6,19 @@ using RabbitMQ.Client;
 
 namespace kanban_lia.Infrastructure.Messaging;
 
-public sealed class RabbitMqIntegrationEventPublisher
-    : IIntegrationEventPublisher, IAsyncDisposable
+public sealed class RabbitMqIntegrationEventPublisher(
+    IOptions<RabbitMqOptions> options)
+        : IIntegrationEventPublisher, IAsyncDisposable
 {
     private const string ColumnHasNoEdge = "ColumnHasNoEdge";
     private const string PlacementCreated = "PlacementCreated";
     private const string PlacementBackend = "PlacementBackend";
 
-    private readonly RabbitMqOptions _options;
+    private readonly RabbitMqOptions _options = options.Value;
     private readonly SemaphoreSlim _channelLock = new(1, 1);
 
     private IConnection? _connection;
     private IChannel? _channel;
-
-    public RabbitMqIntegrationEventPublisher(
-        IOptions<RabbitMqOptions> options)
-    {
-        _options = options.Value;
-    }
 
     public async Task PublishColumnHasNoEdgeAsync(
         Guid columnId,
@@ -48,6 +43,10 @@ public sealed class RabbitMqIntegrationEventPublisher
         {
             await EnsureConnectedAsync();
 
+            var channel = _channel
+                ?? throw new InvalidOperationException(
+                    "RabbitMQ channel was not initialized.");
+
             var properties = new BasicProperties
             {
                 ContentType = "application/json",
@@ -56,12 +55,13 @@ public sealed class RabbitMqIntegrationEventPublisher
                 Type = integrationEvent.EventType
             };
 
-            await _channel!.BasicPublishAsync(
+            await channel.BasicPublishAsync(
                 exchange: _options.ExchangeName,
                 routingKey: "column.no-edge",
                 mandatory: false,
                 basicProperties: properties,
-                body: body);
+                body: body,
+                cancellationToken: cancellationToken);
         }
         finally
         {
@@ -95,6 +95,10 @@ public sealed class RabbitMqIntegrationEventPublisher
         {
             await EnsureConnectedAsync();
 
+            var channel = _channel
+                ?? throw new InvalidOperationException(
+                    "RabbitMQ channel was not initialized.");
+
             var properties = new BasicProperties
             {
                 ContentType = "application/json",
@@ -103,12 +107,13 @@ public sealed class RabbitMqIntegrationEventPublisher
                 Type = integrationEvent.EventType
             };
 
-            await _channel!.BasicPublishAsync(
+            await channel.BasicPublishAsync(
                 exchange: _options.ExchangeName,
                 routingKey: _options.RoutingKey,
                 mandatory: false,
                 basicProperties: properties,
-                body: body);
+                body: body,
+                cancellationToken: cancellationToken);
         }
         finally
         {

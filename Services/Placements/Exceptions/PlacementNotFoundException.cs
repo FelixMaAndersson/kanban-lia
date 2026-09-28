@@ -2,11 +2,6 @@
 
 namespace kanban_lia.Services.Placements.Exceptions
 {
-    public class PlacementNotFoundException : Exception
-    {
-        public PlacementNotFoundException(EntityId entityId)
-    : base($"No current placement found for entity '{entityId.Id}'.")
-        {
-        }
-    }
+    public class PlacementNotFoundException(EntityId entityId) 
+        : Exception($"No current placement found for entity '{entityId.Id}'.");
 }
