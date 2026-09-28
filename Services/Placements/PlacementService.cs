@@ -10,22 +10,23 @@ using kanban_lia.Models.Domain.Columns;
 using kanban_lia.Models.Domain.Exceptions;
 using kanban_lia.Models.Domain.Placements;
 using kanban_lia.Models.Domain.Placements.DTOs;
-using kanban_lia.Models.Events;
 using kanban_lia.Services.Boards.Exceptions;
 using kanban_lia.Services.Columns.Exceptions;
 using kanban_lia.Services.IntegrationEvents;
 using kanban_lia.Services.Placements.DTOs;
-using Microsoft.AspNetCore.SignalR;
-using static kanban_lia.Infrastructure.Schemas.Schema;
 
 namespace kanban_lia.Services.Placements
 {
-    public class PlacementService(IPlacementRepository repository, IColumnRepository columnRepository, IBoardRepository boardRepository, IMapper mapper, IHubContext<BoardHub> hub, IIntegrationEventPublisher integrationEventPublisher) : IPlacementService
+    public class PlacementService(
+        IPlacementRepository repository,
+        IColumnRepository columnRepository,
+        IBoardRepository boardRepository,
+        IMapper mapper,
+        IIntegrationEventPublisher integrationEventPublisher) : IPlacementService
     {
         private readonly IPlacementRepository _repository = repository;
         private readonly IColumnRepository _columnRepository = columnRepository;
         private readonly IMapper _mapper = mapper;
-        private readonly IHubContext<BoardHub> _hub = hub;
         private readonly IBoardRepository _boardRepository = boardRepository;
         private readonly IIntegrationEventPublisher _integrationEventPublisher = integrationEventPublisher;
 
@@ -35,7 +36,10 @@ namespace kanban_lia.Services.Placements
             Guid TargetColumnId
         );
 
-        public async Task CreateAsync(IEnumerable<PlacementOperationDto> dtos, Guid? causationEventId, CancellationToken cancellationToken)
+        public async Task CreateAsync(
+            IEnumerable<PlacementOperationDto> dtos,
+            Guid? causationEventId,
+            CancellationToken cancellationToken)
         {
             foreach (var dto in dtos)
             {
@@ -153,7 +157,7 @@ namespace kanban_lia.Services.Placements
 
                 foreach (var placement in placements)
                 {
-                    if (dto.SourceColumnIds.Count() == 0)
+                    if (!dto.SourceColumnIds.Any())
                     {
                         await _integrationEventPublisher.PublishPlacementCreatedAsync(
                             entityId: placement.EntityId.Id,
@@ -175,7 +179,7 @@ namespace kanban_lia.Services.Placements
                         }
                     }
                 }
-            } 
+            }
         }
 
         public async Task<IEnumerable<PlacementDto>> GetCurrentAsync(GetPlacementDto dto)
@@ -187,7 +191,9 @@ namespace kanban_lia.Services.Placements
             return _mapper.Map<IEnumerable<PlacementDto>>(placements);
         }
 
-        public async Task<IEnumerable<PlacementDto>> GetCurrentByColumnAsync(ColumnId columnId, BoardId boardId)
+        public async Task<IEnumerable<PlacementDto>> GetCurrentByColumnAsync(
+            ColumnId columnId,
+            BoardId boardId)
         {
             var placements = await _repository.GetCurrentByColumnAsync(
                 columnId,

@@ -47,7 +47,9 @@ namespace kanban_lia.Infrastructure.Repositories.Placements
                 parameters);
         }
 
-        public async Task<IEnumerable<Placement>> GetCurrentAsync(IEnumerable<EntityId> entityIds, BoardId boardId)
+        public async Task<IEnumerable<Placement>> GetCurrentAsync(
+            IEnumerable<EntityId> entityIds,
+            BoardId boardId)
         {
             using var connection = _connectionFactory.CreateConnection();
 
@@ -87,7 +89,9 @@ namespace kanban_lia.Infrastructure.Repositories.Placements
                 });
         }
 
-        public async Task<IEnumerable<Placement>> GetCurrentByColumnAsync(ColumnId columnId, BoardId boardId)
+        public async Task<IEnumerable<Placement>> GetCurrentByColumnAsync(
+            ColumnId columnId,
+            BoardId boardId)
         {
             using var connection = _connectionFactory.CreateConnection();
             const string sql = $@"

@@ -3,13 +3,14 @@
 using kanban_lia.Infrastructure.Repositories.Boards;
 using kanban_lia.Models.Domain.Boards;
 using kanban_lia.Models.Domain.Boards.DTOs;
-using kanban_lia.Models.Domain.Placements;
 using kanban_lia.Services.Boards.DTOs;
 using kanban_lia.Services.Boards.Exceptions;
 
 namespace kanban_lia.Services.Boards
 {
-    public class BoardService(IBoardRepository repository, IMapper mapper) : IBoardService
+    public class BoardService(
+        IBoardRepository repository,
+        IMapper mapper) : IBoardService
     {
         private readonly IMapper _mapper = mapper;
         private readonly IBoardRepository _repository = repository;

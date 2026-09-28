@@ -6,13 +6,17 @@ namespace kanban_lia.Models.Domain.Columns
     {
         public ColumnId FromColumnId { get; }
         public ColumnId ToColumnId { get; }
-        private ColumnEdge(Guid fromColumnId, Guid toColumnId)
+        private ColumnEdge(
+            Guid fromColumnId,
+            Guid toColumnId)
         {
             FromColumnId = new ColumnId(fromColumnId);
             ToColumnId = new ColumnId(toColumnId);
         }
 
-        public static ColumnEdge Create(ColumnId fromColumnId, ColumnId toColumnId)
+        public static ColumnEdge Create(
+            ColumnId fromColumnId,
+            ColumnId toColumnId)
         {
             if (fromColumnId.Id == toColumnId.Id)
             {

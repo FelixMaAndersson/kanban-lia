@@ -6,7 +6,10 @@ namespace kanban_lia.Infrastructure.JsonConverters;
 
 public class ColumnIdJsonConverter : JsonConverter<ColumnId>
 {
-    public override ColumnId Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    public override ColumnId Read(
+        ref Utf8JsonReader reader,
+        Type typeToConvert,
+        JsonSerializerOptions options)
     {
         var value = reader.GetString();
         return value is null
@@ -14,7 +17,10 @@ public class ColumnIdJsonConverter : JsonConverter<ColumnId>
             : new ColumnId(Guid.Parse(value));
     }
 
-    public override void Write(Utf8JsonWriter writer, ColumnId value, JsonSerializerOptions options)
+    public override void Write(
+        Utf8JsonWriter writer,
+        ColumnId value,
+        JsonSerializerOptions options)
     {
         writer.WriteStringValue(value.Id);
     }
