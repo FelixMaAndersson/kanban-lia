@@ -28,7 +28,7 @@ public static class ColumnEndpoints
             Guid? causationEventId = null;
 
             if (httpRequest.Headers.TryGetValue(
-                    "X-Causation-Id",
+                    "Causation-Id",
                     out var causationHeader) &&
                 Guid.TryParse(causationHeader, out var parsedId))
             {
