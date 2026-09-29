@@ -18,14 +18,14 @@ namespace kanban_lia.Infrastructure.Repositories.Outbox
             (
                 Id,
                 EventType,
-                Payload,
+                Content,
                 OccurredOn
             )
             VALUES
             (
                 @Id,
                 @EventType,
-                @Payload,
+                @Content,
                 @OccurredOn
             );
             """;

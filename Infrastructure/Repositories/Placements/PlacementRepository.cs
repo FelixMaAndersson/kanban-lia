@@ -13,27 +13,31 @@ namespace kanban_lia.Infrastructure.Repositories.Placements
         private readonly DbConnectionFactory _connectionFactory = connectionFactory;
 
         public async Task CreateAsync(
-    IEnumerable<Placement> placements,
-    IDbTransaction transaction)
+            IEnumerable<Placement> placements,
+            IDbTransaction transaction)
         {
+            var connection = transaction.Connection
+                ?? throw new InvalidOperationException(
+                    "The transaction has no connection.");
+
             var sql = $"""
-        INSERT INTO {Schema.Placements.Table}
-        (
-            {Schema.Placements.EntityId},
-            {Schema.Placements.BoardId},
-            {Schema.Placements.ColumnId},
-            {Schema.Placements.Timestamp},
-            {Schema.Placements.SortKey}
-        )
-        VALUES
-        (
-            @EntityId,
-            @BoardId,
-            @ColumnId,
-            @Timestamp,
-            @SortKey
-        );
-        """;
+                INSERT INTO {Schema.Placements.Table}
+                (
+                    {Schema.Placements.EntityId},
+                    {Schema.Placements.BoardId},
+                    {Schema.Placements.ColumnId},
+                    {Schema.Placements.Timestamp},
+                    {Schema.Placements.SortKey}
+                )
+                VALUES
+                (
+                    @EntityId,
+                    @BoardId,
+                    @ColumnId,
+                    @Timestamp,
+                    @SortKey
+                );
+                """;
 
             var parameters = placements.Select(p => new
             {
@@ -44,7 +48,7 @@ namespace kanban_lia.Infrastructure.Repositories.Placements
                 p.SortKey
             });
 
-            await transaction.Connection!.ExecuteAsync(
+            await connection.ExecuteAsync(
                 new CommandDefinition(
                     sql,
                     parameters,

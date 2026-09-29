@@ -3,7 +3,7 @@
     public sealed record OutboxMessage(
         Guid Id,
         string EventType,
-        string Payload,
+        string Content,
         DateTime OccurredOn,
         DateTime? ProcessedOn,
         string? Error
