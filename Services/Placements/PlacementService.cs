@@ -2,8 +2,10 @@
 using FractionalIndexing;
 
 using kanban_lia.Hubs;
+using kanban_lia.Infrastructure.Database;
 using kanban_lia.Infrastructure.Repositories.Boards;
 using kanban_lia.Infrastructure.Repositories.Columns;
+using kanban_lia.Infrastructure.Repositories.Outbox;
 using kanban_lia.Infrastructure.Repositories.Placements;
 using kanban_lia.Models.Domain.Boards;
 using kanban_lia.Models.Domain.Columns;
@@ -14,21 +16,24 @@ using kanban_lia.Services.Boards.Exceptions;
 using kanban_lia.Services.Columns.Exceptions;
 using kanban_lia.Services.IntegrationEvents;
 using kanban_lia.Services.Placements.DTOs;
+using System.Text.Json;
 
 namespace kanban_lia.Services.Placements
 {
     public class PlacementService(
-        IPlacementRepository repository,
-        IColumnRepository columnRepository,
+        DbConnectionFactory connectionFactory,
         IBoardRepository boardRepository,
-        IMapper mapper,
-        IIntegrationEventPublisher integrationEventPublisher) : IPlacementService
+        IColumnRepository columnRepository,
+        IPlacementRepository repository,
+        IOutboxRepository outboxRepository,
+        IMapper mapper) : IPlacementService
     {
-        private readonly IPlacementRepository _repository = repository;
-        private readonly IColumnRepository _columnRepository = columnRepository;
-        private readonly IMapper _mapper = mapper;
+        private readonly DbConnectionFactory _connectionFactory = connectionFactory;
         private readonly IBoardRepository _boardRepository = boardRepository;
-        private readonly IIntegrationEventPublisher _integrationEventPublisher = integrationEventPublisher;
+        private readonly IColumnRepository _columnRepository = columnRepository;
+        private readonly IPlacementRepository _repository = repository;
+        private readonly IOutboxRepository _outboxRepository = outboxRepository;
+        private readonly IMapper _mapper = mapper;
 
         public record PlacementCreatedEvent(
             Guid EntityId,
@@ -153,31 +158,47 @@ namespace kanban_lia.Services.Placements
                     previous = sortKey;
                 }
 
-                await _repository.CreateAsync(placements);
+                using var connection = _connectionFactory.CreateConnection();
 
-                foreach (var placement in placements)
+                connection.Open();
+
+                using var transaction = connection.BeginTransaction();
+                
+                try
                 {
-                    if (!dto.SourceColumnIds.Any())
+                    await _repository.CreateAsync(
+                        placements, 
+                        transaction);
+
+                    foreach (var placement in placements)
                     {
-                        await _integrationEventPublisher.PublishPlacementCreatedAsync(
-                            entityId: placement.EntityId.Id,
-                            columnId: placement.ColumnId.Id,
-                            sourceColumnId: null,
-                            causationEventId: causationEventId,
-                            cancellationToken: cancellationToken);
-                    }
-                    else
-                    {
-                        foreach (var sourceColumnId in dto.SourceColumnIds)
-                        {
-                            await _integrationEventPublisher.PublishPlacementCreatedAsync(
+                        var integrationEvent =
+                            IntegrationEventFactory.CreatePlacementCreated(
                                 entityId: placement.EntityId.Id,
                                 columnId: placement.ColumnId.Id,
-                                sourceColumnId: sourceColumnId.Id,
-                                causationEventId: causationEventId,
-                                cancellationToken: cancellationToken);
-                        }
+                                causationEventId: causationEventId);
+
+                        var message = new OutboxMessage(
+                            Id: Guid.Parse(integrationEvent.EventId),
+                            EventType: integrationEvent.EventType,
+                            Content: JsonSerializer.Serialize(integrationEvent),
+                            OccurredOn: DateTime.UtcNow,
+                            ProcessedOn: null,
+                            Error: null);
+
+                        await _outboxRepository.AddAsync(
+                            message, 
+                            transaction, 
+                            cancellationToken);
                     }
+
+                    transaction.Commit();
+
+                }
+                catch
+                {
+                    transaction.Rollback();
+                    throw;
                 }
             }
         }

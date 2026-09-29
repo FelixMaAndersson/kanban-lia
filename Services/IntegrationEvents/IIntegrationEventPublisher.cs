@@ -2,12 +2,16 @@
 
 public interface IIntegrationEventPublisher
 {
-    Task PublishPlacementCreatedAsync(
-        Guid entityId,
-        Guid columnId,
-        Guid? sourceColumnId,
-        Guid? causationEventId,
+    Task PublishAsync(
+        string eventType,
+        string content,
         CancellationToken cancellationToken);
+
+    //Task PublishPlacementCreatedAsync(
+    //    Guid entityId,
+    //    Guid columnId,
+    //    Guid? causationEventId,
+    //    CancellationToken cancellationToken);
 
     Task PublishColumnHasNoEdgeAsync(
         Guid columnId,

@@ -1,8 +1,9 @@
-﻿using System.Text.Json;
-using kanban_lia.Services.IntegrationEvents;
+﻿using kanban_lia.Services.IntegrationEvents;
 using kanban_lia.Services.IntegrationEvents.Contracts;
 using Microsoft.Extensions.Options;
 using RabbitMQ.Client;
+using System.Text;
+using System.Text.Json;
 
 namespace kanban_lia.Infrastructure.Messaging;
 
@@ -19,6 +20,96 @@ public sealed class RabbitMqIntegrationEventPublisher(
 
     private IConnection? _connection;
     private IChannel? _channel;
+
+    public async Task PublishAsync(
+    string eventtype,
+    string content,
+    CancellationToken cancellationToken)
+    {
+        var body = Encoding.UTF8.GetBytes(content);
+
+        await _channelLock.WaitAsync(cancellationToken);
+
+        try
+        {
+            await EnsureConnectedAsync();
+
+            var channel = _channel
+                ?? throw new InvalidOperationException(
+                    "RabbitMQ channel was not initialized.");
+
+            var properties = new BasicProperties
+            {
+                ContentType = "application/json",
+                DeliveryMode = DeliveryModes.Persistent,
+                MessageId = Guid.NewGuid().ToString(),
+                Type = eventtype
+            };
+
+            await channel.BasicPublishAsync(
+                exchange: _options.ExchangeName,
+                routingKey: _options.RoutingKey,
+                mandatory: false,
+                basicProperties: properties,
+                body: body,
+                cancellationToken: cancellationToken);
+        }
+        finally
+        {
+            _channelLock.Release();
+        }
+    }
+
+    //public async Task PublishPlacementCreatedAsync(
+    //    Guid entityId,
+    //    Guid columnId,
+    //    Guid? causationEventId,
+    //    CancellationToken cancellationToken)
+    //{
+    //    var integrationEvent =
+    //        new IntegrationEvent<PlacementCreatedPayload>(
+    //            EventId: Guid.NewGuid().ToString(),
+    //            CausationEventId: causationEventId,
+    //            EventType: PlacementCreated,
+    //            Source: PlacementBackend,
+    //            Payload: new PlacementCreatedPayload(
+    //                EntityId: entityId,
+    //                ColumnId: columnId));
+
+    //    var body = JsonSerializer.SerializeToUtf8Bytes(
+    //        integrationEvent);
+
+    //    await _channelLock.WaitAsync(cancellationToken);
+
+    //    try
+    //    {
+    //        await EnsureConnectedAsync();
+
+    //        var channel = _channel
+    //            ?? throw new InvalidOperationException(
+    //                "RabbitMQ channel was not initialized.");
+
+    //        var properties = new BasicProperties
+    //        {
+    //            ContentType = "application/json",
+    //            DeliveryMode = DeliveryModes.Persistent,
+    //            MessageId = integrationEvent.EventId,
+    //            Type = integrationEvent.EventType
+    //        };
+
+    //        await channel.BasicPublishAsync(
+    //            exchange: _options.ExchangeName,
+    //            routingKey: _options.RoutingKey,
+    //            mandatory: false,
+    //            basicProperties: properties,
+    //            body: body,
+    //            cancellationToken: cancellationToken);
+    //    }
+    //    finally
+    //    {
+    //        _channelLock.Release();
+    //    }
+    //}
 
     public async Task PublishColumnHasNoEdgeAsync(
         Guid columnId,
@@ -58,58 +149,6 @@ public sealed class RabbitMqIntegrationEventPublisher(
             await channel.BasicPublishAsync(
                 exchange: _options.ExchangeName,
                 routingKey: "column.no-edge",
-                mandatory: false,
-                basicProperties: properties,
-                body: body,
-                cancellationToken: cancellationToken);
-        }
-        finally
-        {
-            _channelLock.Release();
-        }
-    }
-    public async Task PublishPlacementCreatedAsync(
-        Guid entityId,
-        Guid columnId,
-        Guid? sourceColumnId,
-        Guid? causationEventId,
-        CancellationToken cancellationToken)
-    {
-        var integrationEvent =
-            new IntegrationEvent<PlacementCreatedPayload>(
-                EventId: Guid.NewGuid().ToString(),
-                CausationEventId: causationEventId,
-                EventType: PlacementCreated,
-                Source: PlacementBackend,
-                Payload: new PlacementCreatedPayload(
-                    EntityId: entityId,
-                    ColumnId: columnId,
-                    SourceColumnId: sourceColumnId));
-
-        var body = JsonSerializer.SerializeToUtf8Bytes(
-            integrationEvent);
-
-        await _channelLock.WaitAsync(cancellationToken);
-
-        try
-        {
-            await EnsureConnectedAsync();
-
-            var channel = _channel
-                ?? throw new InvalidOperationException(
-                    "RabbitMQ channel was not initialized.");
-
-            var properties = new BasicProperties
-            {
-                ContentType = "application/json",
-                DeliveryMode = DeliveryModes.Persistent,
-                MessageId = integrationEvent.EventId,
-                Type = integrationEvent.EventType
-            };
-
-            await channel.BasicPublishAsync(
-                exchange: _options.ExchangeName,
-                routingKey: _options.RoutingKey,
                 mandatory: false,
                 basicProperties: properties,
                 body: body,

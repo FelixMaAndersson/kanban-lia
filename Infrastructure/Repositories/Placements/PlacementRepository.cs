@@ -4,6 +4,7 @@ using kanban_lia.Infrastructure.Schemas;
 using kanban_lia.Models.Domain.Boards;
 using kanban_lia.Models.Domain.Columns;
 using kanban_lia.Models.Domain.Placements;
+using System.Data;
 
 namespace kanban_lia.Infrastructure.Repositories.Placements
 {
@@ -11,27 +12,32 @@ namespace kanban_lia.Infrastructure.Repositories.Placements
     {
         private readonly DbConnectionFactory _connectionFactory = connectionFactory;
 
-        public async Task CreateAsync(IEnumerable<Placement> placements)
+        public async Task CreateAsync(
+            IEnumerable<Placement> placements,
+            IDbTransaction transaction)
         {
-            using var connection = _connectionFactory.CreateConnection();
+            var connection = transaction.Connection
+                ?? throw new InvalidOperationException(
+                    "The transaction has no connection.");
 
-            var sql = $@"
-                    INSERT INTO {Schema.Placements.Table} 
-                    (
-                        {Schema.Placements.EntityId},
-                        {Schema.Placements.BoardId},
-                        {Schema.Placements.ColumnId}, 
-                        {Schema.Placements.Timestamp}, 
-                        {Schema.Placements.SortKey}
-                    ) 
-                    VALUES (
-                        @EntityId, 
-                        @BoardId, 
-                        @ColumnId, 
-                        @Timestamp, 
-                        @SortKey
-                    );
-            ";
+            var sql = $"""
+                INSERT INTO {Schema.Placements.Table}
+                (
+                    {Schema.Placements.EntityId},
+                    {Schema.Placements.BoardId},
+                    {Schema.Placements.ColumnId},
+                    {Schema.Placements.Timestamp},
+                    {Schema.Placements.SortKey}
+                )
+                VALUES
+                (
+                    @EntityId,
+                    @BoardId,
+                    @ColumnId,
+                    @Timestamp,
+                    @SortKey
+                );
+                """;
 
             var parameters = placements.Select(p => new
             {
@@ -43,8 +49,10 @@ namespace kanban_lia.Infrastructure.Repositories.Placements
             });
 
             await connection.ExecuteAsync(
-                sql,
-                parameters);
+                new CommandDefinition(
+                    sql,
+                    parameters,
+                    transaction));
         }
 
         public async Task<IEnumerable<Placement>> GetCurrentAsync(

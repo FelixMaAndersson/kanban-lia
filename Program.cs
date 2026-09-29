@@ -4,18 +4,18 @@ using kanban_lia.Endpoints.Placements;
 using kanban_lia.Hubs;
 using kanban_lia.Infrastructure.Database;
 using kanban_lia.Infrastructure.JsonConverters;
+using kanban_lia.Infrastructure.Messaging;
 using kanban_lia.Infrastructure.Repositories.Boards;
 using kanban_lia.Infrastructure.Repositories.Columns;
+using kanban_lia.Infrastructure.Repositories.Outbox;
 using kanban_lia.Infrastructure.Repositories.Placements;
 using kanban_lia.Models.Domain.Exceptions;
 using kanban_lia.Services.Boards;
 using kanban_lia.Services.Boards.Exceptions;
 using kanban_lia.Services.Columns;
 using kanban_lia.Services.Columns.Exceptions;
-using kanban_lia.Services.Placements;
-using kanban_lia.Infrastructure.Messaging;
 using kanban_lia.Services.IntegrationEvents;
-
+using kanban_lia.Services.Placements;
 using Microsoft.AspNetCore.Diagnostics;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -35,6 +35,10 @@ builder.Services.AddScoped<IBoardService, BoardService>();
 builder.Services.AddScoped<IColumnService, ColumnService>();
 builder.Services.AddScoped<IPlacementService, PlacementService>();
 builder.Services.AddScoped<IColumnEdgeService, ColumnEdgeService>();
+
+builder.Services.AddScoped<IOutboxRepository, OutboxRepository>();
+builder.Services.AddHostedService<OutboxWorker>();
+builder.Services.AddSingleton<IIntegrationEventPublisher, RabbitMqIntegrationEventPublisher>();
 
 builder.Services.AddAutoMapper(cfg =>
 {
@@ -60,7 +64,6 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 });
 
 builder.Services.Configure<RabbitMqOptions>(builder.Configuration.GetSection("RabbitMq"));
-builder.Services.AddSingleton<IIntegrationEventPublisher, RabbitMqIntegrationEventPublisher>();
 
 var app = builder.Build();
 
