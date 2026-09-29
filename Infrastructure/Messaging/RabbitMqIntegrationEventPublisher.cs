@@ -1,8 +1,9 @@
-﻿using System.Text.Json;
-using kanban_lia.Services.IntegrationEvents;
+﻿using kanban_lia.Services.IntegrationEvents;
 using kanban_lia.Services.IntegrationEvents.Contracts;
 using Microsoft.Extensions.Options;
 using RabbitMQ.Client;
+using System.Text;
+using System.Text.Json;
 
 namespace kanban_lia.Infrastructure.Messaging;
 
@@ -19,6 +20,45 @@ public sealed class RabbitMqIntegrationEventPublisher(
 
     private IConnection? _connection;
     private IChannel? _channel;
+
+    public async Task PublishAsync(
+    string eventtype,
+    string content,
+    CancellationToken cancellationToken)
+    {
+        var body = Encoding.UTF8.GetBytes(content);
+
+        await _channelLock.WaitAsync(cancellationToken);
+
+        try
+        {
+            await EnsureConnectedAsync();
+
+            var channel = _channel
+                ?? throw new InvalidOperationException(
+                    "RabbitMQ channel was not initialized.");
+
+            var properties = new BasicProperties
+            {
+                ContentType = "application/json",
+                DeliveryMode = DeliveryModes.Persistent,
+                MessageId = Guid.NewGuid().ToString(),
+                Type = eventtype
+            };
+
+            await channel.BasicPublishAsync(
+                exchange: _options.ExchangeName,
+                routingKey: _options.RoutingKey,
+                mandatory: false,
+                basicProperties: properties,
+                body: body,
+                cancellationToken: cancellationToken);
+        }
+        finally
+        {
+            _channelLock.Release();
+        }
+    }
 
     public async Task PublishColumnHasNoEdgeAsync(
         Guid columnId,
