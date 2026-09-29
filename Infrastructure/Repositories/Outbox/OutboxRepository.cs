@@ -47,7 +47,7 @@ namespace kanban_lia.Infrastructure.Repositories.Outbox
             SELECT
                 Id,
                 EventType,
-                Payload,
+                Content,
                 OccurredOn,
                 ProcessedOn,
                 Error
