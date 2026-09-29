@@ -4,7 +4,7 @@ namespace kanban_lia.Infrastructure.Repositories.Outbox
 {
     public interface IOutboxRepository
     {
-        Task CreateAsync(
+        Task AddAsync(
             OutboxMessage message,
             IDbTransaction transaction,
             CancellationToken cancellationToken);
