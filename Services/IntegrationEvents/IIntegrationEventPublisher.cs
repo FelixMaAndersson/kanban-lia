@@ -13,8 +13,8 @@ public interface IIntegrationEventPublisher
     //    Guid? causationEventId,
     //    CancellationToken cancellationToken);
 
-    Task PublishColumnHasNoEdgeAsync(
-        Guid columnId,
-        Guid? causationEventId,
-        CancellationToken cancellationToken);
+    //Task PublishColumnHasNoEdgeAsync(
+    //    Guid columnId,
+    //    Guid? causationEventId,
+    //    CancellationToken cancellationToken);
 }

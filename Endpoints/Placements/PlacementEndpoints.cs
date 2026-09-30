@@ -193,6 +193,14 @@ public static class PlacementEndpoints
                 }
             }
 
+            if (!httpRequest.Headers.TryGetValue(
+                    "Correlation-Id",
+                    out var correlationHeader) ||
+                    !Guid.TryParse(correlationHeader, out var correlationId))
+            {
+                correlationId = Guid.NewGuid();
+            }
+
             Guid? causationEventId = null;
 
             if (httpRequest.Headers.TryGetValue(
@@ -203,7 +211,7 @@ public static class PlacementEndpoints
                 causationEventId = parsedId;
             }
 
-            await placementService.CreateAsync(placementOperations, causationEventId, cancellationToken);
+            await placementService.CreateAsync(placementOperations, correlationId, causationEventId, cancellationToken);
 
             await hub.Clients.All.SendAsync(
                 "PlacementCreated",

@@ -43,6 +43,7 @@ namespace kanban_lia.Services.Placements
 
         public async Task CreateAsync(
             IEnumerable<PlacementOperationDto> dtos,
+            Guid correlationId,
             Guid? causationEventId,
             CancellationToken cancellationToken)
         {
@@ -163,11 +164,11 @@ namespace kanban_lia.Services.Placements
                 connection.Open();
 
                 using var transaction = connection.BeginTransaction();
-                
+
                 try
                 {
                     await _repository.CreateAsync(
-                        placements, 
+                        placements,
                         transaction);
 
                     foreach (var placement in placements)
@@ -176,6 +177,7 @@ namespace kanban_lia.Services.Placements
                             IntegrationEventFactory.CreatePlacementCreated(
                                 entityId: placement.EntityId.Id,
                                 columnId: placement.ColumnId.Id,
+                                correlationId: correlationId,
                                 causationEventId: causationEventId);
 
                         var message = new OutboxMessage(
@@ -187,8 +189,8 @@ namespace kanban_lia.Services.Placements
                             Error: null);
 
                         await _outboxRepository.AddAsync(
-                            message, 
-                            transaction, 
+                            message,
+                            transaction,
                             cancellationToken);
                     }
 
