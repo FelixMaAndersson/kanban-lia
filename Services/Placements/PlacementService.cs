@@ -43,7 +43,7 @@ namespace kanban_lia.Services.Placements
 
         public async Task CreateAsync(
             IEnumerable<PlacementOperationDto> dtos,
-            Guid correlationId,
+            Guid? correlationId,
             Guid? causationEventId,
             CancellationToken cancellationToken)
         {
@@ -177,7 +177,7 @@ namespace kanban_lia.Services.Placements
                             IntegrationEventFactory.CreatePlacementCreated(
                                 entityId: placement.EntityId.Id,
                                 columnId: placement.ColumnId.Id,
-                                correlationId: correlationId,
+                                correlationId: correlationId ?? Guid.NewGuid(),
                                 causationEventId: causationEventId);
 
                         var message = new OutboxMessage(
