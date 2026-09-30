@@ -34,10 +34,10 @@ namespace kanban_lia.Services.Columns
             var toEdges =
                 await _columnEdgeRepository.GetByToColumnIdAsync(newColumn.Id);
 
-            if (!fromEdges.Any() && !toEdges.Any())
-            {
-                await _integrationEventPublisher.PublishColumnHasNoEdgeAsync(newColumn.Id.Id, causationEventId, cancellationToken);
-            }
+            // if (!fromEdges.Any() && !toEdges.Any())
+            // {
+            //     await _integrationEventPublisher.PublishColumnHasNoEdgeAsync(newColumn.Id.Id, causationEventId, cancellationToken);
+            // }
         }
 
         public async Task<IEnumerable<ColumnDto>> GetByBoardIdAsync(BoardId boardId)

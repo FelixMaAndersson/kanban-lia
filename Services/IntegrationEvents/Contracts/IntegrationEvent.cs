@@ -6,6 +6,9 @@ public sealed record IntegrationEvent<TPayload>(
     [property: JsonPropertyName("eventId")]
     string EventId,
 
+    [property: JsonPropertyName("correlationId")]
+    Guid? CorrelationId,
+
     [property: JsonPropertyName("causationEventId")]
     Guid? CausationEventId,
 

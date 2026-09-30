@@ -8,10 +8,12 @@ namespace kanban_lia.Services.IntegrationEvents
             CreatePlacementCreated(
                 Guid entityId,
                 Guid columnId,
+                Guid correlationId,
                 Guid? causationEventId)
         {
             return new IntegrationEvent<PlacementCreatedPayload>(
                 EventId: Guid.NewGuid().ToString(),
+                CorrelationId: correlationId,
                 CausationEventId: causationEventId,
                 EventType: "PlacementCreated",
                 Source: "PlacementBackend",
