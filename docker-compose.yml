@@ -28,7 +28,7 @@ services:
     restart: "no"
 
   flyway:
-    image: flyway/flyway:13
+    image: flyway/flyway:latest
     container_name: kanban-flyway
     depends_on:
       create-db:
