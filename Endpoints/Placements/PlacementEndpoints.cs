@@ -193,12 +193,14 @@ public static class PlacementEndpoints
                 }
             }
 
-            if (!httpRequest.Headers.TryGetValue(
+            Guid? correlationId = null;
+
+            if (httpRequest.Headers.TryGetValue(
                     "Correlation-Id",
-                    out var correlationHeader) ||
-                    !Guid.TryParse(correlationHeader, out var correlationId))
+                    out var correlationHeader) &&
+                Guid.TryParse(correlationHeader, out var parsedCorrelationId))
             {
-                correlationId = Guid.NewGuid();
+                correlationId = parsedCorrelationId;
             }
 
             Guid? causationEventId = null;

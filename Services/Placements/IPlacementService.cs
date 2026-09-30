@@ -10,7 +10,7 @@ namespace kanban_lia.Services.Placements
     {
         Task CreateAsync(
             IEnumerable<PlacementOperationDto> dtos,
-            Guid correlationId,
+            Guid? correlationId,
             Guid? causationEventId, 
             CancellationToken cancellationToken);
         Task<IEnumerable<PlacementDto>> GetCurrentAsync(GetPlacementDto dto);
