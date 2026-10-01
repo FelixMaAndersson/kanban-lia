@@ -6,6 +6,7 @@ using kanban_lia.Models.Domain.Boards;
 using kanban_lia.Models.Domain.Columns;
 using kanban_lia.Services.Columns;
 using kanban_lia.Services.Columns.DTOs;
+using kanban_lia.Services.IntegrationEvents.Models;
 
 namespace kanban_lia.Endpoints.Columns;
 
@@ -26,16 +27,35 @@ public static class ColumnEndpoints
             var dto = mapper.Map<CreateColumnDto>(request);
 
             Guid? causationEventId = null;
+            var actorId = Guid.Empty;
+            var actorType = "";
 
             if (httpRequest.Headers.TryGetValue(
-                    "Causation-Id",
-                    out var causationHeader) &&
+                "Causation-Id", 
+                out var causationHeader) &&
                 Guid.TryParse(causationHeader, out var parsedId))
             {
                 causationEventId = parsedId;
             }
 
-            await columnService.CreateAsync(dto, causationEventId, cancellationToken);
+            if (httpRequest.Headers.TryGetValue(
+                "Actor-Id",
+                out var actorHeader) &&
+                Guid.TryParse(actorHeader, out var parsedActorId))
+            {
+                actorId = parsedActorId;
+            }
+
+            if (httpRequest.Headers.TryGetValue(
+                "Actor-Type",
+                out var actorTypeHeader))
+            {
+                actorType = actorTypeHeader.ToString();
+            }
+
+            var actor = new Actor(actorId, actorType);
+
+            await columnService.CreateAsync(dto, causationEventId, actor, cancellationToken);
 
             return Results.Ok();
         });

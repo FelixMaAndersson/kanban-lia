@@ -15,7 +15,9 @@ using kanban_lia.Models.Domain.Placements.DTOs;
 using kanban_lia.Services.Boards.Exceptions;
 using kanban_lia.Services.Columns.Exceptions;
 using kanban_lia.Services.IntegrationEvents;
+using kanban_lia.Services.IntegrationEvents.Models;
 using kanban_lia.Services.Placements.DTOs;
+using Microsoft.AspNetCore.SignalR;
 using System.Text.Json;
 
 namespace kanban_lia.Services.Placements
@@ -41,11 +43,7 @@ namespace kanban_lia.Services.Placements
             Guid TargetColumnId
         );
 
-        public async Task CreateAsync(
-            IEnumerable<PlacementOperationDto> dtos,
-            Guid? correlationId,
-            Guid? causationEventId,
-            CancellationToken cancellationToken)
+        public async Task CreateAsync(IEnumerable<PlacementOperationDto> dtos, Guid? correlationId, Guid? causationEventId, Actor actor, CancellationToken cancellationToken)
         {
             foreach (var dto in dtos)
             {
@@ -178,10 +176,11 @@ namespace kanban_lia.Services.Placements
                                 entityId: placement.EntityId.Id,
                                 columnId: placement.ColumnId.Id,
                                 correlationId: correlationId ?? Guid.NewGuid(),
-                                causationEventId: causationEventId);
+                                causationEventId: causationEventId,
+                                actor: actor);
 
                         var message = new OutboxMessage(
-                            Id: Guid.Parse(integrationEvent.EventId),
+                            Id: integrationEvent.EventId,
                             EventType: integrationEvent.EventType,
                             Content: JsonSerializer.Serialize(integrationEvent),
                             OccurredOn: DateTime.UtcNow,
@@ -195,7 +194,6 @@ namespace kanban_lia.Services.Placements
                     }
 
                     transaction.Commit();
-
                 }
                 catch
                 {

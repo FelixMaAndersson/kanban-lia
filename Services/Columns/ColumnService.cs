@@ -6,6 +6,7 @@ using kanban_lia.Models.Domain.Columns.DTOs;
 using kanban_lia.Services.Columns.DTOs;
 using kanban_lia.Services.Columns.Exceptions;
 using kanban_lia.Services.IntegrationEvents;
+using kanban_lia.Services.IntegrationEvents.Models;
 
 namespace kanban_lia.Services.Columns
 {
@@ -20,24 +21,20 @@ namespace kanban_lia.Services.Columns
         private readonly IColumnEdgeRepository _columnEdgeRepository = columnEdgeRepository;
         private readonly IIntegrationEventPublisher _integrationEventPublisher = integrationEventPublisher;
 
-        public async Task CreateAsync(
-            CreateColumnDto dto,
-            Guid? causationEventId,
-            CancellationToken cancellationToken)
+        public async Task CreateAsync(CreateColumnDto dto, Guid? causationEventId, Actor actor, CancellationToken cancellationToken)
         {
             var newColumn = Column.Create(dto.Id, dto.BoardId, dto.Title, dto.Position);
 
             await _repository.CreateAsync(newColumn);
 
-            var fromEdges = await _columnEdgeRepository.GetByFromColumnIdAsync(newColumn.Id);
+            await _columnEdgeRepository.GetByFromColumnIdAsync(newColumn.Id);
 
-            var toEdges =
-                await _columnEdgeRepository.GetByToColumnIdAsync(newColumn.Id);
+            await _columnEdgeRepository.GetByToColumnIdAsync(newColumn.Id);
 
-            // if (!fromEdges.Any() && !toEdges.Any())
-            // {
-            //     await _integrationEventPublisher.PublishColumnHasNoEdgeAsync(newColumn.Id.Id, causationEventId, cancellationToken);
-            // }
+            //if (!fromEdges.Any() && !toEdges.Any())
+            //{
+            //    await _integrationEventPublisher.PublishColumnHasNoEdgeAsync(newColumn.Id.Id, causationEventId, actor, cancellationToken);
+            //}
         }
 
         public async Task<IEnumerable<ColumnDto>> GetByBoardIdAsync(BoardId boardId)

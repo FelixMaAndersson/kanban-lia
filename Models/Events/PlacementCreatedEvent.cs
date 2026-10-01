@@ -1,7 +1,10 @@
-﻿namespace kanban_lia.Models.Events
+﻿using kanban_lia.Services.IntegrationEvents.Models;
+
+namespace kanban_lia.Models.Events
 {
     public record PlacementCreatedEvent(
         Guid[] EntityIds,
-        IEnumerable<PlacementChange> Changes
+        IEnumerable<PlacementChange> Changes,
+        Actor Actor
     );
 }

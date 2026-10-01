@@ -1,4 +1,5 @@
 ﻿using kanban_lia.Services.IntegrationEvents.Contracts;
+using kanban_lia.Services.IntegrationEvents.Models;
 
 namespace kanban_lia.Services.IntegrationEvents
 {
@@ -9,14 +10,17 @@ namespace kanban_lia.Services.IntegrationEvents
                 Guid entityId,
                 Guid columnId,
                 Guid correlationId,
-                Guid? causationEventId)
+                Guid? causationEventId,
+                Actor actor)
         {
             return new IntegrationEvent<PlacementCreatedPayload>(
-                EventId: Guid.NewGuid().ToString(),
-                CorrelationId: correlationId,
-                CausationEventId: causationEventId,
+                EventId: Guid.NewGuid(),
                 EventType: "PlacementCreated",
                 Source: "PlacementBackend",
+                CompanyId: Guid.Empty,
+                CorrelationId: correlationId,
+                CausationEventId: causationEventId,
+                Actor: actor,
                 Payload: new PlacementCreatedPayload(
                     EntityId: entityId,
                     ColumnId: columnId));
