@@ -10,13 +10,12 @@ using kanban_lia.Models.Domain.Columns;
 using kanban_lia.Models.Domain.Exceptions;
 using kanban_lia.Models.Domain.Placements;
 using kanban_lia.Models.Domain.Placements.DTOs;
-using kanban_lia.Models.Events;
 using kanban_lia.Services.Boards.Exceptions;
 using kanban_lia.Services.Columns.Exceptions;
 using kanban_lia.Services.IntegrationEvents;
+using kanban_lia.Services.IntegrationEvents.Models;
 using kanban_lia.Services.Placements.DTOs;
 using Microsoft.AspNetCore.SignalR;
-using static kanban_lia.Infrastructure.Schemas.Schema;
 
 namespace kanban_lia.Services.Placements
 {
@@ -35,7 +34,7 @@ namespace kanban_lia.Services.Placements
             Guid TargetColumnId
         );
 
-        public async Task CreateAsync(IEnumerable<PlacementOperationDto> dtos, Guid? causationEventId, Guid? sourceAutomationId, CancellationToken cancellationToken)
+        public async Task CreateAsync(IEnumerable<PlacementOperationDto> dtos, Guid? causationEventId, Actor actor, CancellationToken cancellationToken)
         {
             foreach (var dto in dtos)
             {
@@ -160,7 +159,7 @@ namespace kanban_lia.Services.Placements
                             columnId: placement.ColumnId.Id,
                             sourceColumnId: null,
                             causationEventId: causationEventId,
-                            sourceAutomationId: sourceAutomationId,
+                            actor: actor,
                             cancellationToken: cancellationToken);
                     }
                     else
@@ -172,7 +171,7 @@ namespace kanban_lia.Services.Placements
                                 columnId: placement.ColumnId.Id,
                                 sourceColumnId: sourceColumnId.Id,
                                 causationEventId: causationEventId,
-                                sourceAutomationId: sourceAutomationId,
+                                actor: actor,
                                 cancellationToken: cancellationToken);
                         }
                     }

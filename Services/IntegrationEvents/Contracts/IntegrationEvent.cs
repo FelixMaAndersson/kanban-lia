@@ -1,16 +1,12 @@
-﻿using System.Text.Json.Serialization;
+﻿using kanban_lia.Services.IntegrationEvents.Models;
+using System.Text.Json.Serialization;
 
 namespace kanban_lia.Services.IntegrationEvents.Contracts;
 
-public sealed record IntegrationEvent<TPayload>(
+public sealed record IntegrationEvent<T>(
+
     [property: JsonPropertyName("eventId")]
-    string EventId,
-
-    [property: JsonPropertyName("causationEventId")]
-    Guid? CausationEventId,
-
-    [property: JsonPropertyName("sourceAutomationId")]
-    Guid? SourceAutomationId,
+    Guid EventId,
 
     [property: JsonPropertyName("eventType")]
     string EventType,
@@ -18,5 +14,17 @@ public sealed record IntegrationEvent<TPayload>(
     [property: JsonPropertyName("source")]
     string Source,
 
+    [property: JsonPropertyName("companyId")]
+    Guid CompanyId,
+
+    [property: JsonPropertyName("correlationId")]
+    Guid CorrelationId,
+
+    [property: JsonPropertyName("causationEventId")]
+    Guid? CausationEventId,
+
+    [property: JsonPropertyName("actor")]
+    Actor Actor,
+
     [property: JsonPropertyName("payload")]
-    TPayload Payload);
+    T Payload);

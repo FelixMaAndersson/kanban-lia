@@ -81,10 +81,10 @@ public sealed class RabbitMqIntegrationEventPublisher
         var integrationEvent =
             new IntegrationEvent<PlacementCreatedPayload>(
                 EventId: Guid.NewGuid().ToString(),
-                CausationEventId: causationEventId,
-                SourceAutomationId: sourceAutomationId,
                 EventType: PlacementCreated,
                 Source: PlacementBackend,
+                CompanyId: companyId,
+                CausationEventId: causationEventId,
                 Payload: new PlacementCreatedPayload(
                     EntityId: entityId,
                     ColumnId: columnId,

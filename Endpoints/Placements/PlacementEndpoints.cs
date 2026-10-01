@@ -7,6 +7,7 @@ using kanban_lia.Models.Domain.Columns;
 using kanban_lia.Models.Domain.Placements;
 using kanban_lia.Models.Events;
 using kanban_lia.Services.Columns.Exceptions;
+using kanban_lia.Services.IntegrationEvents.Models;
 using kanban_lia.Services.Placements;
 using kanban_lia.Services.Placements.DTOs;
 using Microsoft.AspNetCore.Mvc;
@@ -193,7 +194,8 @@ public static class PlacementEndpoints
             }
 
             Guid? causationEventId = null;
-            Guid? sourceAutomationId = null;
+            Guid actorId = new();
+            String actorType = "";
 
             if (httpRequest.Headers.TryGetValue(
                     "Idempotency-Key",
@@ -204,21 +206,32 @@ public static class PlacementEndpoints
             }
 
             if (httpRequest.Headers.TryGetValue(
-                    "Source-Automation-Id",
-                    out var automationId) &&
-                Guid.TryParse(automationId, out var parsedAutomationId))
+                    "Actor-Id",
+                    out var actorTempId) &&
+                Guid.TryParse(actorTempId, out var parsedActorId))
             {
-                sourceAutomationId = parsedAutomationId;
+                actorId = parsedActorId;
             }
 
-            await placementService.CreateAsync(placementOperations, causationEventId, sourceAutomationId, cancellationToken);
+            if (httpRequest.Headers.TryGetValue("Actor-Type",
+                    out var actorTempType))
+            {
+                actorType = actorTempType.ToString();
+            }
+
+            var actor = new Actor(
+                actorId,
+                actorType
+            );
+
+            await placementService.CreateAsync(placementOperations, causationEventId, actor, cancellationToken);
 
             await hub.Clients.All.SendAsync(
                 "PlacementCreated",
                 new PlacementCreatedEvent(
                     request.EntityIds,
                     changes,
-                    sourceAutomationId
+                    actor
                 ),
             cancellationToken);
 

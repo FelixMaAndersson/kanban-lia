@@ -2,12 +2,13 @@
 using kanban_lia.Models.Domain.Columns;
 using kanban_lia.Models.Domain.Columns.DTOs;
 using kanban_lia.Services.Columns.DTOs;
+using kanban_lia.Services.IntegrationEvents.Models;
 
 namespace kanban_lia.Services.Columns
 {
     public interface IColumnService
     {
-        Task CreateAsync(CreateColumnDto dto, Guid? causationEventId, Guid? sourceAutomationId, CancellationToken cancellationToken);
+        Task CreateAsync(CreateColumnDto dto, Guid? causationEventId, Actor actor, CancellationToken cancellationToken);
         Task<IEnumerable<ColumnDto>> GetByBoardIdAsync(BoardId boardId);
         Task<ColumnDto?> GetByIdAsync(ColumnId id);
         Task<bool> SetRequestWritableAsync(ColumnId id, bool requestWritable);
