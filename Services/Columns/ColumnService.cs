@@ -7,7 +7,6 @@ using kanban_lia.Services.Columns.DTOs;
 using kanban_lia.Services.Columns.Exceptions;
 using kanban_lia.Services.IntegrationEvents;
 using kanban_lia.Services.IntegrationEvents.Models;
-using static kanban_lia.Infrastructure.Schemas.Schema;
 
 namespace kanban_lia.Services.Columns
 {
@@ -35,7 +34,7 @@ namespace kanban_lia.Services.Columns
 
             //if (!fromEdges.Any() && !toEdges.Any())
             //{
-            //    await _integrationEventPublisher.PublishColumnHasNoEdgeAsync(newColumn.Id.Id, causationEventId, sourceAutomationId, cancellationToken);
+            //    await _integrationEventPublisher.PublishColumnHasNoEdgeAsync(newColumn.Id.Id, causationEventId, actor, cancellationToken);
             //}
         }
 

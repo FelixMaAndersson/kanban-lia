@@ -6,6 +6,7 @@ using kanban_lia.Models.Domain.Boards;
 using kanban_lia.Models.Domain.Columns;
 using kanban_lia.Services.Columns;
 using kanban_lia.Services.Columns.DTOs;
+using kanban_lia.Services.IntegrationEvents.Models;
 
 namespace kanban_lia.Endpoints.Columns;
 
@@ -26,7 +27,7 @@ public static class ColumnEndpoints
             var dto = mapper.Map<CreateColumnDto>(request);
 
             Guid? causationEventId = null;
-            Guid? sourceAutomationId = null;
+            var actor = new Actor(Guid.Empty, "User");
 
             if (httpRequest.Headers.TryGetValue(
                     "Causation-Id",
@@ -41,10 +42,10 @@ public static class ColumnEndpoints
                     out var sourceAutomationKey) &&
                 Guid.TryParse(sourceAutomationKey, out var parsedSourceAutomationId))
             {
-                sourceAutomationId = parsedSourceAutomationId;
+                actor = new Actor(parsedSourceAutomationId, "AutomationExecutor");
             }
 
-            await columnService.CreateAsync(dto, causationEventId, sourceAutomationId, cancellationToken);
+            await columnService.CreateAsync(dto, causationEventId, actor, cancellationToken);
 
             return Results.Ok();
         });

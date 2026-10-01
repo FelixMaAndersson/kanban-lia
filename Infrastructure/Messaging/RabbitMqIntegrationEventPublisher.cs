@@ -22,18 +22,11 @@ public sealed class RabbitMqIntegrationEventPublisher(
     private IChannel? _channel;
 
     public async Task PublishAsync(
-    string eventType,
-    string content,
-    CancellationToken cancellationToken)
+        string eventType,
+        string content,
+        CancellationToken cancellationToken)
     {
-        var integrationEvent =
-        new IntegrationEvent<ColumnHasNoEdgePayload>(
-            EventId: Guid.NewGuid().ToString(),
-            CausationEventId: causationEventId,
-            EventType: ColumnHasNoEdge,
-            Source: PlacementBackend,
-            Payload: new ColumnHasNoEdgePayload(
-                ColumnId: columnId));
+        var body = Encoding.UTF8.GetBytes(content);
 
         await _channelLock.WaitAsync(cancellationToken);
 
@@ -66,25 +59,82 @@ public sealed class RabbitMqIntegrationEventPublisher(
             _channelLock.Release();
         }
     }
-    public async Task PublishPlacementCreatedAsync(
-        Guid entityId,
-        Guid columnId,
-        Guid? sourceColumnId,
-        Guid? causationEventId,
-        Guid? sourceAutomationId,
-        CancellationToken cancellationToken)
-    {
-        var integrationEvent =
-            new IntegrationEvent<PlacementCreatedPayload>(
-                EventId: Guid.NewGuid().ToString(),
-                EventType: PlacementCreated,
-                Source: PlacementBackend,
-                CompanyId: companyId,
-                CausationEventId: causationEventId,
-                Payload: new PlacementCreatedPayload(
-                    EntityId: entityId,
-                    ColumnId: columnId,
-                    SourceColumnId: sourceColumnId));
+
+    //public async Task PublishPlacementCreatedAsync(
+    //    Guid entityId,
+    //    Guid columnId,
+    //    Guid? causationEventId,
+    //    Actor actor,
+    //    CancellationToken cancellationToken)
+    //{
+    //    var integrationEvent =
+    //        new IntegrationEvent<PlacementCreatedPayload>(
+    //            EventId: Guid.NewGuid(),
+    //            EventType: PlacementCreated,
+    //            Source: PlacementBackend,
+    //            CompanyId: Guid.Empty,
+    //            CorrelationId: Guid.NewGuid(),
+    //            CausationEventId: causationEventId,
+    //            Actor: actor,
+    //            Payload: new PlacementCreatedPayload(
+    //                EntityId: entityId,
+    //                ColumnId: columnId));
+
+    //    var body = JsonSerializer.SerializeToUtf8Bytes(
+    //        integrationEvent);
+
+    //    await _channelLock.WaitAsync(cancellationToken);
+
+    //    try
+    //    {
+    //        await EnsureConnectedAsync();
+
+    //        var channel = _channel
+    //            ?? throw new InvalidOperationException(
+    //                "RabbitMQ channel was not initialized.");
+
+    //        var properties = new BasicProperties
+    //        {
+    //            ContentType = "application/json",
+    //            DeliveryMode = DeliveryModes.Persistent,
+    //            MessageId = integrationEvent.EventId.ToString(),
+    //            Type = integrationEvent.EventType
+    //        };
+
+    //        await channel.BasicPublishAsync(
+    //            exchange: _options.ExchangeName,
+    //            routingKey: _options.RoutingKey,
+    //            mandatory: false,
+    //            basicProperties: properties,
+    //            body: body,
+    //            cancellationToken: cancellationToken);
+    //    }
+    //    finally
+    //    {
+    //        _channelLock.Release();
+    //    }
+    //}
+
+    //public async Task PublishColumnHasNoEdgeAsync(
+    //    Guid columnId,
+    //    Guid? causationEventId,
+    //    Actor actor,
+    //    CancellationToken cancellationToken)
+    //{
+    //    var integrationEvent =
+    //    new IntegrationEvent<ColumnHasNoEdgePayload>(
+    //        EventId: Guid.NewGuid(),
+    //        EventType: ColumnHasNoEdge,
+    //        Source: PlacementBackend,
+    //        CompanyId: Guid.Empty,
+    //        CorrelationId: Guid.NewGuid(),
+    //        CausationEventId: causationEventId,
+    //        Actor: actor,
+    //        Payload: new ColumnHasNoEdgePayload(
+    //            ColumnId: columnId));
+
+    //    var body = JsonSerializer.SerializeToUtf8Bytes(
+    //    integrationEvent);
 
     //    await _channelLock.WaitAsync(cancellationToken);
 
@@ -158,5 +208,4 @@ public sealed class RabbitMqIntegrationEventPublisher(
 
         _channelLock.Dispose();
     }
-
 }

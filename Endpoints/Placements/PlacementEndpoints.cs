@@ -204,15 +204,15 @@ public static class PlacementEndpoints
             }
 
             Guid? causationEventId = null;
-            Guid actorId = new();
-            String actorType = "";
+            var actorId = Guid.Empty;
+            var actorType = "User";
 
             if (httpRequest.Headers.TryGetValue(
-                    "Idempotency-Key",
-                    out var idempotencyKey) &&
-                Guid.TryParse(idempotencyKey, out var parsedCausationId))
+                    "Causation-Id",
+                    out var causationHeader) &&
+                Guid.TryParse(causationHeader, out var parsedId))
             {
-                causationEventId = parsedCausationId;
+                causationEventId = parsedId;
             }
 
             if (httpRequest.Headers.TryGetValue(
@@ -223,7 +223,8 @@ public static class PlacementEndpoints
                 actorId = parsedActorId;
             }
 
-            if (httpRequest.Headers.TryGetValue("Actor-Type",
+            if (httpRequest.Headers.TryGetValue(
+                    "Actor-Type",
                     out var actorTempType))
             {
                 actorType = actorTempType.ToString();
@@ -231,8 +232,7 @@ public static class PlacementEndpoints
 
             var actor = new Actor(
                 actorId,
-                actorType
-            );
+                actorType);
 
             await placementService.CreateAsync(placementOperations, correlationId, causationEventId, actor, cancellationToken);
 

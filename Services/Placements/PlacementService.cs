@@ -176,10 +176,11 @@ namespace kanban_lia.Services.Placements
                                 entityId: placement.EntityId.Id,
                                 columnId: placement.ColumnId.Id,
                                 correlationId: correlationId ?? Guid.NewGuid(),
-                                causationEventId: causationEventId);
+                                causationEventId: causationEventId,
+                                actor: actor);
 
                         var message = new OutboxMessage(
-                            Id: Guid.Parse(integrationEvent.EventId),
+                            Id: integrationEvent.EventId,
                             EventType: integrationEvent.EventType,
                             Content: JsonSerializer.Serialize(integrationEvent),
                             OccurredOn: DateTime.UtcNow,
