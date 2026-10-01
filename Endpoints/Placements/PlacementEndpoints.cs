@@ -56,7 +56,6 @@ public static class PlacementEndpoints
                 }
 
                 connectedTargetColumns.Add(column);
-
             }
 
             var currentPlacements = await placementService.GetCurrentAsync(
@@ -205,7 +204,7 @@ public static class PlacementEndpoints
 
             Guid? causationEventId = null;
             var actorId = Guid.Empty;
-            var actorType = "User";
+            var actorType = "";
 
             if (httpRequest.Headers.TryGetValue(
                     "Causation-Id",

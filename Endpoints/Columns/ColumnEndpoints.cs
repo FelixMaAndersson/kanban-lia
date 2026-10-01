@@ -27,23 +27,33 @@ public static class ColumnEndpoints
             var dto = mapper.Map<CreateColumnDto>(request);
 
             Guid? causationEventId = null;
-            var actor = new Actor(Guid.Empty, "User");
+            var actorId = Guid.Empty;
+            var actorType = "";
 
             if (httpRequest.Headers.TryGetValue(
-                    "Causation-Id",
-                    out var causationHeader) &&
+                "Causation-Id", 
+                out var causationHeader) &&
                 Guid.TryParse(causationHeader, out var parsedId))
             {
                 causationEventId = parsedId;
             }
 
             if (httpRequest.Headers.TryGetValue(
-                    "Source-Automation-Key",
-                    out var sourceAutomationKey) &&
-                Guid.TryParse(sourceAutomationKey, out var parsedSourceAutomationId))
+                "Actor-Id",
+                out var actorHeader) &&
+                Guid.TryParse(actorHeader, out var parsedActorId))
             {
-                actor = new Actor(parsedSourceAutomationId, "AutomationExecutor");
+                actorId = parsedActorId;
             }
+
+            if (httpRequest.Headers.TryGetValue(
+                "Actor-Type",
+                out var actorTypeHeader))
+            {
+                actorType = actorTypeHeader.ToString();
+            }
+
+            var actor = new Actor(actorId, actorType);
 
             await columnService.CreateAsync(dto, causationEventId, actor, cancellationToken);
 

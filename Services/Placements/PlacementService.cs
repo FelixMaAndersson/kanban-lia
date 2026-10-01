@@ -194,7 +194,6 @@ namespace kanban_lia.Services.Placements
                     }
 
                     transaction.Commit();
-
                 }
                 catch
                 {

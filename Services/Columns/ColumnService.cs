@@ -27,10 +27,9 @@ namespace kanban_lia.Services.Columns
 
             await _repository.CreateAsync(newColumn);
 
-            var fromEdges = await _columnEdgeRepository.GetByFromColumnIdAsync(newColumn.Id);
+            await _columnEdgeRepository.GetByFromColumnIdAsync(newColumn.Id);
 
-            var toEdges =
-                await _columnEdgeRepository.GetByToColumnIdAsync(newColumn.Id);
+            await _columnEdgeRepository.GetByToColumnIdAsync(newColumn.Id);
 
             //if (!fromEdges.Any() && !toEdges.Any())
             //{
