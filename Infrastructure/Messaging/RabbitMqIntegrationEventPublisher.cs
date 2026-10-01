@@ -1,48 +1,39 @@
-﻿using System.Text.Json;
-using kanban_lia.Services.IntegrationEvents;
+﻿using kanban_lia.Services.IntegrationEvents;
 using kanban_lia.Services.IntegrationEvents.Contracts;
 using Microsoft.Extensions.Options;
 using RabbitMQ.Client;
+using System.Text;
+using System.Text.Json;
 
 namespace kanban_lia.Infrastructure.Messaging;
 
-public sealed class RabbitMqIntegrationEventPublisher
-    : IIntegrationEventPublisher, IAsyncDisposable
+public sealed class RabbitMqIntegrationEventPublisher(
+    IOptions<RabbitMqOptions> options)
+        : IIntegrationEventPublisher, IAsyncDisposable
 {
-    private const string ColumnHasNoEdge = "ColumnHasNoEdge";
+    // private const string ColumnHasNoEdge = "ColumnHasNoEdge";
     private const string PlacementCreated = "PlacementCreated";
     private const string PlacementBackend = "PlacementBackend";
 
-    private readonly RabbitMqOptions _options;
+    private readonly RabbitMqOptions _options = options.Value;
     private readonly SemaphoreSlim _channelLock = new(1, 1);
 
     private IConnection? _connection;
     private IChannel? _channel;
 
-    public RabbitMqIntegrationEventPublisher(
-        IOptions<RabbitMqOptions> options)
-    {
-        _options = options.Value;
-    }
-
-    public async Task PublishColumnHasNoEdgeAsync(
-        Guid columnId,
-        Guid? causationEventId,
-        Guid? sourceAutomationId,
-        CancellationToken cancellationToken)
+    public async Task PublishAsync(
+    string eventType,
+    string content,
+    CancellationToken cancellationToken)
     {
         var integrationEvent =
         new IntegrationEvent<ColumnHasNoEdgePayload>(
             EventId: Guid.NewGuid().ToString(),
             CausationEventId: causationEventId,
-            SourceAutomationId: sourceAutomationId,
             EventType: ColumnHasNoEdge,
             Source: PlacementBackend,
             Payload: new ColumnHasNoEdgePayload(
                 ColumnId: columnId));
-
-        var body = JsonSerializer.SerializeToUtf8Bytes(
-        integrationEvent);
 
         await _channelLock.WaitAsync(cancellationToken);
 
@@ -50,20 +41,25 @@ public sealed class RabbitMqIntegrationEventPublisher
         {
             await EnsureConnectedAsync();
 
+            var channel = _channel
+                ?? throw new InvalidOperationException(
+                    "RabbitMQ channel was not initialized.");
+
             var properties = new BasicProperties
             {
                 ContentType = "application/json",
                 DeliveryMode = DeliveryModes.Persistent,
-                MessageId = integrationEvent.EventId.ToString(),
-                Type = integrationEvent.EventType
+                MessageId = Guid.NewGuid().ToString(),
+                Type = eventType
             };
 
-            await _channel!.BasicPublishAsync(
+            await channel.BasicPublishAsync(
                 exchange: _options.ExchangeName,
-                routingKey: "column.no-edge",
+                routingKey: _options.RoutingKey,
                 mandatory: false,
                 basicProperties: properties,
-                body: body);
+                body: body,
+                cancellationToken: cancellationToken);
         }
         finally
         {
@@ -90,35 +86,37 @@ public sealed class RabbitMqIntegrationEventPublisher
                     ColumnId: columnId,
                     SourceColumnId: sourceColumnId));
 
-        var body = JsonSerializer.SerializeToUtf8Bytes(
-            integrationEvent);
+    //    await _channelLock.WaitAsync(cancellationToken);
 
-        await _channelLock.WaitAsync(cancellationToken);
+    //    try
+    //    {
+    //        await EnsureConnectedAsync();
 
-        try
-        {
-            await EnsureConnectedAsync();
+    //        var channel = _channel
+    //            ?? throw new InvalidOperationException(
+    //                "RabbitMQ channel was not initialized.");
 
-            var properties = new BasicProperties
-            {
-                ContentType = "application/json",
-                DeliveryMode = DeliveryModes.Persistent,
-                MessageId = integrationEvent.EventId,
-                Type = integrationEvent.EventType
-            };
+    //        var properties = new BasicProperties
+    //        {
+    //            ContentType = "application/json",
+    //            DeliveryMode = DeliveryModes.Persistent,
+    //            MessageId = integrationEvent.EventId.ToString(),
+    //            Type = integrationEvent.EventType
+    //        };
 
-            await _channel!.BasicPublishAsync(
-                exchange: _options.ExchangeName,
-                routingKey: _options.RoutingKey,
-                mandatory: false,
-                basicProperties: properties,
-                body: body);
-        }
-        finally
-        {
-            _channelLock.Release();
-        }
-    }
+    //        await channel.BasicPublishAsync(
+    //            exchange: _options.ExchangeName,
+    //            routingKey: "column.no-edge",
+    //            mandatory: false,
+    //            basicProperties: properties,
+    //            body: body,
+    //            cancellationToken: cancellationToken);
+    //    }
+    //    finally
+    //    {
+    //        _channelLock.Release();
+    //    }
+    //}
 
     private async Task EnsureConnectedAsync()
     {

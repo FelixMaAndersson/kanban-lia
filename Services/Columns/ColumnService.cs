@@ -58,7 +58,9 @@ namespace kanban_lia.Services.Columns
             return _mapper.Map<ColumnDto>(column);
         }
 
-        public async Task<bool> SetRequestWritableAsync(ColumnId id, bool requestWritable)
+        public async Task<bool> SetRequestWritableAsync(
+            ColumnId id,
+            bool requestWritable)
         {
             var changed = await _repository.SetRequestWritableAsync(id, requestWritable);
             if (!changed)

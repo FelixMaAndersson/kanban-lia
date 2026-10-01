@@ -28,8 +28,7 @@ namespace kanban_lia.Infrastructure.Repositories.Columns
                 }
             );
         }
-        public async Task<IEnumerable<ColumnEdge>> GetByBoardIdAsync(
-            BoardId boardId)
+        public async Task<IEnumerable<ColumnEdge>> GetByBoardIdAsync(BoardId boardId)
         {
             using var connection = _connectionFactory.CreateConnection();
 
@@ -53,8 +52,7 @@ namespace kanban_lia.Infrastructure.Repositories.Columns
             return edges;
         }
 
-        public async Task<IEnumerable<ColumnEdge>> GetByFromColumnIdAsync(
-            ColumnId fromColumnId)
+        public async Task<IEnumerable<ColumnEdge>> GetByFromColumnIdAsync(ColumnId fromColumnId)
         {
             using var connection = _connectionFactory.CreateConnection();
 
@@ -73,8 +71,7 @@ namespace kanban_lia.Infrastructure.Repositories.Columns
             return edges;
         }
 
-        public async Task<IEnumerable<ColumnEdge>> GetByToColumnIdAsync(
-            ColumnId toColumnId)
+        public async Task<IEnumerable<ColumnEdge>> GetByToColumnIdAsync(ColumnId toColumnId)
         {
             using var connection = _connectionFactory.CreateConnection();
 

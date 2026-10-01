@@ -2,5 +2,7 @@
 
 namespace kanban_lia.Services.Boards.DTOs
 {
-    public record RenameBoardDto(BoardId Id, string NewTitle);
+    public record RenameBoardDto(
+        BoardId Id,
+        string NewTitle);
 }

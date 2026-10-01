@@ -1,6 +1,7 @@
 ﻿using kanban_lia.Models.Domain.Boards;
 using kanban_lia.Models.Domain.Columns;
 using kanban_lia.Models.Domain.Placements;
+using System.Data;
 
 namespace kanban_lia.Infrastructure.Repositories.Placements
 {
@@ -13,7 +14,7 @@ namespace kanban_lia.Infrastructure.Repositories.Placements
     }
     public interface IPlacementRepository
     {
-        Task CreateAsync(IEnumerable<Placement> placements);
+        Task CreateAsync(IEnumerable<Placement> placements, IDbTransaction transaction);
         Task<IEnumerable<Placement>> GetCurrentAsync(IEnumerable<EntityId> entityIds, BoardId boardId);
         Task<IEnumerable<Placement>> GetCurrentByBoardAsync(BoardId boardId);
         Task<IEnumerable<Placement>> GetCurrentByColumnAsync(ColumnId columnId, BoardId boardId);

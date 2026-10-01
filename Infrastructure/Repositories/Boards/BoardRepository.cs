@@ -70,7 +70,9 @@ namespace kanban_lia.Infrastructure.Repositories.Boards
             return board;
         }
 
-        public async Task<bool> RenameAsync(BoardId id, string title)
+        public async Task<bool> RenameAsync(
+            BoardId id, 
+            string title)
         {
             using var connection = _connectionFactory.CreateConnection();
 
@@ -88,7 +90,9 @@ namespace kanban_lia.Infrastructure.Repositories.Boards
 
             return rowsAffected > 0;
         }
-        public async Task<bool> AddRootAsync(BoardId id, EntityId entityId)
+        public async Task<bool> AddRootAsync(
+            BoardId id,
+            EntityId entityId)
         {
             using var connection = _connectionFactory.CreateConnection();
 
@@ -108,7 +112,9 @@ namespace kanban_lia.Infrastructure.Repositories.Boards
             return rowsAffected > 0;
         }
 
-        public async Task<bool> RemoveRootAsync(BoardId id, EntityId entityId)
+        public async Task<bool> RemoveRootAsync(
+            BoardId id,
+            EntityId entityId)
         {
             using var connection = _connectionFactory.CreateConnection();
 
@@ -161,7 +167,7 @@ namespace kanban_lia.Infrastructure.Repositories.Boards
             return count > 0;
         }
 
-        public async Task<bool> RootExistsAsync(BoardId boardId, EntityId entityId)
+        public async Task<bool> RootExistsAsync(BoardId id, EntityId entityId)
         {
             using var connection = _connectionFactory.CreateConnection();
             var count = await connection.ExecuteScalarAsync<int>(
@@ -172,7 +178,7 @@ namespace kanban_lia.Infrastructure.Repositories.Boards
                       AND {Schema.BoardRoots.EntityId} = @EntityId",
                 new
                 {
-                    BoardId = boardId.Id,
+                    BoardId = id.Id,
                     EntityId = entityId.Id
                 }
             );

@@ -2,5 +2,7 @@
 
 namespace kanban_lia.Services.Columns.DTOs
 {
-    public record CreateColumnEdgeDto(ColumnId FromColumnId, ColumnId ToColumnId);
+    public record CreateColumnEdgeDto(
+        ColumnId FromColumnId,
+        ColumnId ToColumnId);
 }

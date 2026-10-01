@@ -3,5 +3,7 @@ using kanban_lia.Models.Domain.Placements;
 
 namespace kanban_lia.Services.Boards.DTOs
 {
-    public record AddRootDto(BoardId BoardId, EntityId EntityId);
+    public record AddRootDto(
+        BoardId BoardId,
+        EntityId EntityId);
 }

@@ -35,17 +35,6 @@ namespace kanban_lia.Infrastructure.Repositories.Columns
             return column;
         }
 
-        // Behöver vi lägga till en metod för att hämta alla kolumner, samt en metod för att hämta kolumner baserat på BoardId?
-        //public async Task<IEnumerable<Column>> GetAllAsync()
-        //{
-        //    using var connection = _connectionFactory.CreateConnection();
-        //    var columns = await connection.QueryAsync<Column>(
-        //        @"
-        //            SELECT * FROM Columns"
-        //    );
-        //    return columns;
-        //}
-
         public async Task<IEnumerable<Column>> GetByBoardIdAsync(BoardId boardId)
         {
             using var connection = _connectionFactory.CreateConnection();
@@ -115,7 +104,9 @@ namespace kanban_lia.Infrastructure.Repositories.Columns
             return column.RequestWritable;
         }
 
-        public async Task<bool> SetRequestWritableAsync(ColumnId id, bool requestWritable)
+        public async Task<bool> SetRequestWritableAsync(
+            ColumnId id,
+            bool requestWritable)
         {
             using var connection = _connectionFactory.CreateConnection();
             var rowsAffected = await connection.ExecuteAsync(
@@ -132,7 +123,9 @@ namespace kanban_lia.Infrastructure.Repositories.Columns
             return rowsAffected > 0;
         }
 
-        public async Task<bool> RenameAsync(ColumnId id, string title)
+        public async Task<bool> RenameAsync(
+            ColumnId id,
+            string title)
         {
             using var connection = _connectionFactory.CreateConnection();
             var rowsAffected = await connection.ExecuteAsync(
