@@ -17,7 +17,7 @@ namespace kanban_lia.Services.IntegrationEvents
                 EventId: Guid.NewGuid(),
                 EventType: "PlacementCreated",
                 Source: "PlacementBackend",
-                CompanyId: Guid.Empty,
+                CompanyId: 0,
                 CorrelationId: correlationId,
                 CausationEventId: causationEventId,
                 Actor: actor,
