@@ -16,7 +16,7 @@ namespace kanban_lia.Services.IntegrationEvents
             return new IntegrationEvent<PlacementCreatedPayload>(
                 EventId: Guid.NewGuid(),
                 EventType: "PlacementCreated",
-                Source: "PlacementBackend",
+                Source: "Kanban",
                 CompanyId: 0,
                 CorrelationId: correlationId,
                 CausationEventId: causationEventId,
