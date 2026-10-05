@@ -192,7 +192,9 @@ public static class PlacementEndpoints
                 }
             }
 
-            Guid? correlationId = null;
+            Guid correlationId = Guid.NewGuid();
+            var actorId = Guid.Empty;
+            var actorType = "";
 
             if (httpRequest.Headers.TryGetValue(
                     "Correlation-Id",
@@ -203,15 +205,13 @@ public static class PlacementEndpoints
             }
 
             Guid? causationEventId = null;
-            var actorId = Guid.Empty;
-            var actorType = "";
 
             if (httpRequest.Headers.TryGetValue(
                     "Causation-Id",
                     out var causationHeader) &&
-                Guid.TryParse(causationHeader, out var parsedId))
+                Guid.TryParse(causationHeader, out var parsedCausationEventId))
             {
-                causationEventId = parsedId;
+                causationEventId = parsedCausationEventId;
             }
 
             if (httpRequest.Headers.TryGetValue(

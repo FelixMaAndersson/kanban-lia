@@ -21,7 +21,7 @@ namespace kanban_lia.Services.Columns
         private readonly IColumnEdgeRepository _columnEdgeRepository = columnEdgeRepository;
         private readonly IIntegrationEventPublisher _integrationEventPublisher = integrationEventPublisher;
 
-        public async Task CreateAsync(CreateColumnDto dto, Guid? causationEventId, Actor actor, CancellationToken cancellationToken)
+        public async Task CreateAsync(CreateColumnDto dto, Guid correlationId, Actor actor, CancellationToken cancellationToken)
         {
             var newColumn = Column.Create(dto.Id, dto.BoardId, dto.Title, dto.Position);
 

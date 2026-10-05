@@ -26,16 +26,16 @@ public static class ColumnEndpoints
         {
             var dto = mapper.Map<CreateColumnDto>(request);
 
-            Guid? causationEventId = null;
+            Guid correlationId = Guid.NewGuid();
             var actorId = Guid.Empty;
             var actorType = "";
 
             if (httpRequest.Headers.TryGetValue(
-                "Causation-Id", 
-                out var causationHeader) &&
-                Guid.TryParse(causationHeader, out var parsedId))
+                "Correlation-Id", 
+                out var correlationHeader) &&
+                Guid.TryParse(correlationHeader, out var parsedCorrelationId))
             {
-                causationEventId = parsedId;
+                correlationId = parsedCorrelationId;
             }
 
             if (httpRequest.Headers.TryGetValue(
@@ -55,7 +55,7 @@ public static class ColumnEndpoints
 
             var actor = new Actor(actorId, actorType);
 
-            await columnService.CreateAsync(dto, causationEventId, actor, cancellationToken);
+            await columnService.CreateAsync(dto, correlationId, actor, cancellationToken);
 
             return Results.Ok();
         });
