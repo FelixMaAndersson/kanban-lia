@@ -1,6 +1,6 @@
 ﻿namespace kanban_lia.Services.IntegrationEvents.Models
 {
     public record Actor(
-        Guid Id,
+        int Id,
         string Type);
 }

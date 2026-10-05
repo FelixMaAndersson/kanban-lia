@@ -193,7 +193,7 @@ public static class PlacementEndpoints
             }
 
             Guid correlationId = Guid.NewGuid();
-            var actorId = Guid.Empty;
+            var actorId = -1;
             var actorType = "";
 
             if (httpRequest.Headers.TryGetValue(
@@ -217,7 +217,7 @@ public static class PlacementEndpoints
             if (httpRequest.Headers.TryGetValue(
                     "Actor-Id",
                     out var actorTempId) &&
-                Guid.TryParse(actorTempId, out var parsedActorId))
+                int.TryParse(actorTempId, out var parsedActorId))
             {
                 actorId = parsedActorId;
             }
