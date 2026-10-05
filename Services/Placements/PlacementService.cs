@@ -176,7 +176,7 @@ namespace kanban_lia.Services.Placements
                                 entityId: placement.EntityId.Id,
                                 columnId: placement.ColumnId.Id,
                                 correlationId: correlationId,
-                                causationEventId: causationEventId ?? Guid.NewGuid(),
+                                causationEventId: causationEventId,
                                 actor: actor);
 
                         var message = new OutboxMessage(
