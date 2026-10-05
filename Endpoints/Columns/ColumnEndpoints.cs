@@ -27,7 +27,7 @@ public static class ColumnEndpoints
             var dto = mapper.Map<CreateColumnDto>(request);
 
             Guid correlationId = Guid.NewGuid();
-            var actorId = Guid.Empty;
+            var actorId = -1;
             var actorType = "";
 
             if (httpRequest.Headers.TryGetValue(
@@ -41,7 +41,7 @@ public static class ColumnEndpoints
             if (httpRequest.Headers.TryGetValue(
                 "Actor-Id",
                 out var actorHeader) &&
-                Guid.TryParse(actorHeader, out var parsedActorId))
+                int.TryParse(actorHeader, out var parsedActorId))
             {
                 actorId = parsedActorId;
             }
