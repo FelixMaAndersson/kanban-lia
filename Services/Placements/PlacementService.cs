@@ -43,7 +43,7 @@ namespace kanban_lia.Services.Placements
             Guid TargetColumnId
         );
 
-        public async Task CreateAsync(IEnumerable<PlacementOperationDto> dtos, Guid? correlationId, Guid? causationEventId, Actor actor, CancellationToken cancellationToken)
+        public async Task CreateAsync(IEnumerable<PlacementOperationDto> dtos, Guid correlationId, Guid? causationEventId, Actor actor, CancellationToken cancellationToken)
         {
             foreach (var dto in dtos)
             {
@@ -175,7 +175,7 @@ namespace kanban_lia.Services.Placements
                             IntegrationEventFactory.CreatePlacementCreated(
                                 entityId: placement.EntityId.Id,
                                 columnId: placement.ColumnId.Id,
-                                correlationId: correlationId ?? Guid.NewGuid(),
+                                correlationId: correlationId,
                                 causationEventId: causationEventId,
                                 actor: actor);
 

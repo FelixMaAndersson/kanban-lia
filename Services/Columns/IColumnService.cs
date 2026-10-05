@@ -8,7 +8,7 @@ namespace kanban_lia.Services.Columns
 {
     public interface IColumnService
     {
-        Task CreateAsync(CreateColumnDto dto, Guid? causationEventId, Actor actor, CancellationToken cancellationToken);
+        Task CreateAsync(CreateColumnDto dto, Guid correlationId, Actor actor, CancellationToken cancellationToken);
         Task<IEnumerable<ColumnDto>> GetByBoardIdAsync(BoardId boardId);
         Task<ColumnDto?> GetByIdAsync(ColumnId id);
         Task<bool> SetRequestWritableAsync(ColumnId id, bool requestWritable);
