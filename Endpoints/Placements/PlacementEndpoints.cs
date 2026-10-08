@@ -193,6 +193,7 @@ public static class PlacementEndpoints
             }
 
             Guid correlationId = Guid.NewGuid();
+            Guid? causationEventId = null;
             var actorId = -1;
             var actorType = "";
 
@@ -204,7 +205,6 @@ public static class PlacementEndpoints
                 correlationId = parsedCorrelationId;
             }
 
-            Guid? causationEventId = null;
 
             if (httpRequest.Headers.TryGetValue(
                     "Causation-Id",
