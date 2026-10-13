@@ -8,7 +8,6 @@ namespace kanban_lia.Infrastructure.Repositories.Columns
 {
     public class ColumnEdgeRepository(DbConnectionFactory connectionFactory) : IColumnEdgeRepository
     {
-
         private readonly DbConnectionFactory _connectionFactory = connectionFactory;
 
         public async Task CreateAsync(ColumnEdge columnEdge)

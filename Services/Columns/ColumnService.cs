@@ -13,13 +13,11 @@ namespace kanban_lia.Services.Columns
     public class ColumnService(
         IColumnRepository repository,
         IColumnEdgeRepository columnEdgeRepository,
-        IIntegrationEventPublisher integrationEventPublisher,
         IMapper mapper) : IColumnService
     {
         private readonly IMapper _mapper = mapper;
         private readonly IColumnRepository _repository = repository;
         private readonly IColumnEdgeRepository _columnEdgeRepository = columnEdgeRepository;
-        private readonly IIntegrationEventPublisher _integrationEventPublisher = integrationEventPublisher;
 
         public async Task CreateAsync(CreateColumnDto dto, Guid correlationId, Actor actor, CancellationToken cancellationToken)
         {
