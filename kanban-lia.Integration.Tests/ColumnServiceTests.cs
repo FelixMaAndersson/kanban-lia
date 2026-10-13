@@ -44,11 +44,9 @@ namespace kanban_lia.Integration.Tests
             var boardId = await boardService.CreateAsync("Test Board");
             var columnId = new ColumnId(Guid.NewGuid());
 
-            var actor = new Actor("1", "Test");
-
             await columnService.CreateAsync(
                 new CreateColumnDto(columnId, "Test Column", 1, boardId, true), 
-                Guid.NewGuid(), actor, CancellationToken.None);
+                Guid.NewGuid(), null, CancellationToken.None);
 
             var retrievedColumn = await columnService.GetByIdAsync(columnId);
 
@@ -63,16 +61,13 @@ namespace kanban_lia.Integration.Tests
             var boardService = CreateBoardService();
 
             var boardId = await boardService.CreateAsync("Test Board");
-            var columnId = new ColumnId(Guid.NewGuid());
-
-            var actor = new Actor("1", "Test");
 
             await columnService.CreateAsync(
-                new CreateColumnDto(columnId, "Column 1", 1, boardId, true), 
-                Guid.NewGuid(), actor, CancellationToken.None);
+                new CreateColumnDto(new ColumnId(Guid.NewGuid()), "Column 1", 1, boardId, true), 
+                Guid.NewGuid(), null, CancellationToken.None);
             await columnService.CreateAsync(
-                new CreateColumnDto(columnId, "Column 2", 2, boardId, true), 
-                Guid.NewGuid(), actor, CancellationToken.None);
+                new CreateColumnDto(new ColumnId(Guid.NewGuid()), "Column 2", 2, boardId, true), 
+                Guid.NewGuid(), null, CancellationToken.None);
 
             var columns = await columnService.GetByBoardIdAsync(boardId);
 
@@ -90,11 +85,9 @@ namespace kanban_lia.Integration.Tests
             var boardId = await boardService.CreateAsync("Test Board");
             var columnId = new ColumnId(Guid.NewGuid());
 
-            var actor = new Actor("1", "Test");
-
             await columnService.CreateAsync(
                 new CreateColumnDto(columnId, "Old Title", 1, boardId, true), 
-                Guid.NewGuid(), actor, CancellationToken.None);
+                Guid.NewGuid(), null, CancellationToken.None);
 
             var renamed = await columnService.RenameAsync(new RenameColumnDto(columnId, "New Title"));
 
@@ -113,11 +106,9 @@ namespace kanban_lia.Integration.Tests
             var boardId = await boardService.CreateAsync("Test Board");
             var columnId = new ColumnId(Guid.NewGuid());
 
-            var actor = new Actor("1", "Test");
-
             await columnService.CreateAsync(
                 new CreateColumnDto(columnId, "Old Title", 1, boardId, true), 
-                Guid.NewGuid(), actor, CancellationToken.None);
+                Guid.NewGuid(), null, CancellationToken.None);
 
             var deleted = await columnService.DeleteAsync(columnId);
 

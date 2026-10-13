@@ -93,22 +93,25 @@ namespace kanban_lia.Integration.Tests
                     true),
                     Guid.NewGuid(), null, CancellationToken.None);
 
+            var operation1EntityId = new EntityId(Guid.NewGuid());
+            var operation2EntityId = new EntityId(Guid.NewGuid());
+
             var operation1 = new PlacementOperationDto(
                 new CreatePlacementDto(
-                    [new(Guid.NewGuid())],
+                    [operation1EntityId],
                     boardId,
                     columnId,
-                    null,
-                    null),
+                    [],
+                    []),
                 null);
-            
+
             var operation2 = new PlacementOperationDto(
                 new CreatePlacementDto(
-                    [new(Guid.NewGuid())],
+                    [operation2EntityId],
                     boardId,
                     columnId,
-                    null,
-                    null),
+                    [operation1EntityId],
+                    []),
                 null);
 
             await placementService.CreateAsync(
@@ -128,11 +131,11 @@ namespace kanban_lia.Integration.Tests
 
             // Assert
             var placement1 = await repository.GetCurrentAsync(
-                [new(Guid.NewGuid())],
+                [operation1EntityId],
                 boardId);
 
             var placement2 = await repository.GetCurrentAsync(
-                [new(Guid.NewGuid())],
+                [operation2EntityId],
                 boardId);
 
             Assert.NotNull(placement1);
@@ -169,22 +172,25 @@ namespace kanban_lia.Integration.Tests
                     true),
                     Guid.NewGuid(), null, CancellationToken.None);
 
+            var operation1EntityId = new EntityId(Guid.NewGuid());
+            var operation2EntityId = new EntityId(Guid.NewGuid());
+
             var operation1 = new PlacementOperationDto(
                 new CreatePlacementDto(
-                    [new(Guid.NewGuid())],
+                    [operation1EntityId],
                     boardId,
                     columnId,
-                    null,
-                    null),
+                    [],
+                    []),
                 null);
 
             var operation2 = new PlacementOperationDto(
                 new CreatePlacementDto(
-                    [new(Guid.NewGuid())],
+                    [operation2EntityId],
                     boardId,
                     columnId,
-                    null,
-                    null),
+                    [],
+                    [operation1EntityId]),
                 null);
 
             await placementService.CreateAsync(
@@ -204,11 +210,11 @@ namespace kanban_lia.Integration.Tests
 
             // Assert
             var placement1 = await repository.GetCurrentAsync(
-                [new(Guid.NewGuid())],
+                [operation1EntityId],
                 boardId);
 
             var placement2 = await repository.GetCurrentAsync(
-                [new(Guid.NewGuid())],
+                [operation2EntityId],
                 boardId);
 
             Assert.NotNull(placement1);
@@ -251,8 +257,8 @@ namespace kanban_lia.Integration.Tests
                     [new(Guid.NewGuid())],
                     boardId,
                     columnId,
-                    null,
-                    null),
+                    [],
+                    []),
                 null);
 
             await placementService.CreateAsync(
@@ -304,8 +310,8 @@ namespace kanban_lia.Integration.Tests
                     [new(Guid.NewGuid())],
                     boardId,
                     columnId,
-                    null,
-                    null),
+                    [new(Guid.NewGuid())],
+                    [new(Guid.NewGuid())]),
                 null);
 
             await Assert.ThrowsAsync<InvalidDomainException>(
@@ -339,25 +345,25 @@ namespace kanban_lia.Integration.Tests
                     true),
                     Guid.NewGuid(), null, CancellationToken.None);
 
-            var entityId1 = Guid.NewGuid();
-            var entityId2 = Guid.NewGuid();
+            var operation1EntityId = new EntityId(Guid.NewGuid());
+            var operation2EntityId = new EntityId(Guid.NewGuid());
 
             var operation1 = new PlacementOperationDto(
                 new CreatePlacementDto(
-                    [new(Guid.NewGuid())],
+                    [operation1EntityId],
                     boardId,
                     columnId,
-                    null,
-                    null),
+                    [],
+                    []),
                 null);
 
             var operation2 = new PlacementOperationDto(
                 new CreatePlacementDto(
-                    [new(Guid.NewGuid())],
+                    [operation2EntityId],
                     boardId,
                     columnId,
-                    null,
-                    null),
+                    [],
+                    []),
                 null);
 
             await placementService.CreateAsync(
@@ -377,11 +383,11 @@ namespace kanban_lia.Integration.Tests
 
             // Assert
             var placement1 = await repository.GetCurrentAsync(
-                [new(Guid.NewGuid())],
+                [operation1EntityId],
                 boardId);
 
             var placement2 = await repository.GetCurrentAsync(
-                [new(Guid.NewGuid())],
+                [operation2EntityId],
                 boardId);
 
             Assert.NotNull(placement1);
