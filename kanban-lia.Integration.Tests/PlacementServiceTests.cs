@@ -13,6 +13,9 @@ using kanban_lia.Services.Columns;
 using kanban_lia.Services.Columns.Exceptions;
 using kanban_lia.Services.Placements;
 using kanban_lia.Mappings;
+using kanban_lia.Infrastructure.Repositories.Outbox;
+using kanban_lia.Services.IntegrationEvents.Models;
+using kanban_lia.Services.Placements.DTOs;
 
 namespace kanban_lia.Integration.Tests
 {
@@ -40,9 +43,11 @@ namespace kanban_lia.Integration.Tests
         private PlacementService CreatePlacementService()
         {
             return new PlacementService(
-                new PlacementRepository(_db.DbFactory),
-                new ColumnRepository(_db.DbFactory),
+                _db.DbFactory,
                 new BoardRepository(_db.DbFactory),
+                new ColumnRepository(_db.DbFactory),
+                new PlacementRepository(_db.DbFactory),
+                new OutboxRepository(_db.DbFactory),
                 _mapper);
         }
 
@@ -55,6 +60,7 @@ namespace kanban_lia.Integration.Tests
         {
             return new ColumnService(
                 new ColumnRepository(_db.DbFactory),
+                new ColumnEdgeRepository(_db.DbFactory),
                 _mapper);
         }
 
@@ -83,33 +89,53 @@ namespace kanban_lia.Integration.Tests
                     columnId,
                     "Column 1",
                     1,
-                    boardId));
+                    boardId,
+                    true),
+                    Guid.NewGuid(), null, CancellationToken.None);
 
-            var entityId1 = Guid.NewGuid();
-            var entityId2 = Guid.NewGuid();
+            var operation1EntityId = new EntityId(Guid.NewGuid());
+            var operation2EntityId = new EntityId(Guid.NewGuid());
+
+            var operation1 = new PlacementOperationDto(
+                new CreatePlacementDto(
+                    [operation1EntityId],
+                    boardId,
+                    columnId,
+                    [],
+                    []),
+                null);
+
+            var operation2 = new PlacementOperationDto(
+                new CreatePlacementDto(
+                    [operation2EntityId],
+                    boardId,
+                    columnId,
+                    [operation1EntityId],
+                    []),
+                null);
 
             await placementService.CreateAsync(
-                new Services.Placements.DTOs.CreatePlacementDto(
-                    entityId1,
-                    columnId,
-                    null,
-                    null), placementService.Get_integrationEventPublisher1());
+                [operation1],
+                Guid.NewGuid(),
+                null,
+                null,
+                CancellationToken.None);
 
             // Act
             await placementService.CreateAsync(
-                new Services.Placements.DTOs.CreatePlacementDto(
-                    entityId2,
-                    columnId,
-                    entityId1,
-                    null), placementService.Get_integrationEventPublisher1());
+                [operation2],
+                Guid.NewGuid(),
+                null,
+                null,
+                CancellationToken.None);
 
             // Assert
             var placement1 = await repository.GetCurrentAsync(
-                new EntityId(entityId1),
+                [operation1EntityId],
                 boardId);
 
             var placement2 = await repository.GetCurrentAsync(
-                new EntityId(entityId2),
+                [operation2EntityId],
                 boardId);
 
             Assert.NotNull(placement1);
@@ -117,11 +143,11 @@ namespace kanban_lia.Integration.Tests
 
             Assert.True(
                 string.CompareOrdinal(
-                    placement1.SortKey,
-                    placement2.SortKey) < 0,
+                    placement1.First().SortKey,
+                    placement2.First().SortKey) < 0,
                 $"Expected entity2 to be after entity1. " +
-                $"entity1 SortKey: '{placement1.SortKey}', " +
-                $"entity2 SortKey: '{placement2.SortKey}'");
+                $"entity1 SortKey: '{placement1.First().SortKey}', " +
+                $"entity2 SortKey: '{placement2.First().SortKey}'");
         }
 
         [Fact]
@@ -142,31 +168,53 @@ namespace kanban_lia.Integration.Tests
                     columnId,
                     "Column 1",
                     1,
-                    boardId));
-            var entityId1 = Guid.NewGuid();
-            var entityId2 = Guid.NewGuid();
-            await placementService.CreateAsync(
-                new Services.Placements.DTOs.CreatePlacementDto(
-                    entityId1,
+                    boardId,
+                    true),
+                    Guid.NewGuid(), null, CancellationToken.None);
+
+            var operation1EntityId = new EntityId(Guid.NewGuid());
+            var operation2EntityId = new EntityId(Guid.NewGuid());
+
+            var operation1 = new PlacementOperationDto(
+                new CreatePlacementDto(
+                    [operation1EntityId],
+                    boardId,
                     columnId,
-                    null,
-                    null), placementService.Get_integrationEventPublisher1());
+                    [],
+                    []),
+                null);
+
+            var operation2 = new PlacementOperationDto(
+                new CreatePlacementDto(
+                    [operation2EntityId],
+                    boardId,
+                    columnId,
+                    [],
+                    [operation1EntityId]),
+                null);
+
+            await placementService.CreateAsync(
+                [operation1],
+                Guid.NewGuid(),
+                null,
+                null,
+                CancellationToken.None);
 
             // Act
             await placementService.CreateAsync(
-                new Services.Placements.DTOs.CreatePlacementDto(
-                    entityId2,
-                    columnId,
-                    null,
-                    entityId1), placementService.Get_integrationEventPublisher1());
+                [operation2],
+                Guid.NewGuid(),
+                null,
+                null,
+                CancellationToken.None);
 
             // Assert
             var placement1 = await repository.GetCurrentAsync(
-                new EntityId(entityId1),
+                [operation1EntityId],
                 boardId);
 
             var placement2 = await repository.GetCurrentAsync(
-                new EntityId(entityId2),
+                [operation2EntityId],
                 boardId);
 
             Assert.NotNull(placement1);
@@ -174,11 +222,11 @@ namespace kanban_lia.Integration.Tests
 
             Assert.True(
                 string.CompareOrdinal(
-                    placement1.SortKey,
-                    placement2.SortKey) > 0,
+                    placement1.First().SortKey,
+                    placement2.First().SortKey) > 0,
                 $"Expected entity2 to be before entity1. " +
-                $"entity1 SortKey: '{placement1.SortKey}', " +
-                $"entity2 SortKey: '{placement2.SortKey}'");
+                $"entity1 SortKey: '{placement1.First().SortKey}', " +
+                $"entity2 SortKey: '{placement2.First().SortKey}'");
         }
 
         [Fact]
@@ -189,29 +237,43 @@ namespace kanban_lia.Integration.Tests
             var columnService = CreateColumnService();
             var placementService = CreatePlacementService();
             var repository = CreatePlacementRepository();
+
             var boardId = await boardService.CreateAsync("Testboard");
+
             var columnId = new ColumnId(Guid.NewGuid());
+
             await columnService.CreateAsync(
                 new Services.Columns.DTOs.CreateColumnDto(
                     columnId,
                     "Column 1",
                     1,
-                    boardId));
-            var entityId1 = Guid.NewGuid();
+                    boardId,
+                    true),
+                    Guid.NewGuid(), null, CancellationToken.None);
 
             // Act
-            await placementService.CreateAsync(
-                new Services.Placements.DTOs.CreatePlacementDto(
-                    entityId1,
+            var operation = new PlacementOperationDto(
+                new CreatePlacementDto(
+                    [new(Guid.NewGuid())],
+                    boardId,
                     columnId,
-                    null,
-                    null), placementService.Get_integrationEventPublisher1());
+                    [],
+                    []),
+                null);
+
+            await placementService.CreateAsync(
+                [operation],
+                Guid.NewGuid(),
+                null,
+                null,
+                CancellationToken.None);
 
             // Assert
-            var placement1 = await repository.GetCurrentAsync(
-                new EntityId(entityId1),
+            var placement = await repository.GetCurrentAsync(
+                [new(Guid.NewGuid())],
                 boardId);
-            Assert.NotNull(placement1);
+
+            Assert.NotNull(placement);
         }
 
         [Fact]
@@ -231,17 +293,34 @@ namespace kanban_lia.Integration.Tests
                     columnId,
                     "Column 1",
                     1,
-                    boardId));
+                    boardId,
+                    true),
+                    Guid.NewGuid(), null, CancellationToken.None);
 
-            var dto = new Services.Placements.DTOs.CreatePlacementDto(
-                Guid.NewGuid(),
+            var dto = new CreatePlacementDto(
+                [new(Guid.NewGuid())],
+                boardId,
                 columnId,
-                Guid.NewGuid(),
-                Guid.NewGuid());
+                null,
+                null);
 
             // Act & Assert
+            var operation = new PlacementOperationDto(
+                new CreatePlacementDto(
+                    [new(Guid.NewGuid())],
+                    boardId,
+                    columnId,
+                    [new(Guid.NewGuid())],
+                    [new(Guid.NewGuid())]),
+                null);
+
             await Assert.ThrowsAsync<InvalidDomainException>(
-                () => placementService.CreateAsync(dto, placementService.Get_integrationEventPublisher1()));
+                () => placementService.CreateAsync(
+                [operation],
+                Guid.NewGuid(),
+                null,
+                null,
+                CancellationToken.None));
         }
 
         [Fact]
@@ -262,49 +341,69 @@ namespace kanban_lia.Integration.Tests
                     columnId,
                     "Column 1",
                     1,
-                    boardId));
+                    boardId,
+                    true),
+                    Guid.NewGuid(), null, CancellationToken.None);
 
-            var entityId1 = Guid.NewGuid();
-            var entityId2 = Guid.NewGuid();
+            var operation1EntityId = new EntityId(Guid.NewGuid());
+            var operation2EntityId = new EntityId(Guid.NewGuid());
+
+            var operation1 = new PlacementOperationDto(
+                new CreatePlacementDto(
+                    [operation1EntityId],
+                    boardId,
+                    columnId,
+                    [],
+                    []),
+                null);
+
+            var operation2 = new PlacementOperationDto(
+                new CreatePlacementDto(
+                    [operation2EntityId],
+                    boardId,
+                    columnId,
+                    [],
+                    []),
+                null);
 
             await placementService.CreateAsync(
-                new Services.Placements.DTOs.CreatePlacementDto(
-                    entityId1,
-                    columnId,
-                    null,
-                    null), placementService.Get_integrationEventPublisher1());
+                [operation1],
+                Guid.NewGuid(),
+                null,
+                null,
+                CancellationToken.None);
 
             // Act
             await placementService.CreateAsync(
-                new Services.Placements.DTOs.CreatePlacementDto(
-                    entityId2,
-                    columnId,
-                    null,
-                    null), placementService.Get_integrationEventPublisher1());
+                [operation2],
+                Guid.NewGuid(),
+                null,
+                null,
+                CancellationToken.None);
 
             // Assert
             var placement1 = await repository.GetCurrentAsync(
-                new EntityId(entityId1),
+                [operation1EntityId],
                 boardId);
 
             var placement2 = await repository.GetCurrentAsync(
-                new EntityId(entityId2),
+                [operation2EntityId],
                 boardId);
 
             Assert.NotNull(placement1);
             Assert.NotNull(placement2);
 
             Assert.NotEqual(
-                placement1.SortKey,
-                placement2.SortKey);
+                placement1.First().SortKey,
+                placement2.First().SortKey);
 
             Assert.True(
                 string.CompareOrdinal(
-                    placement1.SortKey,
-                    placement2.SortKey) < 0,
+                    placement1.First().SortKey,
+                    placement2.First().SortKey) < 0,
                 $"Expected entity2 to be placed after entity1. " +
-                $"entity1 SortKey: '{placement1.SortKey}', " +
-                $"entity2 SortKey: '{placement2.SortKey}'");
+                $"entity1 SortKey: '{placement1.First().SortKey}', " +
+                $"entity2 SortKey: '{placement2.First().SortKey}'");
         }
 
         [Fact]
@@ -318,15 +417,30 @@ namespace kanban_lia.Integration.Tests
             var boardId = await boardService.CreateAsync("Testboard");
             var columnId = new ColumnId(Guid.NewGuid());
 
-            var dto = new Services.Placements.DTOs.CreatePlacementDto(
-                Guid.NewGuid(),
+            var dto = new CreatePlacementDto(
+                [new(Guid.NewGuid())],
+                boardId,
                 columnId,
                 null,
                 null);
 
             // Act & Assert
+            var operation = new PlacementOperationDto(
+                new CreatePlacementDto(
+                    [new(Guid.NewGuid())],
+                    boardId,
+                    columnId,
+                    null,
+                    null),
+                null);
+
             await Assert.ThrowsAsync<ColumnNotFoundException>(
-                () => placementService.CreateAsync(dto, placementService.Get_integrationEventPublisher1()));
+                () => placementService.CreateAsync(
+                [operation],
+                Guid.NewGuid(),
+                null,
+                null,
+                CancellationToken.None));
         }
     }
 }

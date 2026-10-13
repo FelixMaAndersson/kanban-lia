@@ -46,7 +46,7 @@ public class BoardServiceTests : IClassFixture<DatabaseFixture>
         var board = await _service.GetByIdAsync(id);
 
         Assert.NotNull(board);
-        Assert.Equal(id.Id, board.Id);
+        Assert.Equal(id, board.Id);
     }
 
     [Fact]
@@ -62,7 +62,7 @@ public class BoardServiceTests : IClassFixture<DatabaseFixture>
     {
         var id = await _service.CreateAsync("Testboard");
 
-        await _service.RenameAsync(new RenameBoardDto(id.Id, "Renamedboard"));
+        await _service.RenameAsync(new RenameBoardDto(id, "Renamedboard"));
 
         var board = await _repository.GetByIdAsync(id);
 
@@ -75,7 +75,7 @@ public class BoardServiceTests : IClassFixture<DatabaseFixture>
     {
         var id = new BoardId(Guid.NewGuid());
 
-        await Assert.ThrowsAsync<BoardNotFoundException>(() => _service.RenameAsync(new RenameBoardDto(id.Id, "Renamedboard")));
+        await Assert.ThrowsAsync<BoardNotFoundException>(() => _service.RenameAsync(new RenameBoardDto(id, "Renamedboard")));
     }
 
     [Fact]
@@ -84,7 +84,7 @@ public class BoardServiceTests : IClassFixture<DatabaseFixture>
         var boardId = await _service.CreateAsync("Testboard");
         var entityId = new EntityId(Guid.NewGuid());
 
-        await _service.AddRootAsync(new AddRootDto(boardId.Id, entityId.Id));
+        await _service.AddRootAsync(new AddRootDto(boardId, entityId));
 
         var rootExists = await _repository.RootExistsAsync(
         boardId,
@@ -99,7 +99,7 @@ public class BoardServiceTests : IClassFixture<DatabaseFixture>
         var boardId = new BoardId(Guid.NewGuid());
         var entityId = new EntityId(Guid.NewGuid());
 
-        await Assert.ThrowsAsync<BoardNotFoundException>(() => _service.AddRootAsync(new AddRootDto(boardId.Id, entityId.Id)));
+        await Assert.ThrowsAsync<BoardNotFoundException>(() => _service.AddRootAsync(new AddRootDto(boardId, entityId)));
     }
 
     [Fact]
@@ -108,9 +108,9 @@ public class BoardServiceTests : IClassFixture<DatabaseFixture>
         var boardId = await _service.CreateAsync("Testboard");
         var entityId = new EntityId(Guid.NewGuid());
 
-        await _service.AddRootAsync(new AddRootDto(boardId.Id, entityId.Id));
+        await _service.AddRootAsync(new AddRootDto(boardId, entityId));
 
-        await Assert.ThrowsAsync<RootAlreadyExistsException>(() => _service.AddRootAsync(new AddRootDto(boardId.Id, entityId.Id)));
+        await Assert.ThrowsAsync<RootAlreadyExistsException>(() => _service.AddRootAsync(new AddRootDto(boardId, entityId)));
     }
 
     [Fact]
@@ -119,9 +119,9 @@ public class BoardServiceTests : IClassFixture<DatabaseFixture>
         var boardId = await _service.CreateAsync("Testboard");
         var entityId = new EntityId(Guid.NewGuid());
 
-        await _service.AddRootAsync(new AddRootDto(boardId.Id, entityId.Id));
+        await _service.AddRootAsync(new AddRootDto(boardId, entityId));
 
-        await _service.RemoveRootAsync(new RemoveRootDto(boardId.Id, entityId.Id));
+        await _service.RemoveRootAsync(new RemoveRootDto(boardId, entityId));
 
         var rootExists = await _repository.RootExistsAsync(
         boardId,
@@ -136,7 +136,7 @@ public class BoardServiceTests : IClassFixture<DatabaseFixture>
         var boardId = new BoardId(Guid.NewGuid());
         var entityId = new EntityId(Guid.NewGuid());
 
-        await Assert.ThrowsAsync<BoardNotFoundException>(() => _service.RemoveRootAsync(new RemoveRootDto(boardId.Id, entityId.Id)));
+        await Assert.ThrowsAsync<BoardNotFoundException>(() => _service.RemoveRootAsync(new RemoveRootDto(boardId, entityId)));
     }
 
     [Fact]
@@ -145,7 +145,7 @@ public class BoardServiceTests : IClassFixture<DatabaseFixture>
         var boardId = await _service.CreateAsync("Testboard");
         var entityId = new EntityId(Guid.NewGuid());
 
-        await Assert.ThrowsAsync<RootNotFoundException>(() => _service.RemoveRootAsync(new RemoveRootDto(boardId.Id, entityId.Id)));
+        await Assert.ThrowsAsync<RootNotFoundException>(() => _service.RemoveRootAsync(new RemoveRootDto(boardId, entityId)));
     }
 
     [Fact]

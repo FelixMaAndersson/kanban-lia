@@ -9,6 +9,7 @@ using kanban_lia.Services.Boards;
 using kanban_lia.Services.Columns;
 using kanban_lia.Services.Columns.DTOs;
 using kanban_lia.Services.Columns.Exceptions;
+using kanban_lia.Services.IntegrationEvents.Models;
 
 namespace kanban_lia.Integration.Tests
 {
@@ -23,9 +24,10 @@ namespace kanban_lia.Integration.Tests
             NullLoggerFactory.Instance
         ).CreateMapper();
 
+
         private ColumnService CreateColumnService()
         {
-            return new ColumnService(new ColumnRepository(_db.DbFactory), _mapper);
+            return new ColumnService(new ColumnRepository(_db.DbFactory), new ColumnEdgeRepository(_db.DbFactory), _mapper);
         }
 
         private BoardService CreateBoardService()
@@ -42,12 +44,14 @@ namespace kanban_lia.Integration.Tests
             var boardId = await boardService.CreateAsync("Test Board");
             var columnId = new ColumnId(Guid.NewGuid());
 
-            await columnService.CreateAsync(new CreateColumnDto(columnId, "Test Column", 1, boardId));
+            await columnService.CreateAsync(
+                new CreateColumnDto(columnId, "Test Column", 1, boardId, true), 
+                Guid.NewGuid(), null, CancellationToken.None);
 
             var retrievedColumn = await columnService.GetByIdAsync(columnId);
 
             Assert.Equal("Test Column", retrievedColumn!.Title);
-            Assert.Equal(columnId.Id, retrievedColumn.Id);
+            Assert.Equal(columnId, retrievedColumn.Id);
         }
 
         [Fact]
@@ -58,8 +62,12 @@ namespace kanban_lia.Integration.Tests
 
             var boardId = await boardService.CreateAsync("Test Board");
 
-            await columnService.CreateAsync(new CreateColumnDto(new ColumnId(Guid.NewGuid()), "Column 1", 1, boardId));
-            await columnService.CreateAsync(new CreateColumnDto(new ColumnId(Guid.NewGuid()), "Column 2", 2, boardId));
+            await columnService.CreateAsync(
+                new CreateColumnDto(new ColumnId(Guid.NewGuid()), "Column 1", 1, boardId, true), 
+                Guid.NewGuid(), null, CancellationToken.None);
+            await columnService.CreateAsync(
+                new CreateColumnDto(new ColumnId(Guid.NewGuid()), "Column 2", 2, boardId, true), 
+                Guid.NewGuid(), null, CancellationToken.None);
 
             var columns = await columnService.GetByBoardIdAsync(boardId);
 
@@ -77,8 +85,11 @@ namespace kanban_lia.Integration.Tests
             var boardId = await boardService.CreateAsync("Test Board");
             var columnId = new ColumnId(Guid.NewGuid());
 
-            await columnService.CreateAsync(new CreateColumnDto(columnId, "Old Title", 1, boardId));
-            var renamed = await columnService.RenameAsync(new RenameColumnDto(columnId.Id, "New Title"));
+            await columnService.CreateAsync(
+                new CreateColumnDto(columnId, "Old Title", 1, boardId, true), 
+                Guid.NewGuid(), null, CancellationToken.None);
+
+            var renamed = await columnService.RenameAsync(new RenameColumnDto(columnId, "New Title"));
 
             var updatedColumn = await columnService.GetByIdAsync(columnId);
 
@@ -95,7 +106,10 @@ namespace kanban_lia.Integration.Tests
             var boardId = await boardService.CreateAsync("Test Board");
             var columnId = new ColumnId(Guid.NewGuid());
 
-            await columnService.CreateAsync(new CreateColumnDto(columnId, "Old Title", 1, boardId));
+            await columnService.CreateAsync(
+                new CreateColumnDto(columnId, "Old Title", 1, boardId, true), 
+                Guid.NewGuid(), null, CancellationToken.None);
+
             var deleted = await columnService.DeleteAsync(columnId);
 
             Assert.True(deleted);
