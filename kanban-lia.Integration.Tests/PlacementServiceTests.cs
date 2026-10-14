@@ -19,55 +19,58 @@ using kanban_lia.Integration.Tests.Fixture;
 namespace kanban_lia.Integration.Tests
 {
     [Collection(DatabaseCollection.Name)]
-    public class PlacementServiceTests
+    public class PlacementServiceTests(DatabaseFixture database) : IAsyncLifetime
     {
-        private readonly DatabaseFixture _db;
-        private readonly IMapper _mapper;
-
-        public PlacementServiceTests(DatabaseFixture db)
-        {
-            _db = db;
-
-            var config = new MapperConfiguration(
+        private readonly DatabaseFixture _database = database;
+        private readonly IMapper _mapper = new MapperConfiguration(
                 cfg =>
                 {
                     cfg.AddProfile<BoardProfile>();
                     cfg.AddProfile<ColumnProfile>();
                     cfg.AddProfile<PlacementProfile>();
                 },
-                NullLoggerFactory.Instance);
+                NullLoggerFactory.Instance).CreateMapper();
+        
 
-            _mapper = config.CreateMapper();
+        public async ValueTask InitializeAsync()
+        {
+            await _database.ResetAsync();
+        }
+
+        public ValueTask DisposeAsync()
+        {
+            GC.SuppressFinalize(this);
+            return ValueTask.CompletedTask;
         }
 
         private PlacementService CreatePlacementService()
         {
             return new PlacementService(
-                _db.DbFactory,
-                new BoardRepository(_db.DbFactory),
-                new ColumnRepository(_db.DbFactory),
-                new PlacementRepository(_db.DbFactory),
-                new OutboxRepository(_db.DbFactory),
+                _database.DbFactory,
+                new BoardRepository(_database.DbFactory),
+                new ColumnRepository(_database.DbFactory),
+                new PlacementRepository(_database.DbFactory),
+                new OutboxRepository(_database.DbFactory),
                 _mapper);
         }
 
         private PlacementRepository CreatePlacementRepository()
         {
-            return new PlacementRepository(_db.DbFactory);
+            return new PlacementRepository(_database.DbFactory);
         }
 
         private ColumnService CreateColumnService()
         {
             return new ColumnService(
-                new ColumnRepository(_db.DbFactory),
-                new ColumnEdgeRepository(_db.DbFactory),
+                new ColumnRepository(_database.DbFactory),
+                new ColumnEdgeRepository(_database.DbFactory),
                 _mapper);
         }
 
         private BoardService CreateBoardService()
         {
             return new BoardService(
-                new BoardRepository(_db.DbFactory),
+                new BoardRepository(_database.DbFactory),
                 _mapper);
         }
 

@@ -13,9 +13,10 @@ using Microsoft.Extensions.Logging.Abstractions;
 namespace kanban_lia.Integration.Tests
 {
     [Collection(DatabaseCollection.Name)]
-    public class BoardServiceTests
+    public class BoardServiceTests : IAsyncLifetime
     {
-        private readonly IBoardRepository _repository;
+        private readonly DatabaseFixture _database;
+        private readonly BoardRepository _repository;
         private readonly BoardService _service;
         private static readonly IMapper _mapper = new MapperConfiguration(
         cfg =>
@@ -28,6 +29,18 @@ namespace kanban_lia.Integration.Tests
         {
             _repository = new BoardRepository(fixture.DbFactory);
             _service = new BoardService(_repository, _mapper);
+            _database = fixture;
+        }
+
+        public async ValueTask InitializeAsync()
+        {
+            await _database.ResetAsync();
+        }
+
+        public ValueTask DisposeAsync()
+        {
+            GC.SuppressFinalize(this);
+            return ValueTask.CompletedTask;
         }
 
         [Fact]
