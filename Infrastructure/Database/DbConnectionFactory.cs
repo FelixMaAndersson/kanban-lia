@@ -1,5 +1,5 @@
 ﻿using Microsoft.Data.SqlClient;
-using System.Data;
+using System.Data.Common;
 
 namespace kanban_lia.Infrastructure.Database;
 
@@ -13,7 +13,7 @@ public class DbConnectionFactory(string connectionString)
     {
     }
 
-    public IDbConnection CreateConnection()
+    public DbConnection CreateConnection()
     {
         return new SqlConnection(_connectionString);
     }

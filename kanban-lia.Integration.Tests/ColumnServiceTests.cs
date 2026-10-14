@@ -9,11 +9,12 @@ using kanban_lia.Services.Boards;
 using kanban_lia.Services.Columns;
 using kanban_lia.Services.Columns.DTOs;
 using kanban_lia.Services.Columns.Exceptions;
-using kanban_lia.Services.IntegrationEvents.Models;
+using kanban_lia.Integration.Tests.Fixture;
 
 namespace kanban_lia.Integration.Tests
 {
-    public class ColumnServiceTests(DatabaseFixture db) : IClassFixture<DatabaseFixture>
+    [Collection(DatabaseCollection.Name)]
+    public class ColumnServiceTests(DatabaseFixture db)
     {
         private readonly DatabaseFixture _db = db;
         private static readonly IMapper _mapper = new MapperConfiguration(
@@ -45,7 +46,7 @@ namespace kanban_lia.Integration.Tests
             var columnId = new ColumnId(Guid.NewGuid());
 
             await columnService.CreateAsync(
-                new CreateColumnDto(columnId, "Test Column", 1, boardId, true), 
+                new CreateColumnDto(columnId, "Test Column", 1, boardId, true),
                 Guid.NewGuid(), null, CancellationToken.None);
 
             var retrievedColumn = await columnService.GetByIdAsync(columnId);
@@ -63,10 +64,10 @@ namespace kanban_lia.Integration.Tests
             var boardId = await boardService.CreateAsync("Test Board");
 
             await columnService.CreateAsync(
-                new CreateColumnDto(new ColumnId(Guid.NewGuid()), "Column 1", 1, boardId, true), 
+                new CreateColumnDto(new ColumnId(Guid.NewGuid()), "Column 1", 1, boardId, true),
                 Guid.NewGuid(), null, CancellationToken.None);
             await columnService.CreateAsync(
-                new CreateColumnDto(new ColumnId(Guid.NewGuid()), "Column 2", 2, boardId, true), 
+                new CreateColumnDto(new ColumnId(Guid.NewGuid()), "Column 2", 2, boardId, true),
                 Guid.NewGuid(), null, CancellationToken.None);
 
             var columns = await columnService.GetByBoardIdAsync(boardId);
@@ -86,7 +87,7 @@ namespace kanban_lia.Integration.Tests
             var columnId = new ColumnId(Guid.NewGuid());
 
             await columnService.CreateAsync(
-                new CreateColumnDto(columnId, "Old Title", 1, boardId, true), 
+                new CreateColumnDto(columnId, "Old Title", 1, boardId, true),
                 Guid.NewGuid(), null, CancellationToken.None);
 
             var renamed = await columnService.RenameAsync(new RenameColumnDto(columnId, "New Title"));
@@ -107,7 +108,7 @@ namespace kanban_lia.Integration.Tests
             var columnId = new ColumnId(Guid.NewGuid());
 
             await columnService.CreateAsync(
-                new CreateColumnDto(columnId, "Old Title", 1, boardId, true), 
+                new CreateColumnDto(columnId, "Old Title", 1, boardId, true),
                 Guid.NewGuid(), null, CancellationToken.None);
 
             var deleted = await columnService.DeleteAsync(columnId);
