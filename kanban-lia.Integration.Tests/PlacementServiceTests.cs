@@ -1,6 +1,5 @@
 ﻿using AutoMapper;
 using Microsoft.Extensions.Logging.Abstractions;
-using Microsoft.AspNetCore.SignalR;
 
 using kanban_lia.Infrastructure.Repositories.Boards;
 using kanban_lia.Infrastructure.Repositories.Columns;
@@ -14,12 +13,13 @@ using kanban_lia.Services.Columns.Exceptions;
 using kanban_lia.Services.Placements;
 using kanban_lia.Mappings;
 using kanban_lia.Infrastructure.Repositories.Outbox;
-using kanban_lia.Services.IntegrationEvents.Models;
 using kanban_lia.Services.Placements.DTOs;
+using kanban_lia.Integration.Tests.Fixture;
 
 namespace kanban_lia.Integration.Tests
 {
-    public class PlacementServiceTests : IClassFixture<DatabaseFixture>
+    [Collection(DatabaseCollection.Name)]
+    public class PlacementServiceTests
     {
         private readonly DatabaseFixture _db;
         private readonly IMapper _mapper;
