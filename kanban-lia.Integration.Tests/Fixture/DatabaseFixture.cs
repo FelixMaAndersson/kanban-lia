@@ -1,7 +1,8 @@
 ﻿using Dapper;
-using Microsoft.Data.SqlClient;
-using Testcontainers.MsSql;
 using kanban_lia.Infrastructure.Database;
+using Microsoft.Data.SqlClient;
+using Respawn;
+using Testcontainers.MsSql;
 
 namespace kanban_lia.Integration.Tests.Fixture
 {
@@ -12,6 +13,7 @@ namespace kanban_lia.Integration.Tests.Fixture
                 .Build();
 
         public DbConnectionFactory DbFactory { get; private set; } = null!;
+        private Respawner _respawner = null!;
 
         public async ValueTask InitializeAsync()
         {
@@ -28,21 +30,40 @@ namespace kanban_lia.Integration.Tests.Fixture
                         "CREATE DATABASE KanbanTestDb;");
                 }
 
-                var ConnectionString = new SqlConnectionStringBuilder(
+                var connectionString = new SqlConnectionStringBuilder(
                     _sqlServer.GetConnectionString())
                 {
                     InitialCatalog = "KanbanTestDb"
                 }.ConnectionString;
 
-                DbFactory = new DbConnectionFactory(ConnectionString);
+                DbFactory = new DbConnectionFactory(connectionString);
 
                 await ApplyMigrationsAsync();
+
+                await using var databaseConnection = DbFactory.CreateConnection();
+                await databaseConnection.OpenAsync();
+
+                _respawner = await Respawner.CreateAsync(
+                    databaseConnection,
+                    new RespawnerOptions
+                    {
+                        DbAdapter = DbAdapter.SqlServer,
+                        SchemasToInclude = ["dbo"]
+                    });
             }
             catch
             {
                 await _sqlServer.DisposeAsync();
                 throw;
             }
+        }
+
+        public async Task ResetAsync()
+        {
+            await using var connection = DbFactory.CreateConnection();
+            await connection.OpenAsync();
+
+            await _respawner.ResetAsync(connection);
         }
 
         public async ValueTask DisposeAsync()

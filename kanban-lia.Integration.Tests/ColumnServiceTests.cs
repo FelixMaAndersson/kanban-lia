@@ -14,9 +14,9 @@ using kanban_lia.Integration.Tests.Fixture;
 namespace kanban_lia.Integration.Tests
 {
     [Collection(DatabaseCollection.Name)]
-    public class ColumnServiceTests(DatabaseFixture db)
+    public class ColumnServiceTests(DatabaseFixture database) 
     {
-        private readonly DatabaseFixture _db = db;
+        private readonly DatabaseFixture _database = database;
         private static readonly IMapper _mapper = new MapperConfiguration(
             cfg =>
             {
@@ -28,12 +28,12 @@ namespace kanban_lia.Integration.Tests
 
         private ColumnService CreateColumnService()
         {
-            return new ColumnService(new ColumnRepository(_db.DbFactory), new ColumnEdgeRepository(_db.DbFactory), _mapper);
+            return new ColumnService(new ColumnRepository(_database.DbFactory), new ColumnEdgeRepository(_database.DbFactory), _mapper);
         }
 
         private BoardService CreateBoardService()
         {
-            return new BoardService(new BoardRepository(_db.DbFactory), _mapper);
+            return new BoardService(new BoardRepository(_database.DbFactory), _mapper);
         }
 
         [Fact]
