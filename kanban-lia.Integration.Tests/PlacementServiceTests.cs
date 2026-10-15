@@ -15,6 +15,7 @@ using kanban_lia.Mappings;
 using kanban_lia.Infrastructure.Repositories.Outbox;
 using kanban_lia.Services.Placements.DTOs;
 using kanban_lia.Integration.Tests.Fixture;
+using kanban_lia.Services.IntegrationEvents.Models;
 
 namespace kanban_lia.Integration.Tests
 {
@@ -30,7 +31,7 @@ namespace kanban_lia.Integration.Tests
                     cfg.AddProfile<PlacementProfile>();
                 },
                 NullLoggerFactory.Instance).CreateMapper();
-        
+
 
         public async ValueTask InitializeAsync()
         {
@@ -94,7 +95,9 @@ namespace kanban_lia.Integration.Tests
                     1,
                     boardId,
                     true),
-                    Guid.NewGuid(), null, CancellationToken.None);
+                    Guid.NewGuid(),
+                    new Actor("-1", "TestActor"),
+                    CancellationToken.None);
 
             var operation1EntityId = new EntityId(Guid.NewGuid());
             var operation2EntityId = new EntityId(Guid.NewGuid());
@@ -106,7 +109,7 @@ namespace kanban_lia.Integration.Tests
                     columnId,
                     [],
                     []),
-                null);
+                []);
 
             var operation2 = new PlacementOperationDto(
                 new CreatePlacementDto(
@@ -115,13 +118,13 @@ namespace kanban_lia.Integration.Tests
                     columnId,
                     [operation1EntityId],
                     []),
-                null);
+                []);
 
             await placementService.CreateAsync(
                 [operation1],
                 Guid.NewGuid(),
                 null,
-                null,
+                new Actor("-1", "TestActor"),
                 CancellationToken.None);
 
             // Act
@@ -129,7 +132,7 @@ namespace kanban_lia.Integration.Tests
                 [operation2],
                 Guid.NewGuid(),
                 null,
-                null,
+                new Actor("-1", "TestActor"),
                 CancellationToken.None);
 
             // Assert
@@ -173,7 +176,9 @@ namespace kanban_lia.Integration.Tests
                     1,
                     boardId,
                     true),
-                    Guid.NewGuid(), null, CancellationToken.None);
+                    Guid.NewGuid(),
+                    new Actor("-1", "TestActor"),
+                    CancellationToken.None);
 
             var operation1EntityId = new EntityId(Guid.NewGuid());
             var operation2EntityId = new EntityId(Guid.NewGuid());
@@ -185,7 +190,7 @@ namespace kanban_lia.Integration.Tests
                     columnId,
                     [],
                     []),
-                null);
+                []);
 
             var operation2 = new PlacementOperationDto(
                 new CreatePlacementDto(
@@ -194,13 +199,13 @@ namespace kanban_lia.Integration.Tests
                     columnId,
                     [],
                     [operation1EntityId]),
-                null);
+                []);
 
             await placementService.CreateAsync(
                 [operation1],
                 Guid.NewGuid(),
                 null,
-                null,
+                new Actor("-1", "TestActor"),
                 CancellationToken.None);
 
             // Act
@@ -208,7 +213,7 @@ namespace kanban_lia.Integration.Tests
                 [operation2],
                 Guid.NewGuid(),
                 null,
-                null,
+                new Actor("-1", "TestActor"),
                 CancellationToken.None);
 
             // Assert
@@ -252,7 +257,9 @@ namespace kanban_lia.Integration.Tests
                     1,
                     boardId,
                     true),
-                    Guid.NewGuid(), null, CancellationToken.None);
+                    Guid.NewGuid(),
+                    new Actor("-1", "TestActor"),
+                    CancellationToken.None);
 
             // Act
             var operation = new PlacementOperationDto(
@@ -262,13 +269,13 @@ namespace kanban_lia.Integration.Tests
                     columnId,
                     [],
                     []),
-                null);
+                []);
 
             await placementService.CreateAsync(
                 [operation],
                 Guid.NewGuid(),
                 null,
-                null,
+                new Actor("-1", "TestActor"),
                 CancellationToken.None);
 
             // Assert
@@ -298,14 +305,9 @@ namespace kanban_lia.Integration.Tests
                     1,
                     boardId,
                     true),
-                    Guid.NewGuid(), null, CancellationToken.None);
-
-            var dto = new CreatePlacementDto(
-                [new(Guid.NewGuid())],
-                boardId,
-                columnId,
-                null,
-                null);
+                    Guid.NewGuid(),
+                    new Actor("-1", "TestActor"),
+                    CancellationToken.None);
 
             // Act & Assert
             var operation = new PlacementOperationDto(
@@ -315,14 +317,14 @@ namespace kanban_lia.Integration.Tests
                     columnId,
                     [new(Guid.NewGuid())],
                     [new(Guid.NewGuid())]),
-                null);
+                []);
 
             await Assert.ThrowsAsync<InvalidDomainException>(
                 () => placementService.CreateAsync(
                 [operation],
                 Guid.NewGuid(),
                 null,
-                null,
+                new Actor("-1", "TestActor"),
                 CancellationToken.None));
         }
 
@@ -346,7 +348,9 @@ namespace kanban_lia.Integration.Tests
                     1,
                     boardId,
                     true),
-                    Guid.NewGuid(), null, CancellationToken.None);
+                    Guid.NewGuid(),
+                    new Actor("-1", "TestActor"),
+                    CancellationToken.None);
 
             var operation1EntityId = new EntityId(Guid.NewGuid());
             var operation2EntityId = new EntityId(Guid.NewGuid());
@@ -358,7 +362,7 @@ namespace kanban_lia.Integration.Tests
                     columnId,
                     [],
                     []),
-                null);
+                []);
 
             var operation2 = new PlacementOperationDto(
                 new CreatePlacementDto(
@@ -367,13 +371,13 @@ namespace kanban_lia.Integration.Tests
                     columnId,
                     [],
                     []),
-                null);
+                []);
 
             await placementService.CreateAsync(
                 [operation1],
                 Guid.NewGuid(),
                 null,
-                null,
+                new Actor("-1", "TestActor"),
                 CancellationToken.None);
 
             // Act
@@ -381,7 +385,7 @@ namespace kanban_lia.Integration.Tests
                 [operation2],
                 Guid.NewGuid(),
                 null,
-                null,
+                new Actor("-1", "TestActor"),
                 CancellationToken.None);
 
             // Assert
@@ -415,17 +419,9 @@ namespace kanban_lia.Integration.Tests
             // Arrange
             var boardService = CreateBoardService();
             var placementService = CreatePlacementService();
-            var columnService = CreateColumnService();
 
             var boardId = await boardService.CreateAsync("Testboard");
             var columnId = new ColumnId(Guid.NewGuid());
-
-            var dto = new CreatePlacementDto(
-                [new(Guid.NewGuid())],
-                boardId,
-                columnId,
-                null,
-                null);
 
             // Act & Assert
             var operation = new PlacementOperationDto(
@@ -433,16 +429,16 @@ namespace kanban_lia.Integration.Tests
                     [new(Guid.NewGuid())],
                     boardId,
                     columnId,
-                    null,
-                    null),
-                null);
+                    [],
+                    []),
+                []);
 
             await Assert.ThrowsAsync<ColumnNotFoundException>(
                 () => placementService.CreateAsync(
                 [operation],
                 Guid.NewGuid(),
                 null,
-                null,
+                new Actor("-1", "TestActor"),
                 CancellationToken.None));
         }
     }
