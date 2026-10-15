@@ -9,6 +9,14 @@ using kanban_lia.Services.Placements.DTOs;
 
 namespace kanban_lia.Mappings
 {
+    /// <summary>
+    /// AutoMapper Profile that configures mappings between placement-related requests, domain models, and their DTO
+    /// representations.
+    /// </summary>
+    /// <remarks>Configures CreateMap<CreatePlacementRequest, CreatePlacementDto> with constructor-parameter
+    /// mappings for ColumnId, BoardId, EntityIds, AfterEntityIds, and BeforeEntityIds; configures
+    /// CreateMap<GetPlacementRequest, GetPlacementDto> mapping EntityIds and BoardId; and configures
+    /// CreateMap<Placement, PlacementDto>.</remarks>
     public class PlacementProfile : Profile
     {
         public PlacementProfile()
