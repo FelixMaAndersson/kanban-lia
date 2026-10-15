@@ -182,6 +182,19 @@ namespace kanban_lia.Infrastructure.Repositories.Placements
                 });
         }
 
+        /// <summary>
+        /// Retrieves the previous and next sort keys for inserting or moving an entity within a column asynchronously.
+        /// </summary>
+        /// <remarks>Only the latest placement per entity within the same board as the column is
+        /// considered; sort-key comparisons use binary collation to determine ordering.</remarks>
+        /// <param name="columnId">Identifier of the column whose current placements are evaluated.</param>
+        /// <param name="lookup">Specifies lookup mode: end of column, after a specified entity, or before a specified entity.</param>
+        /// <param name="afterEntityId">Optional identifier of the entity after which to locate the range; used when lookup selects the 'after'
+        /// mode.</param>
+        /// <param name="beforeEntityId">Optional identifier of the entity before which to locate the range; 
+        /// used when lookup selects the 'before' mode.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result contains a SortKeyRange with the previous
+        /// and next sort keys for the resolved position.</returns>
         public async Task<SortKeyRange> GetSortKeyRangeAsync(
             ColumnId columnId,
             SortKeyLookup lookup,

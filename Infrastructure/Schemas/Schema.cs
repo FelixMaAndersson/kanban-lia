@@ -4,6 +4,13 @@ using kanban_lia.Models.Domain.Placements;
 
 namespace kanban_lia.Infrastructure.Schemas
 {
+    /// <summary>
+    /// Provides constants for database table and column names used by the data access layer.
+    /// </summary>
+    /// <remarks>Contains nested static classes that group table and column name constants (for example:
+    /// Boards, Columns, ColumnEdges, Placements, BoardRoots). Most column names are produced with nameof to remain
+    /// refactor-safe; some table or key names are literal strings. Use these constants to avoid hard-coded identifiers
+    /// in SQL, queries, and migrations.</remarks>
     public static class Schema
     {
         public static class Boards

@@ -17,6 +17,16 @@ namespace kanban_lia.Endpoints.Placements;
 
 public static class PlacementEndpoints
 {
+    /// <summary>
+    /// Maps placement-related HTTP endpoints under /api/placements.
+    /// </summary>
+    /// <remarks>Registers endpoints for creating and retrieving placements: POST /create, GET /get, GET
+    /// /board/{boardId}, and GET /column/{columnId}. The POST endpoint validates column write access, resolves
+    /// connected source and target columns across boards, computes placement operations, invokes IPlacementService to
+    /// create placements, and broadcasts a PlacementCreated event via SignalR. Correlation-Id, Causation-Id, Actor-Id,
+    /// and Actor-Type headers are read when present and used for causation/correlation and actor information.</remarks>
+    /// <param name="app">The WebApplication on which placement endpoints are configured.</param>
+    /// <exception cref="ColumnNotFoundException">Thrown when a required column referenced during endpoint processing cannot be found in the repository.</exception>
     public static void MapPlacementEndpoints(WebApplication app)
     {
         var group = app.MapGroup("/api/placements");
@@ -30,6 +40,8 @@ public static class PlacementEndpoints
             IColumnEdgeRepository columnEdgeRepository,
             IHubContext<BoardHub> hub) =>
         {
+            // this whole method needs to be refactored since it is hard to read and understand.
+            // I'll (Felix) do it next week (v. 43).
             var entityIds = request.EntityIds
                 .Select(id => new EntityId(id))
                 .ToList();

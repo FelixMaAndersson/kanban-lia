@@ -43,8 +43,35 @@ namespace kanban_lia.Services.Placements
             Guid TargetColumnId
         );
 
-        public async Task CreateAsync(IEnumerable<PlacementOperationDto> dtos, Guid correlationId, Guid? causationEventId, Actor actor, CancellationToken cancellationToken)
+        /// <summary>
+        /// Create placements for the specified placement operations, persist them, and enqueue placement-created
+        /// integration events in the outbox within a single database transaction per DTO.
+        /// </summary>
+        /// <remarks>Each DTO is processed sequentially. Positioning is determined by inspecting current
+        /// placements on the board to choose a before/after/last lookup; order keys are generated between neighbors,
+        /// placements are persisted, and corresponding outbox messages are enqueued within the same transaction.
+        /// Transactions are rolled back on error.</remarks>
+        /// <param name="dtos">Placement operations that contain entity ids, target board and column, and optional AfterEntityIds or
+        /// BeforeEntityIds to determine ordering.</param>
+        /// <param name="correlationId">Correlation identifier applied to produced integration events.</param>
+        /// <param name="causationEventId">Optional causation event identifier included on produced integration events.</param>
+        /// <param name="actor">Actor performing the operation and recorded on produced integration events.</param>
+        /// <param name="cancellationToken">Token to cancel the operation and any underlying I/O.</param>
+        /// <returns>A task that completes when all placements and corresponding outbox messages have been persisted and the
+        /// transaction committed for each DTO.</returns>
+        /// <exception cref="ColumnNotFoundException">Thrown when a referenced column cannot be found.</exception>
+        /// <exception cref="BoardNotFoundException">Thrown when a referenced board cannot be found.</exception>
+        /// <exception cref="InvalidDomainException">Thrown when both AfterEntityIds and BeforeEntityIds are provided, 
+        /// or when the specified column does not belong to the specified board.</exception>
+        public async Task CreateAsync(
+            IEnumerable<PlacementOperationDto> dtos, 
+            Guid correlationId, 
+            Guid? causationEventId, 
+            Actor actor, 
+            CancellationToken cancellationToken)
         {
+            // needs to be refactored for readability and maintainability, but works for now.
+            // I'll (Felix) do it 16/10 -26.
             foreach (var dto in dtos)
             {
                 var entityIds = dto.Dto.EntityIds.ToArray();
@@ -159,9 +186,9 @@ namespace kanban_lia.Services.Placements
 
                 using var connection = _connectionFactory.CreateConnection();
 
-                connection.Open();
+                await connection.OpenAsync(cancellationToken);
 
-                using var transaction = connection.BeginTransaction();
+                using var transaction = await connection.BeginTransactionAsync(cancellationToken);
 
                 try
                 {
@@ -193,16 +220,27 @@ namespace kanban_lia.Services.Placements
                             cancellationToken);
                     }
 
-                    transaction.Commit();
+                    await transaction.CommitAsync(cancellationToken);
                 }
                 catch
                 {
-                    transaction.Rollback();
+                    await transaction.RollbackAsync(cancellationToken);
                     throw;
                 }
             }
         }
 
+        /// <summary>
+        /// Retrieves current placements for the specified entities and board and 
+        /// maps them to PlacementDto instances.
+        /// </summary>
+        /// <remarks>Fetches domain entities from the repository and maps them to DTOs using the
+        /// configured mapper.</remarks>
+        /// <param name="dto">A DTO containing the entity identifiers and the board identifier 
+        /// used to filter current placements.</param>
+        /// <returns>A task that represents the asynchronous operation. 
+        /// The task result contains an IEnumerable<PlacementDto>
+        /// with the current placements matching the specified criteria.</returns>
         public async Task<IEnumerable<PlacementDto>> GetCurrentAsync(GetPlacementDto dto)
         {
             var placements = await _repository.GetCurrentAsync(
@@ -212,6 +250,14 @@ namespace kanban_lia.Services.Placements
             return _mapper.Map<IEnumerable<PlacementDto>>(placements);
         }
 
+        /// <summary>
+        /// Gets the current placements in the specified column of a board as PlacementDto objects.
+        /// </summary>
+        /// <param name="columnId">Identifier of the column whose current placements are retrieved.</param>
+        /// <param name="boardId">Identifier of the board that contains the column.</param>
+        /// <returns>A task that represents the asynchronous operation. 
+        /// The task result contains the current placements in the
+        /// specified column as an enumerable of PlacementDto.</returns>
         public async Task<IEnumerable<PlacementDto>> GetCurrentByColumnAsync(
             ColumnId columnId,
             BoardId boardId)
@@ -222,6 +268,13 @@ namespace kanban_lia.Services.Placements
             return _mapper.Map<IEnumerable<PlacementDto>>(placements);
         }
 
+        /// <summary>
+        /// Gets the current placements for the specified board asynchronously.
+        /// </summary>
+        /// <param name="boardId">The identifier of the board whose current placements are retrieved.</param>
+        /// <returns>A task representing the asynchronous operation. 
+        /// The task result contains an enumerable of PlacementDto
+        /// representing the current placements for the specified board.</returns>
         public async Task<IEnumerable<PlacementDto>> GetCurrentByBoardAsync(BoardId boardId)
         {
             var placements = await _repository.GetCurrentByBoardAsync(boardId);
