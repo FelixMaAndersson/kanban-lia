@@ -4,6 +4,7 @@ using kanban_lia.Models.Domain.Placements;
 namespace kanban_lia.Models.Domain.Boards
 {
     public readonly record struct BoardId(Guid Id);
+
     public class Board
     {
         private readonly HashSet<EntityId> _roots = [];
@@ -11,9 +12,9 @@ namespace kanban_lia.Models.Domain.Boards
         public string Title { get; private set; }
         public IReadOnlyCollection<EntityId> Roots => _roots;
 
-        private Board(Guid id, string title)
+        private Board(BoardId id, string title)
         {
-            Id = new BoardId(id);
+            Id = id;
             Title = title;
         }
 
@@ -29,12 +30,10 @@ namespace kanban_lia.Models.Domain.Boards
                 throw new InvalidDomainException("Board title is too long.");
             }
 
-            return new Board(Guid.NewGuid(), title);
+            return new Board(new BoardId(Guid.NewGuid()), title);
         }
 
-        public static Board Restore(
-            Guid id,
-            string title)
+        public static Board Restore(BoardId id, string title)
         {
             return new Board(id, title);
         }

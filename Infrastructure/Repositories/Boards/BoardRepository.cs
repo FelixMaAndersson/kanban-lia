@@ -50,7 +50,7 @@ namespace kanban_lia.Infrastructure.Repositories.Boards
                 return null;
             }
 
-            var board = Board.Restore(boardData.Id, boardData.Title);
+            var board = Board.Restore(new BoardId(boardData.Id), boardData.Title);
 
             var roots = await connection.QueryAsync<Guid>(
                 $@"
