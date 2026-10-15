@@ -31,7 +31,16 @@ namespace kanban_lia.Mappings
                     nameof(RemoveRootDto.EntityId),
                     opt => opt.MapFrom(src => new EntityId(src.EntityId)));
 
-            CreateMap<Board, BoardDto>();
+            CreateMap<Board, BoardDto>()
+                .ForCtorParam(
+                    nameof(BoardDto.Id),
+                    opt => opt.MapFrom(src => src.Id))
+                .ForCtorParam(
+                    nameof(BoardDto.Title),
+                    opt => opt.MapFrom(src => src.Title))
+                .ForCtorParam(
+                    nameof(BoardDto.Roots),
+                    opt => opt.MapFrom(src => src.Roots));
         }
     }
 }
