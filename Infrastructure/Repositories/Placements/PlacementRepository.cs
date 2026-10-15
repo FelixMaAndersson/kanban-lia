@@ -178,7 +178,7 @@ namespace kanban_lia.Infrastructure.Repositories.Placements
                 sql,
                 new
                 {
-                    BoardId = boardId.Id
+                    Id = boardId.Id
                 });
         }
 

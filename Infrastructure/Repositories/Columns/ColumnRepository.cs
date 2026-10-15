@@ -38,70 +38,81 @@ namespace kanban_lia.Infrastructure.Repositories.Columns
         public async Task<IEnumerable<Column>> GetByBoardIdAsync(BoardId boardId)
         {
             using var connection = _connectionFactory.CreateConnection();
-            var columns = await connection.QueryAsync<Column>(
+
+            var rows = await connection.QueryAsync<ColumnRow>(
                 $@"
-                    SELECT  {Schema.Columns.Id}, 
+                    SELECT  {Schema.Columns.Id},
                             {Schema.Columns.BoardId},
-                            {Schema.Columns.Title}, 
+                            {Schema.Columns.Title},
                             {Schema.Columns.Position},
                             {Schema.Columns.RequestWritable}
-                    FROM    {Schema.Columns.Table} 
-                            WHERE {Schema.Columns.BoardId} = @Id
-                         ORDER BY {Schema.Columns.Position}",
+                    FROM    {Schema.Columns.Table}
+                    WHERE   {Schema.Columns.BoardId} = @Id
+                    ORDER BY {Schema.Columns.Position}",
                 new
                 {
                     boardId.Id
-                }
-            );
+                });
 
-            return columns;
+            return rows.Select(row => Column.Restore(
+                new ColumnId(row.Id),
+                new BoardId(row.BoardId),
+                row.Title,
+                row.Position,
+                row.RequestWritable));
         }
 
         public async Task<Column?> GetByIdAsync(ColumnId id)
         {
             using var connection = _connectionFactory.CreateConnection();
-            var column = await connection.QuerySingleOrDefaultAsync<Column>(
+
+            var row = await connection.QuerySingleOrDefaultAsync<ColumnRow>(
                 $@"
-                    SELECT  {Schema.Columns.Id}, 
+                    SELECT  {Schema.Columns.Id},
                             {Schema.Columns.BoardId},
-                            {Schema.Columns.Title}, 
-                            {Schema.Columns.Position}, 
+                            {Schema.Columns.Title},
+                            {Schema.Columns.Position},
                             {Schema.Columns.RequestWritable}
                     FROM    {Schema.Columns.Table}
-                            WHERE {Schema.Columns.Id} = @Id",
+                    WHERE   {Schema.Columns.Id} = @Id",
                 new
                 {
                     id.Id
                 }
             );
 
-            return column;
+            if (row is null)
+            {
+                return null;
+            }
+
+            return Column.Restore(
+                new ColumnId(row.Id),
+                new BoardId(row.BoardId),
+                row.Title,
+                row.Position,
+                row.RequestWritable);
         }
 
         public async Task<bool> CanBeWrittenAsync(ColumnId id)
         {
             using var connection = _connectionFactory.CreateConnection();
-            var column = await connection.QuerySingleOrDefaultAsync<Column>(
+
+            var requestWritable = await connection.QuerySingleOrDefaultAsync<bool?>(
                 $@"
-                    SELECT  {Schema.Columns.Id}, 
-                            {Schema.Columns.BoardId},
-                            {Schema.Columns.Title}, 
-                            {Schema.Columns.Position},
-                            {Schema.Columns.RequestWritable}
-                    FROM    {Schema.Columns.Table}
-                            WHERE {Schema.Columns.Id} = @Id",
-                new
-                {
-                    id.Id
-                }
+                    SELECT {Schema.Columns.RequestWritable}
+                    FROM   {Schema.Columns.Table}
+                    WHERE  {Schema.Columns.Id} = @Id",
+                new { id.Id }
             );
 
-            if (column == null)
+            if (requestWritable is null)
             {
-                throw new InvalidOperationException($"Column with id {id.Id} not found.");
+                throw new InvalidOperationException(
+                    $"Column with id {id.Id} not found.");
             }
 
-            return column.RequestWritable;
+            return requestWritable.Value;
         }
 
         public async Task<bool> SetRequestWritableAsync(
@@ -157,6 +168,15 @@ namespace kanban_lia.Infrastructure.Repositories.Columns
             );
 
             return rowsAffected > 0;
+        }
+
+        private sealed class ColumnRow
+        {
+            public Guid Id { get; set; }
+            public Guid BoardId { get; set; }
+            public string Title { get; set; } = string.Empty;
+            public int Position { get; set; }
+            public bool RequestWritable { get; set; }
         }
     }
 }
