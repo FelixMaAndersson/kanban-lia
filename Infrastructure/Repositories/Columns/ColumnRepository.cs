@@ -94,7 +94,7 @@ namespace kanban_lia.Infrastructure.Repositories.Columns
                 row.RequestWritable);
         }
 
-        public async Task<bool> CanBeWrittenAsync(ColumnId id)
+        public async Task<bool?> CanBeWrittenAsync(ColumnId id)
         {
             using var connection = _connectionFactory.CreateConnection();
 
@@ -106,10 +106,7 @@ namespace kanban_lia.Infrastructure.Repositories.Columns
                 new { id.Id }
             );
 
-            return requestWritable is null
-                ? throw new InvalidOperationException(
-                    $"Column with id {id.Id} not found.")
-                : requestWritable.Value;
+            return requestWritable;
         }
 
         public async Task<bool> SetRequestWritableAsync(
