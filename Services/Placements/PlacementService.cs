@@ -260,6 +260,7 @@ namespace kanban_lia.Services.Placements
                 if (placement?.ColumnId == dto.ColumnId)
                 {
                     afterEntityId = entityId;
+                    break;
                 }
             }
 
