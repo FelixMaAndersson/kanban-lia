@@ -41,7 +41,7 @@ namespace kanban_lia.Infrastructure.Repositories.Columns
             JOIN    {Schema.Columns.Table} AS c2
                     ON ce.{Schema.ColumnEdges.ToColumnId} = c2.{Schema.Columns.Id}
             WHERE   c1.{Schema.Columns.BoardId} = @BoardId
-               OR   c2.{Schema.Columns.BoardId} = @BoardId",
+               OR   c2.{Schema.Columns.BoardId} = @Id",
                 new
                 {
                     boardId.Id
