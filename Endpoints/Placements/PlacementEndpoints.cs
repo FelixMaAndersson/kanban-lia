@@ -46,7 +46,12 @@ public static class PlacementEndpoints
 
             var boardId = new BoardId(request.BoardId);
 
-            if (!await columnRepository.CanBeWrittenAsync(new ColumnId(request.ColumnId)))
+            var canBeWritten = await columnRepository.CanBeWrittenAsync(new ColumnId(request.ColumnId));
+
+            if (canBeWritten is null)
+                throw new ColumnNotFoundException(new ColumnId(request.ColumnId));
+
+            if (!canBeWritten.Value)
                 return Results.Unauthorized();
 
             var connectedTargetColumnIds = await GetConnectedColumns(
@@ -288,9 +293,9 @@ public static class PlacementEndpoints
     }
 
     private static (
-        Guid CorrelationId, 
-        Guid? CausationEventId, 
-        Actor Actor) 
+        Guid CorrelationId,
+        Guid? CausationEventId,
+        Actor Actor)
         GetEventMetadata(HttpRequest httpRequest)
     {
         Guid correlationId = Guid.NewGuid();

@@ -68,13 +68,20 @@ namespace kanban_lia.Services.Columns
 
         public async Task<bool> RenameAsync(RenameColumnDto dto)
         {
-            var columnId = dto.Id;
+            var column = await _repository.GetByIdAsync(dto.Id);
 
-            var renamed = await _repository.RenameAsync(columnId, dto.NewTitle);
+            if (column is null)
+            {
+                throw new ColumnNotFoundException(dto.Id);
+            }
+
+            column.Rename(dto.NewTitle);
+
+            var renamed = await _repository.RenameAsync(dto.Id, dto.NewTitle);
 
             if (!renamed)
             {
-                throw new ColumnNotFoundException(columnId);
+                throw new ColumnNotFoundException(dto.Id);
             }
 
             return renamed;

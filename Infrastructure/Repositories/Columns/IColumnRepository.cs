@@ -9,7 +9,7 @@ namespace kanban_lia.Infrastructure.Repositories.Columns
         Task<IEnumerable<Column>> GetByBoardIdAsync(BoardId boardId);
         Task<Column?> GetByIdAsync(ColumnId id);
         Task<bool> SetRequestWritableAsync(ColumnId id, bool requestWritable);
-        Task<bool> CanBeWrittenAsync(ColumnId id);
+        Task<bool?> CanBeWrittenAsync(ColumnId id);
         Task<bool> RenameAsync(ColumnId id, string title);
 
         //Kanske ha en move method också??

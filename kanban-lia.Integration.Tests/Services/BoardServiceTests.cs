@@ -1,5 +1,4 @@
 ﻿using AutoMapper;
-
 using kanban_lia.Infrastructure.Repositories.Boards;
 using kanban_lia.Integration.Tests.Fixture;
 using kanban_lia.Mappings;
@@ -10,7 +9,7 @@ using kanban_lia.Services.Boards.DTOs;
 using kanban_lia.Services.Boards.Exceptions;
 using Microsoft.Extensions.Logging.Abstractions;
 
-namespace kanban_lia.Integration.Tests
+namespace kanban_lia.Integration.Tests.Services
 {
     [Collection(DatabaseCollection.Name)]
     public class BoardServiceTests : IAsyncLifetime

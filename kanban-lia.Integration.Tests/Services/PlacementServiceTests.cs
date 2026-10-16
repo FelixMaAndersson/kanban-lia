@@ -17,7 +17,7 @@ using kanban_lia.Services.Placements.DTOs;
 using kanban_lia.Integration.Tests.Fixture;
 using kanban_lia.Services.IntegrationEvents.Models;
 
-namespace kanban_lia.Integration.Tests
+namespace kanban_lia.Integration.Tests.Services
 {
     [Collection(DatabaseCollection.Name)]
     public class PlacementServiceTests(DatabaseFixture database) : IAsyncLifetime
