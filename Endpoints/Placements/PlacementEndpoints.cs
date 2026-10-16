@@ -40,9 +40,12 @@ public static class PlacementEndpoints
             IColumnEdgeRepository columnEdgeRepository,
             IHubContext<BoardHub> hub) =>
         {
-            var entityIds = request.EntityIds
+            var entityIds = (request.EntityIds ?? [])
                 .Select(id => new EntityId(id))
                 .ToList();
+
+            var afterEntityIds = request.AfterEntityIds ?? [];
+            var beforeEntityIds = request.BeforeEntityIds ?? [];
 
             var boardId = new BoardId(request.BoardId);
 
@@ -143,8 +146,8 @@ public static class PlacementEndpoints
                     entityIds,
                     targetColumn.BoardId,
                     Target,
-                    request.AfterEntityIds.Select(id => new EntityId(id)),
-                    request.BeforeEntityIds.Select(id => new EntityId(id))
+                    afterEntityIds.Select(id => new EntityId(id)),
+                    beforeEntityIds.Select(id => new EntityId(id))
                 );
 
                 var operationDto = new PlacementOperationDto(
