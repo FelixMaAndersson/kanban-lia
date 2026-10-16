@@ -1,5 +1,6 @@
 ﻿using kanban_lia.Models.Domain.Boards;
 using kanban_lia.Models.Domain.Exceptions;
+using kanban_lia.Models.Domain.Placements;
 
 namespace kanban_lia.Tests
 {
@@ -117,6 +118,66 @@ namespace kanban_lia.Tests
 
             // Act & Assert
             Assert.Throws<InvalidDomainException>(() => board.Rename(new string('a', 256)));
+        }
+
+        [Fact]
+        public void AddRoot_WhenUsed_AddsRootToBoard()
+        {
+            // Arrange
+            var board = Board.Create("Testboard");
+            var rootId = new EntityId(Guid.NewGuid());
+
+            // Act
+            board.AddRoot(rootId);
+
+            // Assert
+            Assert.Single(board.Roots);
+        }
+
+        [Fact]
+        public void AddRoot_WithDuplicateRoot_AddsOnlyOnce()
+        {
+            // Arrange
+            var board = Board.Create("Testboard");
+            var rootId = new EntityId(Guid.NewGuid());
+
+            board.AddRoot(rootId);
+
+            // Act
+            board.AddRoot(rootId);
+
+            // Assert
+            Assert.Single(board.Roots);
+        }
+
+        [Fact]
+        public void RemoveRoot_WhenUsed_RemovesRootFromBoard()
+        {
+            // Arrange
+            var board = Board.Create("Testboard");
+            var rootId = new EntityId(Guid.NewGuid());
+
+            board.AddRoot(rootId);
+
+            // Act
+            board.RemoveRoot(rootId);
+
+            // Assert
+            Assert.Empty(board.Roots);
+        }
+
+        [Fact]
+        public void RemoveRoot_WhenRootDoesNotExist_DoesNothing()
+        {
+            // Arrange
+            var board = Board.Create("Testboard");
+            var rootId = new EntityId(Guid.NewGuid());
+
+            // Act
+            board.RemoveRoot(rootId);
+
+            // Assert
+            Assert.Empty(board.Roots);
         }
     }
 }
