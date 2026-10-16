@@ -3,9 +3,9 @@
 namespace kanban_lia.Infrastructure.Repositories.Outbox
 {
     public sealed class OutboxWorker(
-    IServiceScopeFactory scopeFactory,
-    IIntegrationEventPublisher integrationEventPublisher)
-    : BackgroundService
+        IServiceScopeFactory scopeFactory,
+        IIntegrationEventPublisher integrationEventPublisher)
+        : BackgroundService
     {
         protected override async Task ExecuteAsync(
             CancellationToken stoppingToken)
@@ -27,6 +27,7 @@ namespace kanban_lia.Infrastructure.Repositories.Outbox
                         try
                         {
                             await integrationEventPublisher.PublishAsync(
+                                message.Id,
                                 message.EventType,
                                 message.Content,
                                 stoppingToken);

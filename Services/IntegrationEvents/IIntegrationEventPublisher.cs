@@ -1,10 +1,9 @@
-﻿using kanban_lia.Services.IntegrationEvents.Models;
-
-namespace kanban_lia.Services.IntegrationEvents;
+﻿namespace kanban_lia.Services.IntegrationEvents;
 
 public interface IIntegrationEventPublisher
 {
     Task PublishAsync(
+        Guid messageId,
         string eventType,
         string content,
         CancellationToken cancellationToken);

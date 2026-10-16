@@ -1,9 +1,7 @@
 ﻿using kanban_lia.Services.IntegrationEvents;
-using kanban_lia.Services.IntegrationEvents.Contracts;
 using Microsoft.Extensions.Options;
 using RabbitMQ.Client;
 using System.Text;
-using System.Text.Json;
 
 namespace kanban_lia.Infrastructure.Messaging;
 
@@ -18,6 +16,7 @@ public sealed class RabbitMqIntegrationEventPublisher(
     private IChannel? _channel;
 
     public async Task PublishAsync(
+        Guid messageId,
         string eventType,
         string content,
         CancellationToken cancellationToken)
@@ -38,7 +37,7 @@ public sealed class RabbitMqIntegrationEventPublisher(
             {
                 ContentType = "application/json",
                 DeliveryMode = DeliveryModes.Persistent,
-                MessageId = Guid.NewGuid().ToString(),
+                MessageId = messageId.ToString(),
                 Type = eventType
             };
 
@@ -62,6 +61,18 @@ public sealed class RabbitMqIntegrationEventPublisher(
             _channel?.IsOpen == true)
         {
             return;
+        }
+
+        if (_channel is not null)
+        {
+            await _channel.DisposeAsync();
+            _channel = null;
+        }
+
+        if (_connection is not null)
+        {
+            await _connection.DisposeAsync();
+            _connection = null;
         }
 
         var factory = new ConnectionFactory
