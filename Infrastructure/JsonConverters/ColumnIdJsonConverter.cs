@@ -1,5 +1,4 @@
 ﻿using kanban_lia.Models.Domain.Columns;
-using kanban_lia.Models.Domain.Placements;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
