@@ -159,7 +159,7 @@ namespace kanban_lia.Infrastructure.Repositories.Placements
             FROM {Schema.Placements.Table} AS p
             INNER JOIN {Schema.Columns.Table} AS c
                 ON p.{Schema.Placements.ColumnId} = c.{Schema.Columns.Id}
-            WHERE c.{Schema.Columns.BoardId} = @BoardId
+            WHERE c.{Schema.Columns.BoardId} = @Id
         )
         SELECT
             EntityId,
