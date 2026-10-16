@@ -11,10 +11,6 @@ public sealed class RabbitMqIntegrationEventPublisher(
     IOptions<RabbitMqOptions> options)
         : IIntegrationEventPublisher, IAsyncDisposable
 {
-    // private const string ColumnHasNoEdge = "ColumnHasNoEdge";
-    private const string PlacementCreated = "PlacementCreated";
-    private const string PlacementBackend = "PlacementBackend";
-
     private readonly RabbitMqOptions _options = options.Value;
     private readonly SemaphoreSlim _channelLock = new(1, 1);
 
@@ -59,114 +55,6 @@ public sealed class RabbitMqIntegrationEventPublisher(
             _channelLock.Release();
         }
     }
-
-    //public async Task PublishPlacementCreatedAsync(
-    //    Guid entityId,
-    //    Guid columnId,
-    //    Guid? causationEventId,
-    //    Actor actor,
-    //    CancellationToken cancellationToken)
-    //{
-    //    var integrationEvent =
-    //        new IntegrationEvent<PlacementCreatedPayload>(
-    //            EventId: Guid.NewGuid(),
-    //            EventType: PlacementCreated,
-    //            Source: PlacementBackend,
-    //            CompanyId: Guid.Empty,
-    //            CorrelationId: Guid.NewGuid(),
-    //            CausationEventId: causationEventId,
-    //            Actor: actor,
-    //            Payload: new PlacementCreatedPayload(
-    //                EntityId: entityId,
-    //                ColumnId: columnId));
-
-    //    var body = JsonSerializer.SerializeToUtf8Bytes(
-    //        integrationEvent);
-
-    //    await _channelLock.WaitAsync(cancellationToken);
-
-    //    try
-    //    {
-    //        await EnsureConnectedAsync();
-
-    //        var channel = _channel
-    //            ?? throw new InvalidOperationException(
-    //                "RabbitMQ channel was not initialized.");
-
-    //        var properties = new BasicProperties
-    //        {
-    //            ContentType = "application/json",
-    //            DeliveryMode = DeliveryModes.Persistent,
-    //            MessageId = integrationEvent.EventId.ToString(),
-    //            Type = integrationEvent.EventType
-    //        };
-
-    //        await channel.BasicPublishAsync(
-    //            exchange: _options.ExchangeName,
-    //            routingKey: _options.RoutingKey,
-    //            mandatory: false,
-    //            basicProperties: properties,
-    //            body: body,
-    //            cancellationToken: cancellationToken);
-    //    }
-    //    finally
-    //    {
-    //        _channelLock.Release();
-    //    }
-    //}
-
-    //public async Task PublishColumnHasNoEdgeAsync(
-    //    Guid columnId,
-    //    Guid? causationEventId,
-    //    Actor actor,
-    //    CancellationToken cancellationToken)
-    //{
-    //    var integrationEvent =
-    //    new IntegrationEvent<ColumnHasNoEdgePayload>(
-    //        EventId: Guid.NewGuid(),
-    //        EventType: ColumnHasNoEdge,
-    //        Source: PlacementBackend,
-    //        CompanyId: Guid.Empty,
-    //        CorrelationId: Guid.NewGuid(),
-    //        CausationEventId: causationEventId,
-    //        Actor: actor,
-    //        Payload: new ColumnHasNoEdgePayload(
-    //            ColumnId: columnId));
-
-    //    var body = JsonSerializer.SerializeToUtf8Bytes(
-    //    integrationEvent);
-
-    //    await _channelLock.WaitAsync(cancellationToken);
-
-    //    try
-    //    {
-    //        await EnsureConnectedAsync();
-
-    //        var channel = _channel
-    //            ?? throw new InvalidOperationException(
-    //                "RabbitMQ channel was not initialized.");
-
-    //        var properties = new BasicProperties
-    //        {
-    //            ContentType = "application/json",
-    //            DeliveryMode = DeliveryModes.Persistent,
-    //            MessageId = integrationEvent.EventId.ToString(),
-    //            Type = integrationEvent.EventType
-    //        };
-
-    //        await channel.BasicPublishAsync(
-    //            exchange: _options.ExchangeName,
-    //            routingKey: "column.no-edge",
-    //            mandatory: false,
-    //            basicProperties: properties,
-    //            body: body,
-    //            cancellationToken: cancellationToken);
-    //    }
-    //    finally
-    //    {
-    //        _channelLock.Release();
-    //    }
-    //}
 
     private async Task EnsureConnectedAsync()
     {
