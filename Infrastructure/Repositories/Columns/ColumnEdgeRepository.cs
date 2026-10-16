@@ -44,7 +44,7 @@ namespace kanban_lia.Infrastructure.Repositories.Columns
                OR   c2.{Schema.Columns.BoardId} = @BoardId",
                 new
                 {
-                    Id = boardId.Id
+                    boardId.Id
                 }
             );
 
