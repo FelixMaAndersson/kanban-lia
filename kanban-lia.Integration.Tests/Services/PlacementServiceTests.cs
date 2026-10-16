@@ -16,6 +16,7 @@ using kanban_lia.Infrastructure.Repositories.Outbox;
 using kanban_lia.Services.Placements.DTOs;
 using kanban_lia.Integration.Tests.Fixture;
 using kanban_lia.Services.IntegrationEvents.Models;
+using kanban_lia.Services.Columns.DTOs;
 
 namespace kanban_lia.Integration.Tests.Services
 {
@@ -89,7 +90,7 @@ namespace kanban_lia.Integration.Tests.Services
             var columnId = new ColumnId(Guid.NewGuid());
 
             await columnService.CreateAsync(
-                new Services.Columns.DTOs.CreateColumnDto(
+                new CreateColumnDto(
                     columnId,
                     "Column 1",
                     1,
@@ -170,7 +171,7 @@ namespace kanban_lia.Integration.Tests.Services
             var columnId = new ColumnId(Guid.NewGuid());
 
             await columnService.CreateAsync(
-                new Services.Columns.DTOs.CreateColumnDto(
+                new CreateColumnDto(
                     columnId,
                     "Column 1",
                     1,
@@ -251,7 +252,7 @@ namespace kanban_lia.Integration.Tests.Services
             var columnId = new ColumnId(Guid.NewGuid());
 
             await columnService.CreateAsync(
-                new Services.Columns.DTOs.CreateColumnDto(
+                new CreateColumnDto(
                     columnId,
                     "Column 1",
                     1,
@@ -299,7 +300,7 @@ namespace kanban_lia.Integration.Tests.Services
             var columnId = new ColumnId(Guid.NewGuid());
 
             await columnService.CreateAsync(
-                new Services.Columns.DTOs.CreateColumnDto(
+                new CreateColumnDto(
                     columnId,
                     "Column 1",
                     1,
@@ -342,7 +343,7 @@ namespace kanban_lia.Integration.Tests.Services
             var columnId = new ColumnId(Guid.NewGuid());
 
             await columnService.CreateAsync(
-                new Services.Columns.DTOs.CreateColumnDto(
+                new CreateColumnDto(
                     columnId,
                     "Column 1",
                     1,

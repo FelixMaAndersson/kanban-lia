@@ -9,18 +9,20 @@ namespace kanban_lia.Infrastructure.Repositories.Outbox
     {
         private readonly DbConnectionFactory _connectionFactory = connectionFactory;
 
+        private const int MaxAttempts = 5;
+
         public async Task AddAsync(
         OutboxMessage message,
         IDbTransaction transaction,
         CancellationToken cancellationToken)
         {
             const string sql = $"""
-            INSERT INTO OutboxMessages
+            INSERT INTO {Schema.OutBoxMessages.Table}
             (
-                {Schema.OutBox.Id},
-                {Schema.OutBox.EventType},
-                {Schema.OutBox.Content},
-                {Schema.OutBox.OccurredOn}
+                {Schema.OutBoxMessages.Id},
+                {Schema.OutBoxMessages.EventType},
+                {Schema.OutBoxMessages.Content},
+                {Schema.OutBoxMessages.OccurredOn}
             )
             VALUES
             (
@@ -46,15 +48,15 @@ namespace kanban_lia.Infrastructure.Repositories.Outbox
 
             const string sql = $"""
             SELECT
-                {Schema.OutBox.Id},
-                {Schema.OutBox.EventType},
-                {Schema.OutBox.Content},
-                {Schema.OutBox.OccurredOn},
-                {Schema.OutBox.ProcessedOn},
-                {Schema.OutBox.Error}
-            FROM {Schema.OutBox.OutBoxMessages}
-            WHERE {Schema.OutBox.ProcessedOn} IS NULL
-            ORDER BY {Schema.OutBox.OccurredOn};
+                {Schema.OutBoxMessages.Id},
+                {Schema.OutBoxMessages.EventType},
+                {Schema.OutBoxMessages.Content},
+                {Schema.OutBoxMessages.OccurredOn},
+                {Schema.OutBoxMessages.ProcessedOn},
+                {Schema.OutBoxMessages.Error}
+            FROM {Schema.OutBoxMessages.Table}
+            WHERE {Schema.OutBoxMessages.ProcessedOn} IS NULL
+            ORDER BY {Schema.OutBoxMessages.OccurredOn};
             """;
 
             var messages = await connection.QueryAsync<OutboxMessage>(
@@ -66,15 +68,15 @@ namespace kanban_lia.Infrastructure.Repositories.Outbox
         }
 
         public async Task MarkAsProcessedAsync(
-            Guid id, 
+            Guid id,
             CancellationToken cancellationToken)
         {
             using var connection = _connectionFactory.CreateConnection();
 
             const string sql = $"""
-            UPDATE {Schema.OutBox.OutBoxMessages}
-            SET {Schema.OutBox.ProcessedOn} = @ProcessedOn
-            WHERE {Schema.OutBox.Id} = @Id;
+            UPDATE {Schema.OutBoxMessages.Table}
+            SET {Schema.OutBoxMessages.ProcessedOn} = @ProcessedOn
+            WHERE {Schema.OutBoxMessages.Id} = @Id;
             """;
 
             await connection.ExecuteAsync(
@@ -88,16 +90,22 @@ namespace kanban_lia.Infrastructure.Repositories.Outbox
                     cancellationToken: cancellationToken));
         }
 
-        public async Task MarkAsFailedAsync(Guid id, 
-            string error, 
+        public async Task MarkAsFailedAsync(Guid id,
+            string error,
             CancellationToken cancellationToken)
         {
             using var connection = _connectionFactory.CreateConnection();
 
             const string sql = $"""
-            UPDATE {Schema.OutBox.OutBoxMessages}
-            SET {Schema.OutBox.Error} = @Error
-            WHERE {Schema.OutBox.Id} = @Id;
+            UPDATE {Schema.OutBoxMessages.Table}
+            SET {Schema.OutBoxMessages.Error} = @Error,
+                {Schema.OutBoxMessages.RetryCount} = {Schema.OutBoxMessages.RetryCount} + 1,
+                {Schema.OutBoxMessages.ProcessedOn} = CASE
+                    WHEN {Schema.OutBoxMessages.RetryCount} + 1 >= @MaxAttempts THEN @ProcessedOn
+                    ELSE NULL
+                 END
+             WHERE {Schema.OutBoxMessages.Id} = @Id
+              AND {Schema.OutBoxMessages.ProcessedOn} IS NULL;
             """;
 
             await connection.ExecuteAsync(
@@ -106,7 +114,9 @@ namespace kanban_lia.Infrastructure.Repositories.Outbox
                     new
                     {
                         Id = id,
-                        Error = error
+                        Error = error,
+                        MaxAttempts,
+                        ProcessedOn = DateTime.UtcNow
                     },
                     cancellationToken: cancellationToken));
         }

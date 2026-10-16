@@ -6,6 +6,7 @@
         string Content,
         DateTime OccurredOn,
         DateTime? ProcessedOn,
-        string? Error
+        string? Error,
+        int RetryCount = 0
     );
 }

@@ -54,16 +54,16 @@ namespace kanban_lia.Infrastructure.Schemas
             public const string EntityId = "EntityId";
         }
 
-        public static class OutBox
+        public static class OutBoxMessages
         {
-            public const string Table = "OutBox";
+            public const string Table = "OutBoxMessages";
             public const string Id = "Id";
             public const string EventType = "EventType";
             public const string Content = "Content";
             public const string OccurredOn = "OccurredOn";
             public const string ProcessedOn = "ProcessedOn";
             public const string Error = "Error";
-            public const string OutBoxMessages = "OutBoxMessages";
+            public const string RetryCount = "RetryCount";
         }
     }
 }
