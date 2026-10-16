@@ -17,6 +17,7 @@ using kanban_lia.Services.Columns.Exceptions;
 using kanban_lia.Services.IntegrationEvents;
 using kanban_lia.Services.Placements;
 using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.Data.SqlClient;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -82,6 +83,10 @@ app.UseExceptionHandler(errorApp =>
             RootAlreadyExistsException => StatusCodes.Status400BadRequest,
             ColumnNotFoundException => StatusCodes.Status404NotFound,
             InvalidDomainException => StatusCodes.Status400BadRequest,
+            ArgumentException => StatusCodes.Status400BadRequest,
+            SqlException { Number: 547 } => StatusCodes.Status409Conflict,
+            SqlException { Number: 2627 } => StatusCodes.Status409Conflict,
+            SqlException { Number: 2601 } => StatusCodes.Status409Conflict,
             _ => StatusCodes.Status500InternalServerError
         };
 
@@ -96,9 +101,14 @@ app.UseExceptionHandler(errorApp =>
                 RootAlreadyExistsException => "Root already exists on this board",
                 ColumnNotFoundException => "Column could not be found",
                 InvalidDomainException => "Invalid request",
+                ArgumentException => "Invalid request parameters",
+                SqlException { Number: 547 } => "Operation conflicts with related records",
+                SqlException { Number: 2627 } or SqlException { Number: 2601 } => "A record with the same key already exists",
                 _ => "Internal server error"
             },
-            detail: exception?.Message
+            detail: exception is SqlException
+                ? "The operation could not be completed due to a data conflict."
+                : exception?.Message
         ).ExecuteAsync(context);
     });
 });

@@ -30,7 +30,8 @@ namespace kanban_lia.Models.Domain.Columns
             ColumnId? id,
             BoardId boardId,
             string title,
-            int position)
+            int position,
+            bool requestWritable = true)
         {
             if (string.IsNullOrWhiteSpace(title))
             {
@@ -47,7 +48,7 @@ namespace kanban_lia.Models.Domain.Columns
                 throw new InvalidDomainException("Column position cannot be negative");
             }
 
-            return new Column(id ?? new ColumnId(Guid.NewGuid()), boardId, title, position, true);
+            return new Column(id ?? new ColumnId(Guid.NewGuid()), boardId, title, position, requestWritable);
         }
 
         public static Column Restore(

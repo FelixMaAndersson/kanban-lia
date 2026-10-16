@@ -4,5 +4,5 @@
         Guid BoardId,
         string Title,
         int Position,
-        bool RequestWritable);
+        bool RequestWritable = true);
 }

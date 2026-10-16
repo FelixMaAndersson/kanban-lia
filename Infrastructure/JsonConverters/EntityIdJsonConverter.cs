@@ -11,10 +11,20 @@ public class EntityIdJsonConverter : JsonConverter<EntityId>
         Type typeToConvert,
         JsonSerializerOptions options)
     {
+        if (reader.TokenType != JsonTokenType.String)
+        {
+            throw new JsonException("EntityId must be a JSON string.");
+        }
+
         var value = reader.GetString();
-        return value is null
-            ? throw new JsonException("EntityId cannot be null.")
-            : new EntityId(Guid.Parse(value));
+
+        if (!Guid.TryParse(value, out var guid))
+        {
+            throw new JsonException(
+                $"EntityId value '{value}' is not a valid GUID.");
+        }
+
+        return new EntityId(guid);
     }
 
     public override void Write(

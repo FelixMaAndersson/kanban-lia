@@ -1,6 +1,6 @@
-﻿using System.Text.Json;
+﻿using kanban_lia.Models.Domain.Columns;
+using System.Text.Json;
 using System.Text.Json.Serialization;
-using kanban_lia.Models.Domain.Columns;
 
 namespace kanban_lia.Infrastructure.JsonConverters;
 
@@ -11,10 +11,20 @@ public class ColumnIdJsonConverter : JsonConverter<ColumnId>
         Type typeToConvert,
         JsonSerializerOptions options)
     {
+        if (reader.TokenType != JsonTokenType.String)
+        {
+            throw new JsonException("ColumnId must be a JSON string.");
+        }
+
         var value = reader.GetString();
-        return value is null
-            ? throw new JsonException("ColumnId cannot be null.")
-            : new ColumnId(Guid.Parse(value));
+
+        if (!Guid.TryParse(value, out var guid))
+        {
+            throw new JsonException(
+                $"ColumnId value '{value}' is not a valid GUID.");
+        }
+
+        return new ColumnId(guid);
     }
 
     public override void Write(

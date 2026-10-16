@@ -153,8 +153,15 @@ namespace kanban_lia.Infrastructure.Repositories.Columns
             using var connection = _connectionFactory.CreateConnection();
             var rowsAffected = await connection.ExecuteAsync(
                 $@"
+                    DELETE FROM {Schema.Placements.Table}
+                          WHERE {Schema.Placements.ColumnId} = @Id;
+                    
+                    DELETE FROM {Schema.ColumnEdges.Table}
+                          WHERE {Schema.ColumnEdges.FromColumnId} = @Id
+                             OR {Schema.ColumnEdges.ToColumnId} = @Id;
+
                     DELETE FROM {Schema.Columns.Table} 
-                          WHERE {Schema.Columns.Id} = @Id",
+                          WHERE {Schema.Columns.Id} = @Id;",
                 new
                 {
                     id.Id
@@ -164,7 +171,7 @@ namespace kanban_lia.Infrastructure.Repositories.Columns
             return rowsAffected > 0;
         }
 
-        #pragma warning disable S1144 // Setters are required for Dapper to map the results to the object
+#pragma warning disable S1144 // Setters are required for Dapper to map the results to the object
         private sealed class ColumnRow
         {
             public Guid Id { get; set; }
@@ -173,6 +180,6 @@ namespace kanban_lia.Infrastructure.Repositories.Columns
             public int Position { get; set; }
             public bool RequestWritable { get; set; }
         }
-        #pragma warning restore S1144
+#pragma warning restore S1144
     }
 }

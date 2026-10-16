@@ -30,7 +30,9 @@ public static class PlacementEndpoints
     public static void MapPlacementEndpoints(WebApplication app)
     {
         var group = app.MapGroup("/api/placements");
-
+        var logger = app.Services.GetRequiredService<ILoggerFactory>()
+            .CreateLogger("PlacementEndpoints");
+        
         group.MapPost("/create", async (
             HttpRequest httpRequest,
             [FromBody] CreatePlacementRequest request,
@@ -40,9 +42,11 @@ public static class PlacementEndpoints
             IColumnEdgeRepository columnEdgeRepository,
             IHubContext<BoardHub> hub) =>
         {
-            var entityIds = request.EntityIds
+            var entityIds = (request.EntityIds ?? [])
                 .Select(id => new EntityId(id))
                 .ToList();
+            var afterEntityIds = request.AfterEntityIds ?? [];
+            var beforeEntityIds = request.BeforeEntityIds ?? [];
 
             var boardId = new BoardId(request.BoardId);
 
@@ -52,7 +56,10 @@ public static class PlacementEndpoints
                 throw new ColumnNotFoundException(new ColumnId(request.ColumnId));
 
             if (!canBeWritten.Value)
-                return Results.Unauthorized();
+                return Results.Problem(
+                    statusCode: StatusCodes.Status403Forbidden,
+                    title: "Column is not writable",
+                    detail: $"Column {request.ColumnId} does not accept new placements.");
 
             var connectedTargetColumnIds = await GetConnectedColumns(
                 new ColumnId(request.ColumnId),
@@ -143,8 +150,8 @@ public static class PlacementEndpoints
                     entityIds,
                     targetColumn.BoardId,
                     Target,
-                    request.AfterEntityIds.Select(id => new EntityId(id)),
-                    request.BeforeEntityIds.Select(id => new EntityId(id))
+                    afterEntityIds.Select(id => new EntityId(id)),
+                    beforeEntityIds.Select(id => new EntityId(id))
                 );
 
                 var operationDto = new PlacementOperationDto(
@@ -161,17 +168,29 @@ public static class PlacementEndpoints
 
             await placementService.CreateAsync(placementOperations, correlationId, causationEventId, actor, cancellationToken);
 
-            await hub.Clients.All.SendAsync(
-                "PlacementCreated",
-                new PlacementCreatedEvent(
-                    request.EntityIds,
-                    changes,
-                    actor
-                ),
-            cancellationToken);
+            try
+            {
+                await hub.Clients.All.SendAsync(
+                    "PlacementCreated",
+                    new PlacementCreatedEvent(
+                        [.. entityIds.Select(id => id.Id)],
+                        changes,
+                        actor
+                    ),
+                cancellationToken);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                // The placements are already committed — a broadcast failure must not
+                // turn into a 500; clients will converge on the next fetch.
+                logger.LogError(ex,
+                    "PlacementCreated broadcast failed after commit for {EntityCount} entities",
+                    entityIds.Count);
+            }
 
             return Results.Ok();
         });
+#pragma warning restore S107
 
         group.MapGet("/get", async (
             [FromQuery] Guid[] entityIds,
