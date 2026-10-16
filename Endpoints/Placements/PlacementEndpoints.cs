@@ -30,6 +30,8 @@ public static class PlacementEndpoints
     public static void MapPlacementEndpoints(WebApplication app)
     {
         var group = app.MapGroup("/api/placements");
+        var logger = app.Services.GetRequiredService<ILoggerFactory>()
+            .CreateLogger("PlacementEndpoints");
 
         group.MapPost("/create", async (
             HttpRequest httpRequest,
@@ -167,17 +169,29 @@ public static class PlacementEndpoints
 
             await placementService.CreateAsync(placementOperations, correlationId, causationEventId, actor, cancellationToken);
 
-            await hub.Clients.All.SendAsync(
-                "PlacementCreated",
-                new PlacementCreatedEvent(
-                    [.. entityIds.Select(id => id.Id)],
-                    changes,
-                    actor
-                ),
-            cancellationToken);
+            try
+            {
+                await hub.Clients.All.SendAsync(
+                    "PlacementCreated",
+                    new PlacementCreatedEvent(
+                        [.. entityIds.Select(id => id.Id)],
+                        changes,
+                        actor
+                    ),
+                cancellationToken);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                // The placements are already committed — a broadcast failure must not
+                // turn into a 500; clients will converge on the next fetch.
+                logger.LogError(ex,
+                    "PlacementCreated broadcast failed after commit for {EntityCount} entities",
+                    entityIds.Count);
+            }
 
             return Results.Ok();
         });
+#pragma warning restore S107
 
         group.MapGet("/get", async (
             [FromQuery] Guid[] entityIds,
