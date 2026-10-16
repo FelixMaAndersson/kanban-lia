@@ -32,7 +32,7 @@ public static class PlacementEndpoints
         var group = app.MapGroup("/api/placements");
         var logger = app.Services.GetRequiredService<ILoggerFactory>()
             .CreateLogger("PlacementEndpoints");
-
+        
         group.MapPost("/create", async (
             HttpRequest httpRequest,
             [FromBody] CreatePlacementRequest request,
@@ -45,7 +45,6 @@ public static class PlacementEndpoints
             var entityIds = (request.EntityIds ?? [])
                 .Select(id => new EntityId(id))
                 .ToList();
-
             var afterEntityIds = request.AfterEntityIds ?? [];
             var beforeEntityIds = request.BeforeEntityIds ?? [];
 
