@@ -1,5 +1,6 @@
 ﻿using Dapper;
 using kanban_lia.Infrastructure.Database;
+using kanban_lia.Infrastructure.Schemas;
 using System.Data;
 
 namespace kanban_lia.Infrastructure.Repositories.Outbox
@@ -13,13 +14,13 @@ namespace kanban_lia.Infrastructure.Repositories.Outbox
         IDbTransaction transaction,
         CancellationToken cancellationToken)
         {
-            const string sql = """
+            const string sql = $"""
             INSERT INTO OutboxMessages
             (
-                Id,
-                EventType,
-                Content,
-                OccurredOn
+                {Schema.OutBox.Id},
+                {Schema.OutBox.EventType},
+                {Schema.OutBox.Content},
+                {Schema.OutBox.OccurredOn}
             )
             VALUES
             (
@@ -43,17 +44,17 @@ namespace kanban_lia.Infrastructure.Repositories.Outbox
         {
             using var connection = _connectionFactory.CreateConnection();
 
-            const string sql = """
+            const string sql = $"""
             SELECT
-                Id,
-                EventType,
-                Content,
-                OccurredOn,
-                ProcessedOn,
-                Error
-            FROM OutboxMessages
-            WHERE ProcessedOn IS NULL
-            ORDER BY OccurredOn;
+                {Schema.OutBox.Id},
+                {Schema.OutBox.EventType},
+                {Schema.OutBox.Content},
+                {Schema.OutBox.OccurredOn},
+                {Schema.OutBox.ProcessedOn},
+                {Schema.OutBox.Error}
+            FROM {Schema.OutBox.OutBoxMessages}
+            WHERE {Schema.OutBox.ProcessedOn} IS NULL
+            ORDER BY {Schema.OutBox.OccurredOn};
             """;
 
             var messages = await connection.QueryAsync<OutboxMessage>(
@@ -61,7 +62,7 @@ namespace kanban_lia.Infrastructure.Repositories.Outbox
                     sql,
                     cancellationToken: cancellationToken));
 
-            return messages.ToList();
+            return [.. messages];
         }
 
         public async Task MarkAsProcessedAsync(
@@ -70,10 +71,10 @@ namespace kanban_lia.Infrastructure.Repositories.Outbox
         {
             using var connection = _connectionFactory.CreateConnection();
 
-            const string sql = """
-            UPDATE OutboxMessages
-            SET ProcessedOn = @ProcessedOn
-            WHERE Id = @Id;
+            const string sql = $"""
+            UPDATE {Schema.OutBox.OutBoxMessages}
+            SET {Schema.OutBox.ProcessedOn} = @ProcessedOn
+            WHERE {Schema.OutBox.Id} = @Id;
             """;
 
             await connection.ExecuteAsync(
@@ -93,10 +94,10 @@ namespace kanban_lia.Infrastructure.Repositories.Outbox
         {
             using var connection = _connectionFactory.CreateConnection();
 
-            const string sql = """
-            UPDATE OutboxMessages
-            SET Error = @Error
-            WHERE Id = @Id;
+            const string sql = $"""
+            UPDATE {Schema.OutBox.OutBoxMessages}
+            SET {Schema.OutBox.Error} = @Error
+            WHERE {Schema.OutBox.Id} = @Id;
             """;
 
             await connection.ExecuteAsync(

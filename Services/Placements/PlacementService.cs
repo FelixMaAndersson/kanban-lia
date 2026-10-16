@@ -1,7 +1,6 @@
 ﻿using AutoMapper;
 using FractionalIndexing;
 
-using kanban_lia.Hubs;
 using kanban_lia.Infrastructure.Database;
 using kanban_lia.Infrastructure.Repositories.Boards;
 using kanban_lia.Infrastructure.Repositories.Columns;
@@ -17,9 +16,7 @@ using kanban_lia.Services.Columns.Exceptions;
 using kanban_lia.Services.IntegrationEvents;
 using kanban_lia.Services.IntegrationEvents.Models;
 using kanban_lia.Services.Placements.DTOs;
-using Microsoft.AspNetCore.SignalR;
 using System.Text.Json;
-using static kanban_lia.Infrastructure.Schemas.Schema;
 
 namespace kanban_lia.Services.Placements
 {
