@@ -83,10 +83,10 @@ app.UseExceptionHandler(errorApp =>
             RootAlreadyExistsException => StatusCodes.Status400BadRequest,
             ColumnNotFoundException => StatusCodes.Status404NotFound,
             InvalidDomainException => StatusCodes.Status400BadRequest,
-            ArgumentException => StatusCodes.Status400BadRequest,               // OrderKeyGenerator etc.
-            SqlException { Number: 547 } => StatusCodes.Status409Conflict,     // FK violation (safety net)
-            SqlException { Number: 2627 } => StatusCodes.Status409Conflict,    // PK/unique violation
-            SqlException { Number: 2601 } => StatusCodes.Status409Conflict,    // duplicate key (index)
+            ArgumentException => StatusCodes.Status400BadRequest,
+            SqlException { Number: 547 } => StatusCodes.Status409Conflict,
+            SqlException { Number: 2627 } => StatusCodes.Status409Conflict,
+            SqlException { Number: 2601 } => StatusCodes.Status409Conflict,
             _ => StatusCodes.Status500InternalServerError
         };
 
