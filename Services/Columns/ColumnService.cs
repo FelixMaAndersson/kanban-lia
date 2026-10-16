@@ -5,7 +5,6 @@ using kanban_lia.Models.Domain.Columns;
 using kanban_lia.Models.Domain.Columns.DTOs;
 using kanban_lia.Services.Columns.DTOs;
 using kanban_lia.Services.Columns.Exceptions;
-using kanban_lia.Services.IntegrationEvents;
 using kanban_lia.Services.IntegrationEvents.Models;
 
 namespace kanban_lia.Services.Columns
@@ -21,7 +20,7 @@ namespace kanban_lia.Services.Columns
 
         public async Task CreateAsync(CreateColumnDto dto, Guid correlationId, Actor actor, CancellationToken cancellationToken)
         {
-            var newColumn = Column.Create(dto.Id, dto.BoardId, dto.Title, dto.Position);
+            var newColumn = Column.Create(dto.Id, dto.BoardId, dto.Title, dto.Position, dto.RequestWritable);
 
             await _repository.CreateAsync(newColumn);
 
