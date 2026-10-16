@@ -40,8 +40,6 @@ public static class PlacementEndpoints
             IColumnEdgeRepository columnEdgeRepository,
             IHubContext<BoardHub> hub) =>
         {
-            // this whole method needs to be refactored since it is hard to read and understand.
-            // I'll (Felix) do it next week (v. 43).
             var entityIds = request.EntityIds
                 .Select(id => new EntityId(id))
                 .ToList();
@@ -60,13 +58,7 @@ public static class PlacementEndpoints
             foreach (var columnId in connectedTargetColumnIds)
             {
                 var column =
-                    await columnRepository.GetByIdAsync(columnId);
-
-                if (column is null)
-                {
-                    throw new ColumnNotFoundException(columnId);
-                }
-
+                    await columnRepository.GetByIdAsync(columnId) ?? throw new ColumnNotFoundException(columnId);
                 connectedTargetColumns.Add(column);
             }
 
@@ -124,31 +116,10 @@ public static class PlacementEndpoints
                         currentPlacementsOnTargetBoard.Any(placement =>
                             placement.ColumnId == source.Id));
 
-                Column targetColumn;
-
-                if (matchingSources.Count == 0)
-                {
-                    targetColumn = targetGroup
-                        .OrderBy(target => target.Position)
-                        .First();
-                }
-                else if (targetGroup.Count() == 1)
-                {
-                    targetColumn = targetGroup.First();
-                }
-                else
-                {
-                    var sourcePosition = currentSource is not null
-                        ? currentSource.Position
-                        : matchingSources
-                            .OrderBy(source => source.Position)
-                            .First()
-                            .Position;
-
-                    targetColumn = targetGroup
-                        .OrderBy(target => Math.Abs(target.Position - sourcePosition))
-                        .First();
-                }
+                var targetColumn = SelectTargetColumn(
+                    targetGroup,
+                    matchingSources,
+                    currentSource);
 
                 columnPairs.Add((
                     Target: targetColumn.Id,
@@ -159,89 +130,29 @@ public static class PlacementEndpoints
             var placementOperations =
                 new List<PlacementOperationDto>();
 
-            foreach (var pair in columnPairs)
+            foreach (var (Target, Sources) in columnPairs)
             {
                 var targetColumn =
-                    await columnRepository.GetByIdAsync(pair.Target);
-
-                if (targetColumn is null)
-                {
-                    throw new ColumnNotFoundException(pair.Target);
-                }
-
+                    await columnRepository.GetByIdAsync(Target) ?? throw new ColumnNotFoundException(Target);
                 var createDto = new CreatePlacementDto(
                     entityIds,
                     targetColumn.BoardId,
-                    pair.Target,
+                    Target,
                     request.AfterEntityIds.Select(id => new EntityId(id)),
                     request.BeforeEntityIds.Select(id => new EntityId(id))
                 );
 
                 var operationDto = new PlacementOperationDto(
                     createDto,
-                    pair.Sources
+                    Sources
                 );
 
                 placementOperations.Add(operationDto);
             }
 
-            var changes = new List<PlacementChange>();
+            var changes = CreatePlacementChanges(columnPairs);
 
-            foreach (var pair in columnPairs)
-            {
-                if (pair.Sources.Count == 0)
-                {
-                    changes.Add(new PlacementChange(null, pair.Target.Id));
-                    continue;
-                }
-
-                foreach (var source in pair.Sources)
-                {
-                    changes.Add(new PlacementChange(
-                        source.Id,
-                        pair.Target.Id
-                        ));
-                }
-            }
-
-            Guid correlationId = Guid.NewGuid();
-            Guid? causationEventId = null;
-            var actorId = "-1";
-            var actorType = "";
-
-            if (httpRequest.Headers.TryGetValue(
-                    "Correlation-Id",
-                    out var correlationHeader) &&
-                Guid.TryParse(correlationHeader, out var parsedCorrelationId))
-            {
-                correlationId = parsedCorrelationId;
-            }
-
-            if (httpRequest.Headers.TryGetValue(
-                    "Causation-Id",
-                    out var causationHeader) &&
-                Guid.TryParse(causationHeader, out var parsedCausationEventId))
-            {
-                causationEventId = parsedCausationEventId;
-            }
-
-            if (httpRequest.Headers.TryGetValue(
-                    "Actor-Id",
-                    out var actorIdHeader))
-            {
-                actorId = actorIdHeader.ToString();
-            }
-
-            if (httpRequest.Headers.TryGetValue(
-                    "Actor-Type",
-                    out var actorTypeHeader))
-            {
-                actorType = actorTypeHeader.ToString();
-            }
-
-            var actor = new Actor(
-                actorId,
-                actorType);
+            var (correlationId, causationEventId, actor) = GetEventMetadata(httpRequest);
 
             await placementService.CreateAsync(placementOperations, correlationId, causationEventId, actor, cancellationToken);
 
@@ -319,6 +230,102 @@ public static class PlacementEndpoints
         connectedColumns.AddRange(
             toEdges.Select(edge => edge.FromColumnId));
 
-        return connectedColumns.Distinct().ToList();
+        return [.. connectedColumns.Distinct()];
+    }
+    private static Column SelectTargetColumn(
+    IEnumerable<Column> targetGroup,
+    List<Column> matchingSources,
+    Column? currentSource)
+    {
+        var targets = targetGroup.ToList();
+
+        if (matchingSources.Count == 0)
+        {
+            return targets
+                .OrderBy(target => target.Position)
+                .First();
+        }
+
+        if (targets.Count == 1)
+        {
+            return targets[0];
+        }
+
+        var sourcePosition = currentSource is not null
+            ? currentSource.Position
+            : matchingSources
+                .OrderBy(source => source.Position)
+                .First()
+                .Position;
+
+        return targets
+            .OrderBy(target =>
+                Math.Abs(target.Position - sourcePosition))
+            .First();
+    }
+
+    private static List<PlacementChange> CreatePlacementChanges(
+        List<(ColumnId Target, List<ColumnId> Sources)> columnPairs)
+    {
+        var changes = new List<PlacementChange>();
+        foreach (var (Target, Sources) in columnPairs)
+        {
+            if (Sources.Count == 0)
+            {
+                changes.Add(new PlacementChange(null, Target.Id));
+                continue;
+            }
+
+            foreach (var source in Sources)
+            {
+                changes.Add(new PlacementChange(
+                    source.Id,
+                    Target.Id
+                    ));
+            }
+        }
+        return changes;
+    }
+
+    private static (
+        Guid CorrelationId, 
+        Guid? CausationEventId, 
+        Actor Actor) 
+        GetEventMetadata(HttpRequest httpRequest)
+    {
+        Guid correlationId = Guid.NewGuid();
+        Guid? causationEventId = null;
+        var actorId = "-1";
+        var actorType = "";
+
+        if (httpRequest.Headers.TryGetValue(
+                "Correlation-Id",
+                out var correlationHeader) &&
+            Guid.TryParse(correlationHeader, out var parsedCorrelationId))
+        {
+            correlationId = parsedCorrelationId;
+        }
+
+        if (httpRequest.Headers.TryGetValue(
+                "Causation-Id",
+                out var causationHeader) &&
+            Guid.TryParse(causationHeader, out var parsedCausationEventId))
+        {
+            causationEventId = parsedCausationEventId;
+        }
+
+        if (httpRequest.Headers.TryGetValue("Actor-Id", out var actorIdHeader))
+        {
+            actorId = actorIdHeader.ToString();
+        }
+
+        if (httpRequest.Headers.TryGetValue("Actor-Type", out var actorTypeHeader))
+        {
+            actorType = actorTypeHeader.ToString();
+        }
+
+        var actor = new Actor(actorId, actorType);
+
+        return (correlationId, causationEventId, actor);
     }
 }
