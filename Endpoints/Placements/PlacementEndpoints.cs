@@ -55,7 +55,10 @@ public static class PlacementEndpoints
                 throw new ColumnNotFoundException(new ColumnId(request.ColumnId));
 
             if (!canBeWritten.Value)
-                return Results.Unauthorized();
+                return Results.Problem(
+                    statusCode: StatusCodes.Status403Forbidden,
+                    title: "Column is not writable",
+                    detail: $"Column {request.ColumnId} does not accept new placements.");
 
             var connectedTargetColumnIds = await GetConnectedColumns(
                 new ColumnId(request.ColumnId),
@@ -167,7 +170,7 @@ public static class PlacementEndpoints
             await hub.Clients.All.SendAsync(
                 "PlacementCreated",
                 new PlacementCreatedEvent(
-                    request.EntityIds,
+                    [.. entityIds.Select(id => id.Id)],
                     changes,
                     actor
                 ),

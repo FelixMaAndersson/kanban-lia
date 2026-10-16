@@ -1,6 +1,6 @@
-﻿using System.Text.Json;
+﻿using kanban_lia.Models.Domain.Boards;
+using System.Text.Json;
 using System.Text.Json.Serialization;
-using kanban_lia.Models.Domain.Boards;
 
 namespace kanban_lia.Infrastructure.JsonConverters;
 
@@ -11,10 +11,20 @@ public class BoardIdJsonConverter : JsonConverter<BoardId>
         Type typeToConvert,
         JsonSerializerOptions options)
     {
+        if (reader.TokenType != JsonTokenType.String)
+        {
+            throw new JsonException("BoardId must be a JSON string.");
+        }
+
         var value = reader.GetString();
-        return value is null
-            ? throw new JsonException("BoardId cannot be null.")
-            : new BoardId(Guid.Parse(value));
+
+        if (!Guid.TryParse(value, out var guid))
+        {
+            throw new JsonException(
+                $"BoardId value '{value}' is not a valid GUID.");
+        }
+
+        return new BoardId(guid);
     }
 
     public override void Write(
