@@ -54,4 +54,6 @@ CREATE TABLE OutboxMessages
 	OccurredOn DATETIME2 NOT NULL,
 	ProcessedOn DATETIME2 NULL,
 	Error NVARCHAR(MAX) NULL,
+	RetryCount INT NOT NULL
+		CONSTRAINT DF_OutboxMessages_RetryCount DEFAULT 0
 );
