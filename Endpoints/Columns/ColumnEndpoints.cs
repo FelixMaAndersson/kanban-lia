@@ -31,7 +31,7 @@ public static class ColumnEndpoints
             var actorType = "";
 
             if (httpRequest.Headers.TryGetValue(
-                "Correlation-Id", 
+                "Correlation-Id",
                 out var correlationHeader) &&
                 Guid.TryParse(correlationHeader, out var parsedCorrelationId))
             {
@@ -54,9 +54,9 @@ public static class ColumnEndpoints
 
             var actor = new Actor(actorId, actorType);
 
-            await columnService.CreateAsync(dto, correlationId, actor, cancellationToken);
+            var columnId = await columnService.CreateAsync(dto, correlationId, actor, cancellationToken);
 
-            return Results.Ok();
+            return Results.Ok(new { id = columnId.Id });
         });
 
         // Get columns by board id

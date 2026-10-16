@@ -18,7 +18,7 @@ namespace kanban_lia.Services.Columns
         private readonly IColumnRepository _repository = repository;
         private readonly IColumnEdgeRepository _columnEdgeRepository = columnEdgeRepository;
 
-        public async Task CreateAsync(CreateColumnDto dto, Guid correlationId, Actor actor, CancellationToken cancellationToken)
+        public async Task<ColumnId> CreateAsync(CreateColumnDto dto, Guid correlationId, Actor actor, CancellationToken cancellationToken)
         {
             var newColumn = Column.Create(dto.Id, dto.BoardId, dto.Title, dto.Position, dto.RequestWritable);
 
@@ -28,10 +28,7 @@ namespace kanban_lia.Services.Columns
 
             await _columnEdgeRepository.GetByToColumnIdAsync(newColumn.Id);
 
-            //if (!fromEdges.Any() && !toEdges.Any())
-            //{
-            //    await _integrationEventPublisher.PublishColumnHasNoEdgeAsync(newColumn.Id.Id, causationEventId, actor, cancellationToken);
-            //}
+            return newColumn.Id;
         }
 
         public async Task<IEnumerable<ColumnDto>> GetByBoardIdAsync(BoardId boardId)
