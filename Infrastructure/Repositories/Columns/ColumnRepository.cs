@@ -106,13 +106,10 @@ namespace kanban_lia.Infrastructure.Repositories.Columns
                 new { id.Id }
             );
 
-            if (requestWritable is null)
-            {
-                throw new InvalidOperationException(
-                    $"Column with id {id.Id} not found.");
-            }
-
-            return requestWritable.Value;
+            return requestWritable is null
+                ? throw new InvalidOperationException(
+                    $"Column with id {id.Id} not found.")
+                : requestWritable.Value;
         }
 
         public async Task<bool> SetRequestWritableAsync(
@@ -170,6 +167,7 @@ namespace kanban_lia.Infrastructure.Repositories.Columns
             return rowsAffected > 0;
         }
 
+        #pragma warning disable S1144 // Setters are required for Dapper to map the results to the object
         private sealed class ColumnRow
         {
             public Guid Id { get; set; }
@@ -178,5 +176,6 @@ namespace kanban_lia.Infrastructure.Repositories.Columns
             public int Position { get; set; }
             public bool RequestWritable { get; set; }
         }
+        #pragma warning restore S1144
     }
 }

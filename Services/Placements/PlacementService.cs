@@ -19,6 +19,7 @@ using kanban_lia.Services.IntegrationEvents.Models;
 using kanban_lia.Services.Placements.DTOs;
 using Microsoft.AspNetCore.SignalR;
 using System.Text.Json;
+using static kanban_lia.Infrastructure.Schemas.Schema;
 
 namespace kanban_lia.Services.Placements
 {
@@ -64,102 +65,20 @@ namespace kanban_lia.Services.Placements
         /// <exception cref="InvalidDomainException">Thrown when both AfterEntityIds and BeforeEntityIds are provided, 
         /// or when the specified column does not belong to the specified board.</exception>
         public async Task CreateAsync(
-            IEnumerable<PlacementOperationDto> dtos, 
-            Guid correlationId, 
-            Guid? causationEventId, 
-            Actor actor, 
+            IEnumerable<PlacementOperationDto> dtos,
+            Guid correlationId,
+            Guid? causationEventId,
+            Actor actor,
             CancellationToken cancellationToken)
         {
-            // needs to be refactored for readability and maintainability, but works for now.
-            // I'll (Felix) do it 16/10 -26.
+
             foreach (var dto in dtos)
             {
                 var entityIds = dto.Dto.EntityIds.ToArray();
 
-                var column = await _columnRepository.GetByIdAsync(dto.Dto.ColumnId);
+                var (column, board) = await ValidateAsync(dto);
 
-                var board = await _boardRepository.GetByIdAsync(dto.Dto.BoardId);
-
-                if (column is null)
-                {
-                    throw new ColumnNotFoundException(dto.Dto.ColumnId);
-                }
-
-                if (board is null)
-                {
-                    throw new BoardNotFoundException(dto.Dto.BoardId);
-                }
-
-                if (dto.Dto.AfterEntityIds.Any() && dto.Dto.BeforeEntityIds.Any())
-                {
-                    throw new InvalidDomainException(
-                        "Only one of AfterEntityId and BeforeEntityId can be provided.");
-                }
-
-                if (column.BoardId != board.Id)
-                {
-                    throw new InvalidDomainException(
-                        "The column does not belong to the specified board.");
-                }
-
-                EntityId? afterEntityId = null;
-                EntityId? beforeEntityId = null;
-                SortKeyLookup lookup;
-
-                foreach (var entityId in dto.Dto.AfterEntityIds)
-                {
-                    var currentPlacements = await _repository.GetCurrentAsync(
-                        [entityId],
-                        board.Id
-                        );
-
-                    var placement = currentPlacements.FirstOrDefault();
-
-                    if (placement?.ColumnId == column.Id)
-                    {
-                        afterEntityId = entityId;
-                    }
-                }
-
-                if (afterEntityId is not null)
-                {
-                    lookup = SortKeyLookup.After;
-                }
-
-                else
-                {
-                    foreach (var entityId in dto.Dto.BeforeEntityIds)
-                    {
-                        var currentPlacement = await _repository.GetCurrentAsync(
-                            [entityId],
-                            board.Id
-                            );
-
-                        var placement = currentPlacement.FirstOrDefault();
-
-                        if (placement?.ColumnId == column.Id)
-                        {
-                            beforeEntityId = entityId;
-                            break;
-                        }
-                    }
-
-                    if (beforeEntityId is not null)
-                    {
-                        lookup = SortKeyLookup.Before;
-                    }
-
-                    else
-                    {
-                        lookup = SortKeyLookup.Last;
-                    }
-                }
-
-                var range = await _repository.GetSortKeyRangeAsync(
-                    column.Id,
-                    lookup,
-                    afterEntityId,
-                    beforeEntityId);
+                var range = await GetSortKeyRangeAsync(dto.Dto);
 
                 var placements = new List<Placement>();
 
@@ -280,6 +199,109 @@ namespace kanban_lia.Services.Placements
             var placements = await _repository.GetCurrentByBoardAsync(boardId);
 
             return _mapper.Map<IEnumerable<PlacementDto>>(placements);
+        }
+
+        // helper methods
+
+        /// <summary>
+        /// Validates that the specified column and board exist and that placement arguments are consistent.
+        /// </summary>
+        /// <param name="dto">PlacementOperationDto containing the column and board identifiers and optional placement position
+        /// identifiers (AfterEntityIds/BeforeEntityIds).</param>
+        /// <returns>A tuple containing the validated Column and Board.</returns>
+        /// <exception cref="ColumnNotFoundException">Thrown when a column with the specified ID cannot be found.</exception>
+        /// <exception cref="BoardNotFoundException">Thrown when a board with the specified ID cannot be found.</exception>
+        /// <exception cref="InvalidDomainException">Thrown when the column does not belong to the specified board, or when both AfterEntityIds and
+        /// BeforeEntityIds are provided.</exception>
+        private async Task<(Column column, Board board)> ValidateAsync(PlacementOperationDto dto)
+        {
+            var column = await _columnRepository.GetByIdAsync(dto.Dto.ColumnId);
+
+            var board = await _boardRepository.GetByIdAsync(dto.Dto.BoardId);
+
+            if (column is null)
+            {
+                throw new ColumnNotFoundException(dto.Dto.ColumnId);
+            }
+
+            if (board is null)
+            {
+                throw new BoardNotFoundException(dto.Dto.BoardId);
+            }
+
+            if (column.BoardId != board.Id)
+            {
+                throw new InvalidDomainException(
+                    "The column does not belong to the specified board.");
+            }
+
+            if (dto.Dto.AfterEntityIds.Any() && dto.Dto.BeforeEntityIds.Any())
+            {
+                throw new InvalidDomainException(
+                    "Only one of AfterEntityId and BeforeEntityId can be provided.");
+            }
+
+            return (column, board);
+
+        }
+
+
+        private async Task<SortKeyRange> GetSortKeyRangeAsync(CreatePlacementDto dto)
+        {
+            EntityId? afterEntityId = null;
+            EntityId? beforeEntityId = null;
+            SortKeyLookup lookup;
+
+            foreach (var entityId in dto.AfterEntityIds)
+            {
+                var currentPlacements = await _repository.GetCurrentAsync(
+                    [entityId],
+                    dto.BoardId);
+
+                var placement = currentPlacements.FirstOrDefault();
+
+                if (placement?.ColumnId == dto.ColumnId)
+                {
+                    afterEntityId = entityId;
+                }
+            }
+
+            if (afterEntityId is not null)
+            {
+                lookup = SortKeyLookup.After;
+            }
+            else
+            {
+                foreach (var entityId in dto.BeforeEntityIds)
+                {
+                    var currentPlacements = await _repository.GetCurrentAsync(
+                        [entityId],
+                        dto.BoardId);
+
+                    var placement = currentPlacements.FirstOrDefault();
+
+                    if (placement?.ColumnId == dto.ColumnId)
+                    {
+                        beforeEntityId = entityId;
+                        break;
+                    }
+                }
+
+                if (beforeEntityId is not null)
+                {
+                    lookup = SortKeyLookup.Before;
+                }
+                else
+                {
+                    lookup = SortKeyLookup.Last;
+                }
+            }
+
+            return await _repository.GetSortKeyRangeAsync(
+                dto.ColumnId,
+                lookup,
+                afterEntityId,
+                beforeEntityId);
         }
     }
 }
