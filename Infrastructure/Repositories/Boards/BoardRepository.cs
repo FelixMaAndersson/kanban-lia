@@ -139,26 +139,6 @@ namespace kanban_lia.Infrastructure.Repositories.Boards
 
             var rowsAffected = await connection.ExecuteAsync(
                 $@"
-                    DELETE FROM {Schema.Placements.Table}
-                          WHERE {Schema.Placements.BoardId} = @Id
-                             OR {Schema.Placements.ColumnId} 
-                                IN (SELECT {Schema.Columns.Id} FROM {Schema.Columns.Table} 
-                                                WHERE {Schema.Columns.BoardId} = @Id);
-
-                    DELETE FROM {Schema.ColumnEdges.Table}
-                          WHERE {Schema.ColumnEdges.FromColumnId}
-                                IN (SELECT {Schema.Columns.Id} FROM {Schema.Columns.Table} 
-                                                WHERE {Schema.Columns.BoardId} = @Id)
-                             OR {Schema.ColumnEdges.ToColumnId} 
-                                IN (SELECT {Schema.Columns.Id} FROM {Schema.Columns.Table} 
-                                                WHERE {Schema.Columns.BoardId} = @Id);
-
-                    DELETE FROM {Schema.BoardRoots.Table} 
-                          WHERE {Schema.BoardRoots.BoardId} = @Id;
-
-                    DELETE FROM {Schema.Columns.Table}
-                          WHERE {Schema.Columns.BoardId} = @Id;
-
                     DELETE FROM {Schema.Boards.Table} 
                           WHERE {Schema.Boards.Id} = @Id;",
                 new
