@@ -10,13 +10,13 @@ using kanban_lia.Models.Domain.Placements;
 using kanban_lia.Services.Boards;
 using kanban_lia.Services.Columns;
 using kanban_lia.Services.Columns.Exceptions;
+using kanban_lia.Services.Columns.DTOs;
 using kanban_lia.Services.Placements;
 using kanban_lia.Mappings;
 using kanban_lia.Infrastructure.Repositories.Outbox;
 using kanban_lia.Services.Placements.DTOs;
 using kanban_lia.Integration.Tests.Fixture;
 using kanban_lia.Services.IntegrationEvents.Models;
-using kanban_lia.Services.Columns.DTOs;
 
 namespace kanban_lia.Integration.Tests.Services
 {
@@ -155,6 +155,55 @@ namespace kanban_lia.Integration.Tests.Services
                 $"Expected entity2 to be after entity1. " +
                 $"entity1 SortKey: '{placement1.First().SortKey}', " +
                 $"entity2 SortKey: '{placement2.First().SortKey}'");
+        }
+
+        [Fact]
+        public async Task CreateAsync_ConcurrentInsertionsAfterSameEntity_UseDistinctSortKeys()
+        {
+            var boardService = CreateBoardService();
+            var columnService = CreateColumnService();
+            var placementService = CreatePlacementService();
+            var repository = CreatePlacementRepository();
+
+            var boardId = await boardService.CreateAsync("Concurrent placement test");
+            var columnId = new ColumnId(Guid.NewGuid());
+
+            await columnService.CreateAsync(
+                new CreateColumnDto(columnId, "Column 1", 1, boardId, true),
+                Guid.NewGuid(),
+                new Actor("test-user", "User"),
+                CancellationToken.None);
+
+            var anchorEntityId = new EntityId(Guid.NewGuid());
+            var anchorOperation = new PlacementOperationDto(
+                new CreatePlacementDto(
+                    [anchorEntityId], boardId, columnId, [], []),
+                []);
+
+            await placementService.CreateAsync(
+                [anchorOperation], Guid.NewGuid(), null,
+                new Actor("test-user", "User"), CancellationToken.None);
+
+            var insertions = Enumerable.Range(0, 12).Select(_ =>
+            {
+                var entityId = new EntityId(Guid.NewGuid());
+                var operation = new PlacementOperationDto(
+                    new CreatePlacementDto(
+                        [entityId], boardId, columnId, [anchorEntityId], []),
+                    []);
+
+                return placementService.CreateAsync(
+                    [operation], Guid.NewGuid(), null,
+                    new Actor("test-user", "User"), CancellationToken.None);
+            });
+
+            await Task.WhenAll(insertions);
+
+            var placements = await repository.GetCurrentByColumnAsync(columnId, boardId);
+            var sortKeys = placements.Select(placement => placement.SortKey).ToArray();
+
+            Assert.Equal(13, sortKeys.Length);
+            Assert.Equal(sortKeys.Length, sortKeys.Distinct().Count());
         }
 
         [Fact]
@@ -412,6 +461,48 @@ namespace kanban_lia.Integration.Tests.Services
                 $"Expected entity2 to be placed after entity1. " +
                 $"entity1 SortKey: '{placement1.First().SortKey}', " +
                 $"entity2 SortKey: '{placement2.First().SortKey}'");
+        }
+
+        [Fact]
+        public async Task CreateAsync_WhenColumnBelongsToDifferentBoard_ThrowsInvalidDomainException()
+        {
+            // Arrange
+            var boardService = CreateBoardService();
+            var columnService = CreateColumnService();
+            var placementService = CreatePlacementService();
+
+            var requestedBoardId = await boardService.CreateAsync("Requested board");
+            var columnOwnerBoardId = await boardService.CreateAsync("Column owner board");
+            var columnId = new ColumnId(Guid.NewGuid());
+
+            await columnService.CreateAsync(
+                new CreateColumnDto(
+                    columnId,
+                    "Column on another board",
+                    1,
+                    columnOwnerBoardId,
+                    true),
+                Guid.NewGuid(),
+                new Actor("-1", "TestActor"),
+                CancellationToken.None);
+
+            var operation = new PlacementOperationDto(
+                new CreatePlacementDto(
+                    [new EntityId(Guid.NewGuid())],
+                    requestedBoardId,
+                    columnId,
+                    [],
+                    []),
+                []);
+
+            // Act & Assert
+            await Assert.ThrowsAsync<InvalidDomainException>(
+                () => placementService.CreateAsync(
+                    [operation],
+                    Guid.NewGuid(),
+                    null,
+                    new Actor("-1", "TestActor"),
+                    CancellationToken.None));
         }
 
         [Fact]
