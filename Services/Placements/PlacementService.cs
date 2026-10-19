@@ -208,6 +208,7 @@ namespace kanban_lia.Services.Placements
         /// identifiers (AfterEntityIds/BeforeEntityIds).</param>
         /// <returns>A tuple containing the validated Column and Board.</returns>
         /// <exception cref="ColumnNotFoundException">Thrown when a column with the specified ID cannot be found.</exception>
+        /// <exception cref="ColumnNotWritableException">Thrown when a column is not writable, hence the placement cannot be created inside of it.</exception>
         /// <exception cref="BoardNotFoundException">Thrown when a board with the specified ID cannot be found.</exception>
         /// <exception cref="InvalidDomainException">Thrown when the column does not belong to the specified board, or when both AfterEntityIds and
         /// BeforeEntityIds are provided.</exception>
@@ -220,6 +221,11 @@ namespace kanban_lia.Services.Placements
             if (column is null)
             {
                 throw new ColumnNotFoundException(dto.Dto.ColumnId);
+            }
+
+            if (!column.RequestWritable)
+            {
+                throw new ColumnNotWritableException(column.Id);
             }
 
             if (board is null)
