@@ -11,25 +11,26 @@ using Microsoft.Extensions.Logging.Abstractions;
 
 namespace kanban_lia.Integration.Tests.Services
 {
+    /// <summary>
+    /// Class <c>BoardServiceTests</c> is the test class for <c>BoardService</c>
+    /// </summary>
+    /// <param name="database">Primary constructor for <c>DatabaseFixture</c></param>
     [Collection(DatabaseCollection.Name)]
-    public class BoardServiceTests : IAsyncLifetime
+    public sealed class BoardServiceTests(DatabaseFixture database) : IAsyncLifetime
     {
-        private readonly DatabaseFixture _database;
-        private readonly BoardRepository _repository;
-        private readonly BoardService _service;
-        private static readonly IMapper _mapper = new MapperConfiguration(
-        cfg =>
-        {
-            cfg.AddProfile(new BoardProfile());
-        },
-        NullLoggerFactory.Instance).CreateMapper();
+        private readonly DatabaseFixture _database = database;
 
-        public BoardServiceTests(DatabaseFixture fixture)
-        {
-            _repository = new BoardRepository(fixture.DbFactory);
-            _service = new BoardService(_repository, _mapper);
-            _database = fixture;
-        }
+        private static readonly IMapper _mapper = new MapperConfiguration(
+            cfg =>
+            {
+                cfg.AddProfile(new BoardProfile());
+            },
+            NullLoggerFactory.Instance).CreateMapper();
+
+        private readonly BoardRepository _repository = new(database.DbFactory);
+        private readonly BoardService _service = new(
+            new BoardRepository(database.DbFactory),
+            _mapper);
 
         public async ValueTask InitializeAsync()
         {
@@ -45,7 +46,10 @@ namespace kanban_lia.Integration.Tests.Services
         [Fact]
         public async Task CreateAsync_WithValidProperties_CreatesBoard()
         {
+            // Act
             var id = await _service.CreateAsync("Testboard");
+
+            // Assert
             var board = await _repository.GetByIdAsync(id);
 
             Assert.NotNull(board);
@@ -55,10 +59,13 @@ namespace kanban_lia.Integration.Tests.Services
         [Fact]
         public async Task GetById_WithExistingBoard_ReturnsBoard()
         {
+            // Arrange
             var id = await _service.CreateAsync("Testboard");
 
+            // Act
             var board = await _service.GetByIdAsync(id);
 
+            // Assert
             Assert.NotNull(board);
             Assert.Equal(id, board.Id);
         }
@@ -66,18 +73,41 @@ namespace kanban_lia.Integration.Tests.Services
         [Fact]
         public async Task GetById_WithNonExistingBoard_ThrowsException()
         {
+            // Arrange
             var id = new BoardId(Guid.NewGuid());
 
+            // Act and Assert
             await Assert.ThrowsAsync<BoardNotFoundException>(() => _service.GetByIdAsync(id));
+        }
+
+        [Fact]
+        public async Task GetByIdAsync_ReturnsBoardWithRootsLoaded()
+        {
+            // Arrange
+            var boardId = await _service.CreateAsync("Testboard");
+            var entityId = new EntityId(Guid.NewGuid());
+
+            await _service.AddRootAsync(new AddRootDto(boardId, entityId));
+
+            // Act
+            var board = await _service.GetByIdAsync(boardId);
+
+            // Assert
+            Assert.NotNull(board);
+            Assert.NotEmpty(board.Roots);
+            Assert.Contains(entityId, board.Roots);
         }
 
         [Fact]
         public async Task RenameAsync_WithExistingBoard_RenamesBoard()
         {
+            // Arrange
             var id = await _service.CreateAsync("Testboard");
 
+            // Act
             await _service.RenameAsync(new RenameBoardDto(id, "Renamedboard"));
 
+            // Assert
             var board = await _repository.GetByIdAsync(id);
 
             Assert.NotNull(board);
@@ -87,22 +117,27 @@ namespace kanban_lia.Integration.Tests.Services
         [Fact]
         public async Task RenameAsync_WithNonExistingBoard_ThrowsException()
         {
+            // Arrange
             var id = new BoardId(Guid.NewGuid());
 
+            // Act and Assert
             await Assert.ThrowsAsync<BoardNotFoundException>(() => _service.RenameAsync(new RenameBoardDto(id, "Renamedboard")));
         }
 
         [Fact]
         public async Task AddRootAsync_WithExistingBoard_AddsRoot()
         {
+            // Arrange
             var boardId = await _service.CreateAsync("Testboard");
             var entityId = new EntityId(Guid.NewGuid());
 
+            // Act
             await _service.AddRootAsync(new AddRootDto(boardId, entityId));
 
+            // Assert
             var rootExists = await _repository.RootExistsAsync(
-            boardId,
-            entityId);
+                boardId,
+                entityId);
 
             Assert.True(rootExists);
         }
@@ -110,36 +145,43 @@ namespace kanban_lia.Integration.Tests.Services
         [Fact]
         public async Task AddRootAsync_WithNonExistingBoard_ThrowsException()
         {
+            // Arrange
             var boardId = new BoardId(Guid.NewGuid());
             var entityId = new EntityId(Guid.NewGuid());
 
+            // Act and Assert
             await Assert.ThrowsAsync<BoardNotFoundException>(() => _service.AddRootAsync(new AddRootDto(boardId, entityId)));
         }
 
         [Fact]
         public async Task AddRootAsync_WithDuplicateRoot_ThrowsException()
         {
+            // Arrange
             var boardId = await _service.CreateAsync("Testboard");
             var entityId = new EntityId(Guid.NewGuid());
 
             await _service.AddRootAsync(new AddRootDto(boardId, entityId));
 
+            // Act and Assert
             await Assert.ThrowsAsync<RootAlreadyExistsException>(() => _service.AddRootAsync(new AddRootDto(boardId, entityId)));
         }
 
         [Fact]
         public async Task RemoveRootAsync_WithExistingBoard_RemovesRoot()
         {
+            // Arrange
             var boardId = await _service.CreateAsync("Testboard");
             var entityId = new EntityId(Guid.NewGuid());
 
             await _service.AddRootAsync(new AddRootDto(boardId, entityId));
 
+            // Act
             await _service.RemoveRootAsync(new RemoveRootDto(boardId, entityId));
 
+            // Assert
             var rootExists = await _repository.RootExistsAsync(
-            boardId,
-            entityId);
+                boardId,
+                entityId);
 
             Assert.False(rootExists);
         }
@@ -147,28 +189,35 @@ namespace kanban_lia.Integration.Tests.Services
         [Fact]
         public async Task RemoveRootAsync_WithNonExistingBoard_ThrowsException()
         {
+            // Arrange
             var boardId = new BoardId(Guid.NewGuid());
             var entityId = new EntityId(Guid.NewGuid());
 
+            // Act and Assert
             await Assert.ThrowsAsync<BoardNotFoundException>(() => _service.RemoveRootAsync(new RemoveRootDto(boardId, entityId)));
         }
 
         [Fact]
         public async Task RemoveRootAsync_WithNoRoot_ThrowsException()
         {
+            // Arrange
             var boardId = await _service.CreateAsync("Testboard");
             var entityId = new EntityId(Guid.NewGuid());
 
+            // Act and Assert
             await Assert.ThrowsAsync<RootNotFoundException>(() => _service.RemoveRootAsync(new RemoveRootDto(boardId, entityId)));
         }
 
         [Fact]
         public async Task DeleteAsync_WithExistingBoard_DeletesBoard()
         {
+            // Arrange
             var id = await _service.CreateAsync("Testboard");
 
+            // Act
             await _service.DeleteAsync(id);
 
+            // Assert
             var board = await _repository.GetByIdAsync(id);
 
             Assert.Null(board);
@@ -177,10 +226,11 @@ namespace kanban_lia.Integration.Tests.Services
         [Fact]
         public async Task DeleteAsync_WithNonExistingBoard_ThrowsException()
         {
+            // Arrange
             var id = new BoardId(Guid.NewGuid());
 
+            // Act and Assert
             await Assert.ThrowsAsync<BoardNotFoundException>(() => _service.DeleteAsync(id));
         }
     }
 }
-

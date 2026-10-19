@@ -1,8 +1,10 @@
 ﻿using AutoMapper;
+using kanban_lia.Infrastructure.Repositories.Boards;
 using kanban_lia.Infrastructure.Repositories.Columns;
 using kanban_lia.Models.Domain.Boards;
 using kanban_lia.Models.Domain.Columns;
 using kanban_lia.Models.Domain.Columns.DTOs;
+using kanban_lia.Services.Boards.Exceptions;
 using kanban_lia.Services.Columns.DTOs;
 using kanban_lia.Services.Columns.Exceptions;
 using kanban_lia.Services.IntegrationEvents.Models;
@@ -11,11 +13,13 @@ namespace kanban_lia.Services.Columns
 {
     public class ColumnService(
         IColumnRepository repository,
+        IBoardRepository boardRepository,
         IColumnEdgeRepository columnEdgeRepository,
         IMapper mapper) : IColumnService
     {
         private readonly IMapper _mapper = mapper;
         private readonly IColumnRepository _repository = repository;
+        private readonly IBoardRepository _boardRepository = boardRepository;
         private readonly IColumnEdgeRepository _columnEdgeRepository = columnEdgeRepository;
 
         public async Task<ColumnId> CreateAsync(CreateColumnDto dto, Guid correlationId, Actor actor, CancellationToken cancellationToken)
@@ -33,6 +37,13 @@ namespace kanban_lia.Services.Columns
 
         public async Task<IEnumerable<ColumnDto>> GetByBoardIdAsync(BoardId boardId)
         {
+            var boardExists = await _boardRepository.BoardExistsAsync(boardId);
+
+            if (!boardExists)
+            {
+                throw new BoardNotFoundException(boardId);
+            }
+
             var columns = await _repository.GetByBoardIdAsync(boardId);
 
             return columns.Select(_mapper.Map<ColumnDto>);
