@@ -1,13 +1,23 @@
 ﻿using AutoMapper;
 using kanban_lia.Infrastructure.Repositories.Boards;
+using kanban_lia.Infrastructure.Repositories.Columns;
+using kanban_lia.Infrastructure.Repositories.Outbox;
+using kanban_lia.Infrastructure.Repositories.Placements;
 using kanban_lia.Integration.Tests.Fixture;
 using kanban_lia.Mappings;
 using kanban_lia.Models.Domain.Boards;
+using kanban_lia.Models.Domain.Columns;
 using kanban_lia.Models.Domain.Placements;
 using kanban_lia.Services.Boards;
 using kanban_lia.Services.Boards.DTOs;
 using kanban_lia.Services.Boards.Exceptions;
+using kanban_lia.Services.Columns;
+using kanban_lia.Services.Columns.DTOs;
+using kanban_lia.Services.Placements;
+using Actor = kanban_lia.Services.IntegrationEvents.Models.Actor;
 using Microsoft.Extensions.Logging.Abstractions;
+using kanban_lia.Services.Placements.DTOs;
+
 
 namespace kanban_lia.Integration.Tests.Services
 {
@@ -24,12 +34,31 @@ namespace kanban_lia.Integration.Tests.Services
             cfg =>
             {
                 cfg.AddProfile(new BoardProfile());
+                cfg.AddProfile(new ColumnProfile());
+                cfg.AddProfile(new ColumnEdgeProfile());
+                cfg.AddProfile(new PlacementProfile());
             },
             NullLoggerFactory.Instance).CreateMapper();
 
         private readonly BoardRepository _repository = new(database.DbFactory);
+        private readonly ColumnRepository _columnRepository = new(database.DbFactory);
         private readonly BoardService _service = new(
             new BoardRepository(database.DbFactory),
+            _mapper);
+        private readonly ColumnService _columnService = new(
+            new ColumnRepository(database.DbFactory),
+            new BoardRepository(database.DbFactory),
+            new ColumnEdgeRepository(database.DbFactory),
+            _mapper);
+        private readonly ColumnEdgeService _columnEdgeService = new(
+            new ColumnEdgeRepository(database.DbFactory),
+            _mapper);
+        private readonly PlacementService _placementService = new(
+            database.DbFactory,
+            new BoardRepository(database.DbFactory),
+            new ColumnRepository(database.DbFactory),
+            new PlacementRepository(database.DbFactory),
+            new OutboxRepository(database.DbFactory),
             _mapper);
 
         public async ValueTask InitializeAsync()
@@ -50,7 +79,7 @@ namespace kanban_lia.Integration.Tests.Services
             var id = await _service.CreateAsync("Testboard");
 
             // Assert
-            var board = await _repository.GetByIdAsync(id);
+            var board = await _service.GetByIdAsync(id);
 
             Assert.NotNull(board);
             Assert.Equal("Testboard", board.Title);
@@ -108,7 +137,7 @@ namespace kanban_lia.Integration.Tests.Services
             await _service.RenameAsync(new RenameBoardDto(id, "Renamedboard"));
 
             // Assert
-            var board = await _repository.GetByIdAsync(id);
+            var board = await _service.GetByIdAsync(id);
 
             Assert.NotNull(board);
             Assert.Equal("Renamedboard", board.Title);
@@ -231,6 +260,65 @@ namespace kanban_lia.Integration.Tests.Services
 
             // Act and Assert
             await Assert.ThrowsAsync<BoardNotFoundException>(() => _service.DeleteAsync(id));
+        }
+
+        [Fact]
+        public async Task DeleteAsync_RemovesColumnsEdgesAndPlacements()
+        {
+            // Arrange
+            var cancellationToken = TestContext.Current.CancellationToken;
+
+            var boardId1 = await _service.CreateAsync("Board1");
+            var boardId2 = await _service.CreateAsync("Board2");
+
+            var columnId1 = new ColumnId(Guid.NewGuid());
+            var columnId2 = new ColumnId(Guid.NewGuid());
+
+            var columnDto1 = new CreateColumnDto(columnId1, "TestCol", 0, boardId1, true);
+            var columnDto2 = new CreateColumnDto(columnId2, "TestCol", 0, boardId2, true);
+
+            var actor = new Actor("-1", "Actor");
+
+            await _columnService.CreateAsync(columnDto1, Guid.NewGuid(), actor, cancellationToken);
+
+            await _columnService.CreateAsync(columnDto2, Guid.NewGuid(), actor, cancellationToken);
+
+            var columnEdgeDto1 = new CreateColumnEdgeDto(columnId1, columnId2);
+            var columnEdgeDto2 = new CreateColumnEdgeDto(columnId2, columnId1);
+
+            await _columnEdgeService.CreateAsync(columnEdgeDto1);
+            await _columnEdgeService.CreateAsync(columnEdgeDto2);
+
+            var entityId1 = new EntityId(Guid.NewGuid());
+            var entityId2 = new EntityId(Guid.NewGuid());
+
+            var placementOp1 = new PlacementOperationDto(
+                new CreatePlacementDto([entityId1], boardId1, columnId1, [], []),
+                []);
+            var placementOp2 = new PlacementOperationDto(
+                new CreatePlacementDto([entityId2], boardId2, columnId2, [], []),
+                []);
+
+            await _placementService.CreateAsync(
+                [placementOp1, placementOp2],
+                Guid.NewGuid(),
+                null,
+                actor,
+                cancellationToken);
+
+            // Act
+            await _service.DeleteAsync(boardId1);
+
+            // Assert
+            Assert.False(await _repository.BoardExistsAsync(boardId1));
+            Assert.Null(await _columnRepository.GetByIdAsync(columnId1));
+            Assert.Empty(await _columnEdgeService.GetByBoardIdAsync(boardId1));
+            Assert.Empty(await _placementService.GetCurrentByBoardAsync(boardId1));
+
+            Assert.True(await _repository.BoardExistsAsync(boardId2));
+            Assert.NotNull(await _columnRepository.GetByIdAsync(columnId2));
+            Assert.Empty(await _columnEdgeService.GetByBoardIdAsync(boardId2));
+            Assert.Single(await _placementService.GetCurrentByBoardAsync(boardId2));
         }
     }
 }
