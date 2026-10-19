@@ -431,6 +431,90 @@ namespace kanban_lia.Integration.Tests.Services
                 $"entity2 SortKey: '{placement2.First().SortKey}'");
         }
 
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task CreateAsync_WhenAnchorIsInAnotherColumn_PlacesLast(bool useAfterAnchor)
+        {
+            var boardService = CreateBoardService();
+            var columnService = CreateColumnService();
+            var placementService = CreatePlacementService();
+            var repository = CreatePlacementRepository();
+
+            var boardId = await boardService.CreateAsync("Anchor fallback test");
+            var targetColumnId = new ColumnId(Guid.NewGuid());
+            var otherColumnId = new ColumnId(Guid.NewGuid());
+
+            await columnService.CreateAsync(
+                new CreateColumnDto(targetColumnId, "Target", 1, boardId, true),
+                Guid.NewGuid(),
+                new Actor("-1", "TestActor"),
+                CancellationToken.None);
+
+            await columnService.CreateAsync(
+                new CreateColumnDto(otherColumnId, "Other", 2, boardId, true),
+                Guid.NewGuid(),
+                new Actor("-1", "TestActor"),
+                CancellationToken.None);
+
+            var existingEntityId = new EntityId(Guid.NewGuid());
+            var anchorEntityId = new EntityId(Guid.NewGuid());
+            var newEntityId = new EntityId(Guid.NewGuid());
+
+            async Task CreatePlacementAsync(EntityId entityId, ColumnId columnId)
+            {
+                var operation = new PlacementOperationDto(
+                    new CreatePlacementDto(
+                        [entityId],
+                        boardId,
+                        columnId,
+                        [],
+                        []),
+                    []);
+
+                await placementService.CreateAsync(
+                    [operation],
+                    Guid.NewGuid(),
+                    null,
+                    new Actor("-1", "TestActor"),
+                    CancellationToken.None);
+            }
+
+            await CreatePlacementAsync(existingEntityId, targetColumnId);
+            await CreatePlacementAsync(anchorEntityId, otherColumnId);
+
+            var afterEntityIds = useAfterAnchor
+                ? new[] { anchorEntityId }
+                : Array.Empty<EntityId>();
+            var beforeEntityIds = useAfterAnchor
+                ? Array.Empty<EntityId>()
+                : new[] { anchorEntityId };
+
+            var operationWithMissingTargetAnchor = new PlacementOperationDto(
+                new CreatePlacementDto(
+                    [newEntityId],
+                    boardId,
+                    targetColumnId,
+                    afterEntityIds,
+                    beforeEntityIds),
+                []);
+
+            await placementService.CreateAsync(
+                [operationWithMissingTargetAnchor],
+                Guid.NewGuid(),
+                null,
+                new Actor("-1", "TestActor"),
+                CancellationToken.None);
+
+            var placements = (await repository.GetCurrentByColumnAsync(
+                targetColumnId,
+                boardId)).ToList();
+
+            Assert.Equal(2, placements.Count);
+            Assert.Equal(existingEntityId, placements[0].EntityId);
+            Assert.Equal(newEntityId, placements[1].EntityId);
+        }
+
         [Fact]
         public async Task CreateAsync_WhenColumnBelongsToDifferentBoard_ThrowsInvalidDomainException()
         {
