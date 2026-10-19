@@ -21,10 +21,15 @@ using Microsoft.Extensions.Logging.Abstractions;
 
 namespace kanban_lia.Integration.Tests.Services
 {
+    /// <summary>
+    /// Class <c>ColumnServiceTests</c> is the test class for <c>ColumnService</c>
+    /// </summary>
+    /// <param name="database">Primary constructor for <c>DatabaseFixture</c></param>
     [Collection(DatabaseCollection.Name)]
-    public class ColumnServiceTests(DatabaseFixture database)
+    public sealed class ColumnServiceTests(DatabaseFixture database) : IAsyncLifetime
     {
         private readonly DatabaseFixture _database = database;
+
         private static readonly IMapper _mapper = new MapperConfiguration(
             cfg =>
             {
@@ -32,61 +37,59 @@ namespace kanban_lia.Integration.Tests.Services
                 cfg.AddProfile(new ColumnEdgeProfile());
                 cfg.AddProfile(new PlacementProfile());
             },
-            NullLoggerFactory.Instance
-        ).CreateMapper();
+            NullLoggerFactory.Instance).CreateMapper();
 
+        private readonly BoardService _boardService = new(
+            new BoardRepository(database.DbFactory),
+            _mapper);
 
-        private ColumnService CreateColumnService()
+        private readonly ColumnService _columnService = new(
+            new ColumnRepository(database.DbFactory),
+            new BoardRepository(database.DbFactory),
+            new ColumnEdgeRepository(database.DbFactory),
+            _mapper);
+
+        private readonly ColumnEdgeService _columnEdgeService = new(
+            new ColumnEdgeRepository(database.DbFactory),
+            _mapper);
+
+        private readonly PlacementService _placementService = new(
+            database.DbFactory,
+            new BoardRepository(database.DbFactory),
+            new ColumnRepository(database.DbFactory),
+            new PlacementRepository(database.DbFactory),
+            new OutboxRepository(database.DbFactory),
+            _mapper);
+
+        public async ValueTask InitializeAsync()
         {
-            return new ColumnService(
-                new ColumnRepository(_database.DbFactory),
-                new BoardRepository(_database.DbFactory),
-                new ColumnEdgeRepository(_database.DbFactory),
-                _mapper);
+            await _database.ResetAsync();
         }
 
-        private BoardService CreateBoardService()
+        public ValueTask DisposeAsync()
         {
-            return new BoardService(new BoardRepository(_database.DbFactory), _mapper);
-        }
-
-        private ColumnEdgeService CreateColumnEdgeService()
-        {
-            return new ColumnEdgeService(
-                new ColumnEdgeRepository(_database.DbFactory),
-                _mapper);
-        }
-
-        private PlacementService CreatePlacementService()
-        {
-            return new PlacementService(
-                _database.DbFactory,
-                new BoardRepository(_database.DbFactory),
-                new ColumnRepository(_database.DbFactory),
-                new PlacementRepository(_database.DbFactory),
-                new OutboxRepository(_database.DbFactory),
-                _mapper);
+            GC.SuppressFinalize(this);
+            return ValueTask.CompletedTask;
         }
 
         [Fact]
         public async Task CreateAsync_WithValidId_PersistsColumnThatCanBeRetrieved()
         {
+            // Arrange
             var cancellationToken = TestContext.Current.CancellationToken;
-
-            var columnService = CreateColumnService();
-            var boardService = CreateBoardService();
-
-            var boardId = await boardService.CreateAsync("Test Board");
+            var boardId = await _boardService.CreateAsync("Test Board");
             var columnId = new ColumnId(Guid.NewGuid());
 
-            await columnService.CreateAsync(
+            // Act
+            await _columnService.CreateAsync(
                 new CreateColumnDto(columnId, "Test Column", 1, boardId, true),
                 Guid.NewGuid(),
                 new Actor("-1", "TestActor"),
                 cancellationToken);
 
-            var retrievedColumn = await columnService.GetByIdAsync(columnId);
+            var retrievedColumn = await _columnService.GetByIdAsync(columnId);
 
+            // Assert
             Assert.NotNull(retrievedColumn);
             Assert.Equal("Test Column", retrievedColumn.Title);
             Assert.Equal(columnId, retrievedColumn.Id);
@@ -98,74 +101,70 @@ namespace kanban_lia.Integration.Tests.Services
         [Fact]
         public async Task CreateAsync_WithDuplicateId_ThrowsSqlException2627()
         {
+            // Arrange
             var cancellationToken = TestContext.Current.CancellationToken;
-
-            var columnService = CreateColumnService();
-            var boardService = CreateBoardService();
-
-            var boardId = await boardService.CreateAsync("Test Board");
+            var boardId = await _boardService.CreateAsync("Test Board");
             var columnId = new ColumnId(Guid.NewGuid());
 
-            await columnService.CreateAsync(
+            await _columnService.CreateAsync(
                 new CreateColumnDto(columnId, "Test Column", 1, boardId, true),
                 Guid.NewGuid(),
                 new Actor("-1", "TestActor"),
                 cancellationToken);
 
-            var exception = await Assert.ThrowsAsync<SqlException>(() => columnService.CreateAsync(
-                 new CreateColumnDto(columnId, "Test Column2", 2, boardId, true),
-                 Guid.NewGuid(),
-                 new Actor("-1", "TestActor"),
-                 cancellationToken));
+            // Act
+            var exception = await Assert.ThrowsAsync<SqlException>(() => _columnService.CreateAsync(
+                new CreateColumnDto(columnId, "Test Column2", 2, boardId, true),
+                Guid.NewGuid(),
+                new Actor("-1", "TestActor"),
+                cancellationToken));
 
+            // Assert
             Assert.Equal(2627, exception.Number);
-
-            var columns = await columnService.GetByBoardIdAsync(boardId);
-            Assert.Single(columns);
+            Assert.Single(await _columnService.GetByBoardIdAsync(boardId));
         }
 
         [Fact]
         public async Task CreateAsync_WithUnknownBoard_ThrowsSqlException547()
         {
+            // Arrange
             var cancellationToken = TestContext.Current.CancellationToken;
-
-            var columnService = CreateColumnService();
-
             var columnId = new ColumnId(Guid.NewGuid());
 
-            var exception = await Assert.ThrowsAsync<SqlException>(() => columnService.CreateAsync(
-                 new CreateColumnDto(columnId, "Test Column2", 2, new BoardId(Guid.NewGuid()), true),
-                 Guid.NewGuid(),
-                 new Actor("-1", "TestActor"),
-                 cancellationToken));
+            // Act
+            var exception = await Assert.ThrowsAsync<SqlException>(() => _columnService.CreateAsync(
+                new CreateColumnDto(columnId, "Test Column2", 2, new BoardId(Guid.NewGuid()), true),
+                Guid.NewGuid(),
+                new Actor("-1", "TestActor"),
+                cancellationToken));
 
+            // Assert
             Assert.Equal(547, exception.Number);
         }
 
         [Fact]
         public async Task GetByBoardIdAsync_WithValidId_ReturnsAllColumnsForBoard()
         {
+            // Arrange
             var cancellationToken = TestContext.Current.CancellationToken;
+            var boardId = await _boardService.CreateAsync("Test Board");
 
-            var columnService = CreateColumnService();
-            var boardService = CreateBoardService();
-
-            var boardId = await boardService.CreateAsync("Test Board");
-
-            await columnService.CreateAsync(
+            await _columnService.CreateAsync(
                 new CreateColumnDto(new ColumnId(Guid.NewGuid()), "Column 1", 1, boardId, true),
                 Guid.NewGuid(),
                 new Actor("-1", "TestActor"),
                 cancellationToken);
 
-            await columnService.CreateAsync(
+            await _columnService.CreateAsync(
                 new CreateColumnDto(new ColumnId(Guid.NewGuid()), "Column 2", 2, boardId, true),
                 Guid.NewGuid(),
                 new Actor("-1", "TestActor"),
                 cancellationToken);
 
-            var columns = await columnService.GetByBoardIdAsync(boardId);
+            // Act
+            var columns = await _columnService.GetByBoardIdAsync(boardId);
 
+            // Assert
             Assert.Equal(2, columns.Count());
             Assert.Contains(columns, c => c.Title == "Column 1");
             Assert.Contains(columns, c => c.Title == "Column 2");
@@ -174,33 +173,32 @@ namespace kanban_lia.Integration.Tests.Services
         [Fact]
         public async Task GetByBoardIdAsync_ReturnsOrderedByPosition()
         {
+            // Arrange
             var cancellationToken = TestContext.Current.CancellationToken;
+            var boardId = await _boardService.CreateAsync("Test Board");
 
-            var columnService = CreateColumnService();
-            var boardService = CreateBoardService();
-
-            var boardId = await boardService.CreateAsync("Test Board");
-
-            await columnService.CreateAsync(
+            await _columnService.CreateAsync(
                 new CreateColumnDto(new ColumnId(Guid.NewGuid()), "Column 2", 2, boardId, true),
                 Guid.NewGuid(),
                 new Actor("-1", "TestActor"),
                 cancellationToken);
 
-            await columnService.CreateAsync(
+            await _columnService.CreateAsync(
                 new CreateColumnDto(new ColumnId(Guid.NewGuid()), "Column 1", 1, boardId, true),
                 Guid.NewGuid(),
                 new Actor("-1", "TestActor"),
                 cancellationToken);
 
-            await columnService.CreateAsync(
+            await _columnService.CreateAsync(
                 new CreateColumnDto(new ColumnId(Guid.NewGuid()), "Column 3", 3, boardId, true),
                 Guid.NewGuid(),
                 new Actor("-1", "TestActor"),
                 cancellationToken);
 
-            var columns = await columnService.GetByBoardIdAsync(boardId);
+            // Act
+            var columns = await _columnService.GetByBoardIdAsync(boardId);
 
+            // Assert
             Assert.Equal(3, columns.Count());
             Assert.Equal(["Column 1", "Column 2", "Column 3"],
                 columns.Select(column => column.Title));
@@ -209,58 +207,53 @@ namespace kanban_lia.Integration.Tests.Services
         [Fact]
         public async Task GetByBoardIdAsync_WithInvalidId_ThrowsBoardNotFoundException()
         {
-
-            var columnService = CreateColumnService();
-
+            // Act and Assert
             await Assert.ThrowsAsync<BoardNotFoundException>(() =>
-                columnService.GetByBoardIdAsync(new BoardId(Guid.NewGuid())));
+                _columnService.GetByBoardIdAsync(new BoardId(Guid.NewGuid())));
         }
 
         [Fact]
         public async Task GetById_WithValidId_ReturnsColumn()
         {
+            // Arrange
             var cancellationToken = TestContext.Current.CancellationToken;
-
-            var columnService = CreateColumnService();
-            var boardService = CreateBoardService();
-
-            var boardId = await boardService.CreateAsync("Test Board");
+            var boardId = await _boardService.CreateAsync("Test Board");
             var columnId = new ColumnId(Guid.NewGuid());
 
-            await columnService.CreateAsync(
+            await _columnService.CreateAsync(
                 new CreateColumnDto(columnId, "Column 1", 1, boardId, true),
                 Guid.NewGuid(),
                 new Actor("-1", "TestActor"),
                 cancellationToken);
 
-            var returnedColumn = await columnService.GetByIdAsync(columnId);
+            // Act
+            var returnedColumn = await _columnService.GetByIdAsync(columnId);
 
+            // Assert
             Assert.NotNull(returnedColumn);
             Assert.Equal(columnId, returnedColumn.Id);
-            Assert.Equal("Test Board", returnedColumn.Title);
+            Assert.Equal("Column 1", returnedColumn.Title);
         }
 
         [Fact]
         public async Task RenameAsync_WithValidId_UpdatesColumnTitle()
         {
+            // Arrange
             var cancellationToken = TestContext.Current.CancellationToken;
-
-            var columnService = CreateColumnService();
-            var boardService = CreateBoardService();
-
-            var boardId = await boardService.CreateAsync("Test Board");
+            var boardId = await _boardService.CreateAsync("Test Board");
             var columnId = new ColumnId(Guid.NewGuid());
 
-            await columnService.CreateAsync(
+            await _columnService.CreateAsync(
                 new CreateColumnDto(columnId, "Old Title", 1, boardId, true),
                 Guid.NewGuid(),
                 new Actor("-1", "TestActor"),
                 cancellationToken);
 
-            var renamed = await columnService.RenameAsync(new RenameColumnDto(columnId, "New Title"));
+            // Act
+            var renamed = await _columnService.RenameAsync(new RenameColumnDto(columnId, "New Title"));
+            var updatedColumn = await _columnService.GetByIdAsync(columnId);
 
-            var updatedColumn = await columnService.GetByIdAsync(columnId);
-
+            // Assert
             Assert.True(renamed);
             Assert.NotNull(updatedColumn);
             Assert.Equal("New Title", updatedColumn.Title);
@@ -269,112 +262,112 @@ namespace kanban_lia.Integration.Tests.Services
         [Fact]
         public async Task RenameAsync_NonExistingColumn_ThrowsColumnNotFoundException()
         {
-
-            var columnService = CreateColumnService();
-
+            // Act and Assert
             await Assert.ThrowsAsync<ColumnNotFoundException>(() =>
-                columnService.RenameAsync(new RenameColumnDto(new ColumnId(Guid.NewGuid()), "New Title")));
+                _columnService.RenameAsync(new RenameColumnDto(new ColumnId(Guid.NewGuid()), "New Title")));
         }
 
         [Fact]
         public async Task SetRequestWritableAsync_ExistingColumn_ReturnsTrueAndPersists()
         {
+            // Arrange
             var cancellationToken = TestContext.Current.CancellationToken;
-
-            var columnService = CreateColumnService();
-            var boardService = CreateBoardService();
-
-            var boardId = await boardService.CreateAsync("Test Board");
+            var boardId = await _boardService.CreateAsync("Test Board");
             var columnId = new ColumnId(Guid.NewGuid());
 
-            await columnService.CreateAsync(
+            await _columnService.CreateAsync(
                 new CreateColumnDto(columnId, "Column 1", 1, boardId, false),
                 Guid.NewGuid(),
                 new Actor("-1", "TestActor"),
                 cancellationToken);
 
-            var returnedColumn = await columnService.GetByIdAsync(columnId);
+            var returnedColumn = await _columnService.GetByIdAsync(columnId);
 
-            var changed = await columnService.SetRequestWritableAsync(returnedColumn!.Id, true);
+            // Act
+            var changed = await _columnService.SetRequestWritableAsync(returnedColumn!.Id, true);
+            var updated = await _columnService.GetByIdAsync(columnId);
 
+            // Assert
             Assert.True(changed);
-
-            var updated = await columnService.GetByIdAsync(columnId);
-
             Assert.True(updated!.RequestWritable);
         }
 
         [Fact]
         public async Task SetRequestWritableAsync_NonExisting_ThrowsColumnNotFound()
         {
-
-            var columnService = CreateColumnService();
+            // Arrange
             var columnId = new ColumnId(Guid.NewGuid());
 
+            // Act and Assert
             await Assert.ThrowsAsync<ColumnNotFoundException>(() =>
-                columnService.SetRequestWritableAsync(columnId, true));
+                _columnService.SetRequestWritableAsync(columnId, true));
         }
 
         [Fact]
         public async Task DeleteAsync_DeletesColumn()
         {
+            // Arrange
             var cancellationToken = TestContext.Current.CancellationToken;
-
-            var columnService = CreateColumnService();
-            var boardService = CreateBoardService();
-
-            var boardId = await boardService.CreateAsync("Test Board");
+            var boardId = await _boardService.CreateAsync("Test Board");
             var columnId = new ColumnId(Guid.NewGuid());
 
-            await columnService.CreateAsync(
+            await _columnService.CreateAsync(
                 new CreateColumnDto(columnId, "Old Title", 1, boardId, true),
                 Guid.NewGuid(),
                 new Actor("-1", "TestActor"),
                 cancellationToken);
 
-            var deleted = await columnService.DeleteAsync(columnId);
+            // Act
+            var deleted = await _columnService.DeleteAsync(columnId);
 
+            // Assert
             Assert.True(deleted);
-            await Assert.ThrowsAsync<ColumnNotFoundException>(() => columnService.GetByIdAsync(columnId));
+            await Assert.ThrowsAsync<ColumnNotFoundException>(() => _columnService.GetByIdAsync(columnId));
         }
 
         [Fact]
         public async Task DeleteAsync_RemovesConnectedEdges()
         {
+            // Arrange
             var cancellationToken = TestContext.Current.CancellationToken;
-
-            var columnService = CreateColumnService();
-            var boardService = CreateBoardService();
-            var edgeService = CreateColumnEdgeService();
-
-            var boardId = await boardService.CreateAsync("Test Board");
+            var boardId = await _boardService.CreateAsync("Test Board");
             var columnA = new ColumnId(Guid.NewGuid());
             var columnB = new ColumnId(Guid.NewGuid());
             var columnC = new ColumnId(Guid.NewGuid());
 
-            await columnService.CreateAsync(
+            await _columnService.CreateAsync(
                 new CreateColumnDto(columnA, "Column A", 1, boardId, true),
-                Guid.NewGuid(), new Actor("-1", "TestActor"), cancellationToken);
-            await columnService.CreateAsync(
+                Guid.NewGuid(),
+                new Actor("-1", "TestActor"),
+                cancellationToken);
+
+            await _columnService.CreateAsync(
                 new CreateColumnDto(columnB, "Column B", 2, boardId, true),
-                Guid.NewGuid(), new Actor("-1", "TestActor"), cancellationToken);
-            await columnService.CreateAsync(
+                Guid.NewGuid(),
+                new Actor("-1", "TestActor"),
+                cancellationToken);
+
+            await _columnService.CreateAsync(
                 new CreateColumnDto(columnC, "Column C", 3, boardId, true),
-                Guid.NewGuid(), new Actor("-1", "TestActor"), cancellationToken);
+                Guid.NewGuid(),
+                new Actor("-1", "TestActor"),
+                cancellationToken);
 
-            await edgeService.CreateAsync(new CreateColumnEdgeDto(columnA, columnB));
-            await edgeService.CreateAsync(new CreateColumnEdgeDto(columnB, columnA));
-            await edgeService.CreateAsync(new CreateColumnEdgeDto(columnB, columnC));
+            await _columnEdgeService.CreateAsync(new CreateColumnEdgeDto(columnA, columnB));
+            await _columnEdgeService.CreateAsync(new CreateColumnEdgeDto(columnB, columnA));
+            await _columnEdgeService.CreateAsync(new CreateColumnEdgeDto(columnB, columnC));
 
-            Assert.NotEmpty(await edgeService.GetByFromColumnIdAsync(columnA));
+            Assert.NotEmpty(await _columnEdgeService.GetByFromColumnIdAsync(columnA));
 
-            var deleted = await columnService.DeleteAsync(columnA);
+            // Act
+            var deleted = await _columnService.DeleteAsync(columnA);
+
+            // Assert
             Assert.True(deleted);
+            Assert.Empty(await _columnEdgeService.GetByFromColumnIdAsync(columnA));
+            Assert.Empty(await _columnEdgeService.GetByToColumnIdAsync(columnA));
 
-            Assert.Empty(await edgeService.GetByFromColumnIdAsync(columnA));
-            Assert.Empty(await edgeService.GetByToColumnIdAsync(columnA));
-
-            var remaining = await edgeService.GetByFromColumnIdAsync(columnB);
+            var remaining = await _columnEdgeService.GetByFromColumnIdAsync(columnB);
             var item = Assert.Single(remaining);
             Assert.Equal(columnC, item.ToColumnId);
         }
@@ -382,34 +375,35 @@ namespace kanban_lia.Integration.Tests.Services
         [Fact]
         public async Task DeleteAsync_RemovesPlacementsForColumn()
         {
+            // Arrange
             var cancellationToken = TestContext.Current.CancellationToken;
-
-            var columnService = CreateColumnService();
-            var boardService = CreateBoardService();
-            var placementService = CreatePlacementService();
-
-            var boardId = await boardService.CreateAsync("Test Board");
+            var boardId = await _boardService.CreateAsync("Test Board");
             var columnId = new ColumnId(Guid.NewGuid());
 
-            await columnService.CreateAsync(
+            await _columnService.CreateAsync(
                 new CreateColumnDto(columnId, "Column 1", 1, boardId, true),
-                Guid.NewGuid(), new Actor("-1", "TestActor"), cancellationToken);
+                Guid.NewGuid(),
+                new Actor("-1", "TestActor"),
+                cancellationToken);
 
             var entityId = new EntityId(Guid.NewGuid());
-            await placementService.CreateAsync(
+
+            await _placementService.CreateAsync(
                 [new PlacementOperationDto(
-            new CreatePlacementDto([entityId], boardId, columnId, [], []),
-            [])],
+                    new CreatePlacementDto([entityId], boardId, columnId, [], []),
+                    [])],
                 Guid.NewGuid(),
                 null,
                 new Actor("-1", "TestActor"),
                 cancellationToken);
 
-            Assert.NotEmpty(await placementService.GetCurrentByColumnAsync(columnId, boardId));
+            Assert.NotEmpty(await _placementService.GetCurrentByColumnAsync(columnId, boardId));
 
-            await columnService.DeleteAsync(columnId);
+            // Act
+            await _columnService.DeleteAsync(columnId);
 
-            Assert.Empty(await placementService.GetCurrentByColumnAsync(columnId, boardId));
+            // Assert
+            Assert.Empty(await _placementService.GetCurrentByColumnAsync(columnId, boardId));
         }
     }
 }
