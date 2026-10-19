@@ -153,9 +153,6 @@ namespace kanban_lia.Infrastructure.Repositories.Columns
             using var connection = _connectionFactory.CreateConnection();
             var rowsAffected = await connection.ExecuteAsync(
                 $@"
-                    DELETE FROM {Schema.Placements.Table}
-                          WHERE {Schema.Placements.ColumnId} = @Id;
-                    
                     DELETE FROM {Schema.ColumnEdges.Table}
                           WHERE {Schema.ColumnEdges.FromColumnId} = @Id
                              OR {Schema.ColumnEdges.ToColumnId} = @Id;

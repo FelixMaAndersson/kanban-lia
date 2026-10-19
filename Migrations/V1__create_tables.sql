@@ -11,15 +11,20 @@ CREATE TABLE Columns
 	Title			NVARCHAR(255)    NOT NULL,
 	Position		INT              NOT NULL,
 	RequestWritable BIT				 NOT NULL,
-	CONSTRAINT FK_Columns_Boards FOREIGN KEY (BoardId) REFERENCES Boards (Id)
+	CONSTRAINT FK_Columns_Boards 
+		FOREIGN KEY (BoardId) REFERENCES Boards (Id)
+		ON DELETE CASCADE
 );
 
 CREATE TABLE BoardRoots
 (
 	BoardId  UNIQUEIDENTIFIER NOT NULL,
 	EntityId UNIQUEIDENTIFIER NOT NULL,
-	CONSTRAINT PK_BoardRoots PRIMARY KEY (BoardId, EntityId),
-	CONSTRAINT FK_BoardRoots_Boards FOREIGN KEY (BoardId) REFERENCES Boards (Id)
+	CONSTRAINT PK_BoardRoots 
+		PRIMARY KEY (BoardId, EntityId),
+	CONSTRAINT FK_BoardRoots_Boards 
+		FOREIGN KEY (BoardId) REFERENCES Boards (Id)
+		ON DELETE CASCADE
 );
 
 CREATE TABLE Placements
@@ -33,10 +38,10 @@ CREATE TABLE Placements
 
 	CONSTRAINT FK_Placements_Columns
 		FOREIGN KEY (ColumnId)
-		REFERENCES Columns(Id),
+		REFERENCES Columns(Id)
+		ON DELETE CASCADE,
 	CONSTRAINT FK_Placements_Boards_BoardId 
-		FOREIGN KEY (BoardId) 
-		REFERENCES dbo.Boards(Id),
+		FOREIGN KEY (BoardId) REFERENCES dbo.Boards(Id)
 );
 
 CREATE TABLE ColumnEdges
@@ -44,6 +49,11 @@ CREATE TABLE ColumnEdges
 	Id UNIQUEIDENTIFIER NOT NULL CONSTRAINT PK_ColumnEdges PRIMARY KEY DEFAULT NEWSEQUENTIALID(),
 	FromColumnId UNIQUEIDENTIFIER NOT NULL,
 	ToColumnId UNIQUEIDENTIFIER NOT NULL,
+
+	CONSTRAINT FK_ColumnEdges_FromColumn
+		FOREIGN KEY (FromColumnId) REFERENCES Columns(Id),
+	CONSTRAINT FK_ColumnEdges_ToColumn
+		FOREIGN KEY (ToColumnId) REFERENCES Columns(Id)
 );
 
 CREATE TABLE OutboxMessages
