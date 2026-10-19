@@ -27,7 +27,9 @@ public static class PlacementEndpoints
     /// and Actor-Type headers are read when present and used for causation/correlation and actor information.</remarks>
     /// <param name="app">The WebApplication on which placement endpoints are configured.</param>
     /// <exception cref="ColumnNotFoundException">Thrown when a required column referenced during endpoint processing cannot be found in the repository.</exception>
+#pragma warning disable S3776
     public static void MapPlacementEndpoints(WebApplication app)
+#pragma warning restore S3776
     {
         var group = app.MapGroup("/api/placements");
         var logger = app.Services.GetRequiredService<ILoggerFactory>()
@@ -195,7 +197,6 @@ public static class PlacementEndpoints
 
             return Results.Ok();
         });
-#pragma warning restore S107
 
         group.MapGet("/get", async (
             [FromQuery] Guid[] entityIds,
