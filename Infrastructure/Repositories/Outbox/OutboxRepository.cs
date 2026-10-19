@@ -53,18 +53,26 @@ namespace kanban_lia.Infrastructure.Repositories.Outbox
                 {Schema.OutBoxMessages.Content},
                 {Schema.OutBoxMessages.OccurredOn},
                 {Schema.OutBoxMessages.ProcessedOn},
-                {Schema.OutBoxMessages.Error}
+                {Schema.OutBoxMessages.Error},
+                {Schema.OutBoxMessages.RetryCount}
             FROM {Schema.OutBoxMessages.Table}
             WHERE {Schema.OutBoxMessages.ProcessedOn} IS NULL
             ORDER BY {Schema.OutBoxMessages.OccurredOn};
             """;
 
-            var messages = await connection.QueryAsync<OutboxMessage>(
-                new CommandDefinition(
-                    sql,
-                    cancellationToken: cancellationToken));
+            var rows = await connection.QueryAsync<OutboxMessageRow>(
+    new CommandDefinition(
+        sql,
+        cancellationToken: cancellationToken));
 
-            return [.. messages];
+            return rows.Select(row => new OutboxMessage(
+                row.Id,
+                row.EventType,
+                row.Content,
+                row.OccurredOn,
+                row.ProcessedOn,
+                row.Error,
+                row.RetryCount));
         }
 
         public async Task MarkAsProcessedAsync(
@@ -120,5 +128,17 @@ namespace kanban_lia.Infrastructure.Repositories.Outbox
                     },
                     cancellationToken: cancellationToken));
         }
+        #pragma warning disable S1144
+        private sealed class OutboxMessageRow
+        {
+            public Guid Id { get; set; }
+            public string EventType { get; set; } = null!;
+            public string Content { get; set; } = null!;
+            public DateTime OccurredOn { get; set; }
+            public DateTime? ProcessedOn { get; set; }
+            public string? Error { get; set; }
+            public int RetryCount { get; set; }
+        }
+        #pragma warning restore S1144
     }
 }
