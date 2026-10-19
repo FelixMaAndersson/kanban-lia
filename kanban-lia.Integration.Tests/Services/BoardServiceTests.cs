@@ -144,6 +144,23 @@ namespace kanban_lia.Integration.Tests.Services
         }
 
         [Fact]
+        public async Task RenameAsync_ToExactly255Chars_Persists()
+        {
+            // Arrange
+            var id = await _service.CreateAsync("Testboard");
+            var title = new string('a', 255);
+
+            // Act
+            await _service.RenameAsync(new RenameBoardDto(id, title));
+
+            // Assert
+            var board = await _service.GetByIdAsync(id);
+
+            Assert.NotNull(board);
+            Assert.Equal(title, board.Title);
+        }
+
+        [Fact]
         public async Task RenameAsync_WithNonExistingBoard_ThrowsException()
         {
             // Arrange
