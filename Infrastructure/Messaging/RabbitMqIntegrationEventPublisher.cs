@@ -44,7 +44,7 @@ public sealed class RabbitMqIntegrationEventPublisher(
             await channel.BasicPublishAsync(
                 exchange: _options.ExchangeName,
                 routingKey: _options.RoutingKey,
-                mandatory: false,
+                mandatory: true,
                 basicProperties: properties,
                 body: body,
                 cancellationToken: cancellationToken);
@@ -83,8 +83,13 @@ public sealed class RabbitMqIntegrationEventPublisher(
             AutomaticRecoveryEnabled = true
         };
 
+        var channelOptions = new CreateChannelOptions(
+            publisherConfirmationsEnabled: true,
+            publisherConfirmationTrackingEnabled: true);
+
+
         _connection = await factory.CreateConnectionAsync();
-        _channel = await _connection.CreateChannelAsync();
+        _channel = await _connection.CreateChannelAsync(channelOptions);
 
         await _channel.ExchangeDeclareAsync(
             exchange: _options.ExchangeName,

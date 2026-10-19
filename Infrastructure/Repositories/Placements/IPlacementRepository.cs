@@ -14,14 +14,20 @@ namespace kanban_lia.Infrastructure.Repositories.Placements
     }
     public interface IPlacementRepository
     {
+        Task AcquireSortKeyLockAsync(
+            IDbTransaction transaction,
+            ColumnId columnId,
+            CancellationToken cancellationToken);
         Task CreateAsync(IEnumerable<Placement> placements, IDbTransaction transaction);
         Task<IEnumerable<Placement>> GetCurrentAsync(IEnumerable<EntityId> entityIds, BoardId boardId);
         Task<IEnumerable<Placement>> GetCurrentByBoardAsync(BoardId boardId);
         Task<IEnumerable<Placement>> GetCurrentByColumnAsync(ColumnId columnId, BoardId boardId);
         Task<SortKeyRange> GetSortKeyRangeAsync(
+            IDbTransaction transaction,
             ColumnId columnId,
             SortKeyLookup lookup,
             EntityId? afterEntityId = null,
-            EntityId? beforeEntityId = null);
+            EntityId? beforeEntityId = null,
+            CancellationToken cancellationToken = default);
     }
 }
