@@ -56,7 +56,7 @@ namespace kanban_lia.Integration.Tests.Services
             new OutboxRepository(database.DbFactory),
             _mapper);
 
-        private readonly PlacementRepository _placementRepository = new(database.DbFactory);
+        private readonly PlacementRepository _repository = new(database.DbFactory);
 
         public async ValueTask InitializeAsync()
         {
@@ -125,11 +125,11 @@ namespace kanban_lia.Integration.Tests.Services
                 cancellationToken);
 
             // Assert
-            var placement1 = await _placementRepository.GetCurrentAsync(
+            var placement1 = await _repository.GetCurrentAsync(
                 [operation1EntityId],
                 boardId);
 
-            var placement2 = await _placementRepository.GetCurrentAsync(
+            var placement2 = await _repository.GetCurrentAsync(
                 [operation2EntityId],
                 boardId);
 
@@ -186,7 +186,7 @@ namespace kanban_lia.Integration.Tests.Services
             await Task.WhenAll(insertions);
 
             // Assert
-            var placements = await _placementRepository.GetCurrentByColumnAsync(columnId, boardId);
+            var placements = await _repository.GetCurrentByColumnAsync(columnId, boardId);
             var sortKeys = placements.Select(placement => placement.SortKey).ToArray();
 
             Assert.Equal(13, sortKeys.Length);
@@ -249,11 +249,11 @@ namespace kanban_lia.Integration.Tests.Services
                 cancellationToken);
 
             // Assert
-            var placement1 = await _placementRepository.GetCurrentAsync(
+            var placement1 = await _repository.GetCurrentAsync(
                 [operation1EntityId],
                 boardId);
 
-            var placement2 = await _placementRepository.GetCurrentAsync(
+            var placement2 = await _repository.GetCurrentAsync(
                 [operation2EntityId],
                 boardId);
 
@@ -306,7 +306,7 @@ namespace kanban_lia.Integration.Tests.Services
                 cancellationToken);
 
             // Assert
-            var placement = await _placementRepository.GetCurrentAsync(
+            var placement = await _repository.GetCurrentAsync(
                 [new(Guid.NewGuid())],
                 boardId);
 
@@ -407,11 +407,11 @@ namespace kanban_lia.Integration.Tests.Services
                 cancellationToken);
 
             // Assert
-            var placement1 = await _placementRepository.GetCurrentAsync(
+            var placement1 = await _repository.GetCurrentAsync(
                 [operation1EntityId],
                 boardId);
 
-            var placement2 = await _placementRepository.GetCurrentAsync(
+            var placement2 = await _repository.GetCurrentAsync(
                 [operation2EntityId],
                 boardId);
 
@@ -436,22 +436,17 @@ namespace kanban_lia.Integration.Tests.Services
         [InlineData(false)]
         public async Task CreateAsync_WhenAnchorIsInAnotherColumn_PlacesLast(bool useAfterAnchor)
         {
-            var boardService = CreateBoardService();
-            var columnService = CreateColumnService();
-            var placementService = CreatePlacementService();
-            var repository = CreatePlacementRepository();
-
-            var boardId = await boardService.CreateAsync("Anchor fallback test");
+            var boardId = await _boardService.CreateAsync("Anchor fallback test");
             var targetColumnId = new ColumnId(Guid.NewGuid());
             var otherColumnId = new ColumnId(Guid.NewGuid());
 
-            await columnService.CreateAsync(
+            await _columnService.CreateAsync(
                 new CreateColumnDto(targetColumnId, "Target", 1, boardId, true),
                 Guid.NewGuid(),
                 new Actor("-1", "TestActor"),
                 CancellationToken.None);
 
-            await columnService.CreateAsync(
+            await _columnService.CreateAsync(
                 new CreateColumnDto(otherColumnId, "Other", 2, boardId, true),
                 Guid.NewGuid(),
                 new Actor("-1", "TestActor"),
@@ -472,7 +467,7 @@ namespace kanban_lia.Integration.Tests.Services
                         []),
                     []);
 
-                await placementService.CreateAsync(
+                await _placementService.CreateAsync(
                     [operation],
                     Guid.NewGuid(),
                     null,
@@ -499,14 +494,14 @@ namespace kanban_lia.Integration.Tests.Services
                     beforeEntityIds),
                 []);
 
-            await placementService.CreateAsync(
+            await _placementService.CreateAsync(
                 [operationWithMissingTargetAnchor],
                 Guid.NewGuid(),
                 null,
                 new Actor("-1", "TestActor"),
                 CancellationToken.None);
 
-            var placements = (await repository.GetCurrentByColumnAsync(
+            var placements = (await _repository.GetCurrentByColumnAsync(
                 targetColumnId,
                 boardId)).ToList();
 
