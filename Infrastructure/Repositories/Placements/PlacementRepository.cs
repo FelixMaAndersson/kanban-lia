@@ -12,6 +12,38 @@ namespace kanban_lia.Infrastructure.Repositories.Placements
     {
         private readonly DbConnectionFactory _connectionFactory = connectionFactory;
 
+        public async Task AcquireSortKeyLockAsync(
+            IDbTransaction transaction,
+            ColumnId columnId,
+            CancellationToken cancellationToken)
+        {
+            var connection = transaction.Connection
+                ?? throw new InvalidOperationException("The transaction has no connection.");
+
+            const string sql = """
+                DECLARE @LockResult int;
+                EXEC @LockResult = sys.sp_getapplock
+                    @Resource = @Resource,
+                    @LockMode = 'Exclusive',
+                    @LockOwner = 'Transaction',
+                    @LockTimeout = 15000;
+                SELECT @LockResult;
+                """;
+
+            var result = await connection.QuerySingleAsync<int>(
+                new CommandDefinition(
+                    sql,
+                    new { Resource = $"PlacementSortKey:{columnId.Id:D}" },
+                    transaction,
+                    cancellationToken: cancellationToken));
+
+            if (result < 0)
+            {
+                throw new InvalidOperationException(
+                    $"Could not acquire sort-key lock for column '{columnId.Id}'. SQL Server returned {result}.");
+            }
+        }
+
         public async Task CreateAsync(
             IEnumerable<Placement> placements,
             IDbTransaction transaction)
@@ -196,12 +228,15 @@ namespace kanban_lia.Infrastructure.Repositories.Placements
         /// <returns>A task that represents the asynchronous operation. The task result contains a SortKeyRange with the previous
         /// and next sort keys for the resolved position.</returns>
         public async Task<SortKeyRange> GetSortKeyRangeAsync(
+            IDbTransaction transaction,
             ColumnId columnId,
             SortKeyLookup lookup,
             EntityId? afterEntityId = null,
-            EntityId? beforeEntityId = null)
+            EntityId? beforeEntityId = null,
+            CancellationToken cancellationToken = default)
         {
-            using var connection = _connectionFactory.CreateConnection();
+            var connection = transaction.Connection
+                ?? throw new InvalidOperationException("The transaction has no connection.");
 
             const string sql = $@"
         WITH TargetBoard AS
@@ -293,14 +328,17 @@ namespace kanban_lia.Infrastructure.Repositories.Placements
     ";
 
             return await connection.QuerySingleAsync<SortKeyRange>(
-                sql,
-                new
-                {
-                    ColumnId = columnId.Id,
-                    Lookup = (int)lookup,
-                    AfterEntityId = afterEntityId?.Id,
-                    BeforeEntityId = beforeEntityId?.Id
-                });
+                new CommandDefinition(
+                    sql,
+                    new
+                    {
+                        ColumnId = columnId.Id,
+                        Lookup = (int)lookup,
+                        AfterEntityId = afterEntityId?.Id,
+                        BeforeEntityId = beforeEntityId?.Id
+                    },
+                    transaction,
+                    cancellationToken: cancellationToken));
         }
     }
 }

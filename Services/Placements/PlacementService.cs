@@ -16,6 +16,7 @@ using kanban_lia.Services.Columns.Exceptions;
 using kanban_lia.Services.IntegrationEvents;
 using kanban_lia.Services.IntegrationEvents.Models;
 using kanban_lia.Services.Placements.DTOs;
+using System.Data;
 using System.Text.Json;
 
 namespace kanban_lia.Services.Placements
@@ -75,31 +76,6 @@ namespace kanban_lia.Services.Placements
 
                 var (column, board) = await ValidateAsync(dto);
 
-                var range = await GetSortKeyRangeAsync(dto.Dto);
-
-                var placements = new List<Placement>();
-
-                var previous = range.Previous;
-                var next = range.Next;
-
-                foreach (var entityId in entityIds)
-                {
-
-                    var sortKey = OrderKeyGenerator.GenerateKeyBetween(
-                        previous,
-                        next);
-
-                    var placement = Placement.Create(
-                        entityId,
-                        board.Id,
-                        column.Id,
-                        sortKey);
-
-                    placements.Add(placement);
-
-                    previous = sortKey;
-                }
-
                 using var connection = _connectionFactory.CreateConnection();
 
                 await connection.OpenAsync(cancellationToken);
@@ -108,6 +84,31 @@ namespace kanban_lia.Services.Placements
 
                 try
                 {
+                    var columnsToLock = dto.SourceColumnIds
+                        .Append(dto.Dto.ColumnId)
+                        .Distinct()
+                        .OrderBy(id => id.Id)
+                        .ToArray();
+
+                    foreach (var columnId in columnsToLock)
+                    {
+                        await _repository.AcquireSortKeyLockAsync(
+                            transaction, columnId, cancellationToken);
+                    }
+
+                    var range = await GetSortKeyRangeAsync(
+                        dto.Dto, transaction, cancellationToken);
+                    var placements = new List<Placement>();
+                    var previous = range.Previous;
+                    var next = range.Next;
+
+                    foreach (var entityId in entityIds)
+                    {
+                        var sortKey = OrderKeyGenerator.GenerateKeyBetween(previous, next);
+                        placements.Add(Placement.Create(entityId, board.Id, column.Id, sortKey));
+                        previous = sortKey;
+                    }
+
                     await _repository.CreateAsync(
                         placements,
                         transaction);
@@ -242,8 +243,21 @@ namespace kanban_lia.Services.Placements
 
         }
 
-
-        private async Task<SortKeyRange> GetSortKeyRangeAsync(CreatePlacementDto dto)
+        /// <summary>
+        /// Determines the SortKeyRange for a new placement by inspecting adjacent placements in the specified column.
+        /// </summary>
+        /// <remarks>Checks AfterEntityIds first and uses the first entity currently in the same column to
+        /// select a lookup of After. If no matching after-entity is found, checks BeforeEntityIds and uses the first
+        /// matching entity to select a lookup of Before. If neither yields a neighbor, selects Last. The method queries
+        /// the repository for current placements and delegates to the repository's GetSortKeyRangeAsync with the
+        /// determined lookup and neighbor entity identifiers.</remarks>
+        /// <param name="dto">CreatePlacementDto containing BoardId, ColumnId, and ordered AfterEntityIds and BeforeEntityIds used to find
+        /// neighboring placements.</param>
+        /// <returns>A SortKeyRange that defines the sort-key bounds to use when inserting the new placement.</returns>
+        private async Task<SortKeyRange> GetSortKeyRangeAsync(
+            CreatePlacementDto dto,
+            IDbTransaction transaction,
+            CancellationToken cancellationToken)
         {
             EntityId? afterEntityId = null;
             EntityId? beforeEntityId = null;
@@ -260,7 +274,6 @@ namespace kanban_lia.Services.Placements
                 if (placement?.ColumnId == dto.ColumnId)
                 {
                     afterEntityId = entityId;
-                    break;
                 }
             }
 
@@ -296,10 +309,12 @@ namespace kanban_lia.Services.Placements
             }
 
             return await _repository.GetSortKeyRangeAsync(
+                transaction,
                 dto.ColumnId,
                 lookup,
                 afterEntityId,
-                beforeEntityId);
+                beforeEntityId,
+                cancellationToken);
         }
     }
 }
