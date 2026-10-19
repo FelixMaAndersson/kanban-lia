@@ -42,7 +42,6 @@ CREATE TABLE Placements
 		ON DELETE CASCADE,
 	CONSTRAINT FK_Placements_Boards_BoardId 
 		FOREIGN KEY (BoardId) REFERENCES dbo.Boards(Id)
-		ON DELETE CASCADE,
 );
 
 CREATE TABLE ColumnEdges
@@ -52,11 +51,9 @@ CREATE TABLE ColumnEdges
 	ToColumnId UNIQUEIDENTIFIER NOT NULL,
 
 	CONSTRAINT FK_ColumnEdges_FromColumn
-		FOREIGN KEY (FromColumnId) REFERENCES Columns(Id)
-		ON DELETE CASCADE,
+		FOREIGN KEY (FromColumnId) REFERENCES Columns(Id),
 	CONSTRAINT FK_ColumnEdges_ToColumn
 		FOREIGN KEY (ToColumnId) REFERENCES Columns(Id)
-		ON DELETE CASCADE
 );
 
 CREATE TABLE OutboxMessages
