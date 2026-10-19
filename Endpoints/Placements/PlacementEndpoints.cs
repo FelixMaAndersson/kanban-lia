@@ -32,7 +32,7 @@ public static class PlacementEndpoints
         var group = app.MapGroup("/api/placements");
         var logger = app.Services.GetRequiredService<ILoggerFactory>()
             .CreateLogger("PlacementEndpoints");
-        
+
         group.MapPost("/create", async (
             HttpRequest httpRequest,
             [FromBody] CreatePlacementRequest request,
@@ -107,6 +107,8 @@ public static class PlacementEndpoints
 
             var targetGroups = connectedTargetColumns.GroupBy(column => column.BoardId);
 
+            var affectedBoardIds = targetGroups.Select(group => group.Key.Id).ToList();
+
             var columnPairs = new List<(ColumnId Target, List<ColumnId> Sources)>();
 
             foreach (var targetGroup in targetGroups)
@@ -170,14 +172,17 @@ public static class PlacementEndpoints
 
             try
             {
-                await hub.Clients.All.SendAsync(
-                    "PlacementCreated",
-                    new PlacementCreatedEvent(
-                        [.. entityIds.Select(id => id.Id)],
-                        changes,
-                        actor
-                    ),
-                cancellationToken);
+                foreach (var affectedBoardId in affectedBoardIds)
+                {
+                    await hub.Clients.Group(BoardHub.GroupName(affectedBoardId)).SendAsync(
+                        "PlacementCreated",
+                        new PlacementCreatedEvent(
+                            [.. entityIds.Select(id => id.Id)],
+                            changes,
+                            actor
+                        ),
+                        cancellationToken);
+                }
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
