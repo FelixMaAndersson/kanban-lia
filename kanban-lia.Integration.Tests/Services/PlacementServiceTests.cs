@@ -65,6 +65,7 @@ namespace kanban_lia.Integration.Tests.Services
         {
             return new ColumnService(
                 new ColumnRepository(_database.DbFactory),
+                new BoardRepository(_database.DbFactory),
                 new ColumnEdgeRepository(_database.DbFactory),
                 _mapper);
         }
