@@ -16,6 +16,8 @@ using kanban_lia.Services.IntegrationEvents.Models;
 using kanban_lia.Services.Placements;
 using kanban_lia.Services.Placements.DTOs;
 using Microsoft.Extensions.Logging.Abstractions;
+using System.Collections.Concurrent;
+using System.Diagnostics;
 
 namespace kanban_lia.Integration.Tests.Services
 {
@@ -823,6 +825,186 @@ namespace kanban_lia.Integration.Tests.Services
                 setup.TestingRejectId, setup.TestingBoardId));
             Assert.Empty(await _repository.GetCurrentByColumnAsync(
                 setup.DevelopmentRejectedId, setup.DevelopmentBoardId));
+        }
+
+        [Fact]
+        public async Task CreateAsync_NinetyConcurrentInsertionsInSameColumn_AllCompleteWithDistinctSortKeys()
+        {
+            var cancellationToken = TestContext.Current.CancellationToken;
+            var boardId = await _boardService.CreateAsync("Sort-key load test");
+            var columnId = new ColumnId(Guid.NewGuid());
+
+            await _columnService.CreateAsync(
+                new CreateColumnDto(columnId, "Column 1", 1, boardId, true),
+                Guid.NewGuid(),
+                new Actor("test-user", "User"),
+                cancellationToken);
+
+            var actor = new Actor("test-user", "User");
+            var anchorEntityId = new EntityId(Guid.NewGuid());
+
+            var anchorOperation = new PlacementOperationDto(
+                new CreatePlacementDto(
+                    [anchorEntityId], boardId, columnId, [], []),
+                []);
+
+            var anchorResult = await _placementService.CreateAsync(
+                [anchorOperation],
+                Guid.NewGuid(),
+                null,
+                actor,
+                cancellationToken);
+
+            Assert.Contains(anchorEntityId, anchorResult.SucceededEntityIds);
+
+            const int requestCount = 90;
+
+            var requests = Enumerable.Range(0, requestCount)
+                .Select(_ =>
+                {
+                    var entityId = new EntityId(Guid.NewGuid());
+                    var operation = new PlacementOperationDto(
+                        new CreatePlacementDto(
+                            [entityId], boardId, columnId, [anchorEntityId], []),
+                        []);
+
+                    return (EntityId: entityId, Operation: operation);
+                })
+                .ToArray();
+
+            var startGate = new TaskCompletionSource<bool>(
+                TaskCreationOptions.RunContinuationsAsynchronously);
+
+            var tasks = requests.Select(async request =>
+            {
+                await startGate.Task;
+
+                var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+
+                var result = await _placementService.CreateAsync(
+                    [request.Operation],
+                    Guid.NewGuid(),
+                    null,
+                    actor,
+                    cancellationToken);
+
+                stopwatch.Stop();
+
+                return (request.EntityId, Result: result, stopwatch.Elapsed);
+            }).ToArray();
+
+            var totalStopwatch = System.Diagnostics.Stopwatch.StartNew();
+            startGate.SetResult(true);
+
+            var results = await Task.WhenAll(tasks);
+
+            totalStopwatch.Stop();
+
+            Assert.All(results, item =>
+            {
+                Assert.Contains(item.EntityId, item.Result.SucceededEntityIds);
+                Assert.Empty(item.Result.Failures);
+            });
+
+            var placements = (await _repository.GetCurrentByColumnAsync(columnId, boardId))
+                .ToArray();
+
+            Assert.Equal(requestCount + 1, placements.Length);
+            Assert.Equal(
+                placements.Length,
+                placements.Select(placement => placement.SortKey).Distinct().Count());
+        }
+
+        [Fact]
+        public async Task CreateAsync_OneThousandFiveHundredConcurrentInsertionsInSameColumnInOneMinute_AllCompleteWithDistinctSortKeys_WithOutput()
+        {
+            var cancellationToken = TestContext.Current.CancellationToken;
+            var boardId = await _boardService.CreateAsync("Sort-key load test");
+            var columnId = new ColumnId(Guid.NewGuid());
+
+            await _columnService.CreateAsync(
+                new CreateColumnDto(columnId, "Column 1", 1, boardId, true),
+                Guid.NewGuid(),
+                new Actor("test-user", "User"),
+                cancellationToken);
+
+            var actor = new Actor("test-user", "User");
+            var anchorEntityId = new EntityId(Guid.NewGuid());
+
+            var anchorOperation = new PlacementOperationDto(
+                new CreatePlacementDto(
+                    [anchorEntityId], boardId, columnId, [], []),
+                []);
+
+            var anchorResult = await _placementService.CreateAsync(
+                [anchorOperation],
+                Guid.NewGuid(),
+                null,
+                actor,
+                cancellationToken);
+
+            Assert.Contains(anchorEntityId, anchorResult.SucceededEntityIds);
+
+            const int requestCount = 1500;
+            var interval = TimeSpan.FromMilliseconds(60_000d / requestCount);
+
+            var tasks = new List<Task>();
+            var failures = new ConcurrentBag<string>();
+            var elapsedTimes = new ConcurrentBag<TimeSpan>();
+            var totalStopwatch = Stopwatch.StartNew();
+
+            for (var i = 0; i < requestCount; i++)
+            {
+                await Task.Delay(interval, cancellationToken);
+
+                var entityId = new EntityId(Guid.NewGuid());
+                var operation = new PlacementOperationDto(
+                    new CreatePlacementDto(
+                        [entityId], boardId, columnId, [anchorEntityId], []),
+                    []);
+
+                tasks.Add(MeasureAsync(entityId, operation));
+            }
+
+            await Task.WhenAll(tasks);
+
+            totalStopwatch.Stop();
+            TestContext.Current.TestOutputHelper?.WriteLine(
+                $"Längsta anrop: {elapsedTimes.Max().TotalMilliseconds:N0} ms");
+
+            Assert.Empty(failures);
+            Assert.Equal(requestCount, elapsedTimes.Count);
+
+            var placements = (await _repository.GetCurrentByColumnAsync(columnId, boardId))
+                .ToArray();
+
+            Assert.Equal(requestCount + 1, placements.Length);
+            Assert.Equal(
+                placements.Length,
+                placements.Select(placement => placement.SortKey).Distinct().Count());
+
+            Console.WriteLine($"Längsta anrop: {elapsedTimes.Max().TotalMilliseconds:N0} ms");
+
+            async Task MeasureAsync(EntityId entityId, PlacementOperationDto operation)
+            {
+                var stopwatch = Stopwatch.StartNew();
+
+                var result = await _placementService.CreateAsync(
+                    [operation],
+                    Guid.NewGuid(),
+                    null,
+                    actor,
+                    cancellationToken);
+
+                stopwatch.Stop();
+                elapsedTimes.Add(stopwatch.Elapsed);
+
+                if (!result.SucceededEntityIds.Contains(entityId) || result.Failures.Count > 0)
+                {
+                    var error = string.Join("; ", result.Failures.Select(failure => failure.Error));
+                    failures.Add($"Entity {entityId.Id}: {error}");
+                }
+            }
         }
 
         private sealed record ConnectedRejectSetup(
