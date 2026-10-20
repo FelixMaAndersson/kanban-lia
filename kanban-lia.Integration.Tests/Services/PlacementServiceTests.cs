@@ -5,11 +5,9 @@ using kanban_lia.Infrastructure.Repositories.Boards;
 using kanban_lia.Infrastructure.Repositories.Columns;
 using kanban_lia.Infrastructure.Repositories.Placements;
 using kanban_lia.Models.Domain.Columns;
-using kanban_lia.Models.Domain.Exceptions;
 using kanban_lia.Models.Domain.Placements;
 using kanban_lia.Services.Boards;
 using kanban_lia.Services.Columns;
-using kanban_lia.Services.Columns.Exceptions;
 using kanban_lia.Services.Columns.DTOs;
 using kanban_lia.Services.Placements;
 using kanban_lia.Mappings;
@@ -314,12 +312,13 @@ namespace kanban_lia.Integration.Tests.Services
         }
 
         [Fact]
-        public async Task CreateAsync_WithBothBeforeAndAfter_ThrowsInvalidException()
+        public async Task CreateAsync_WithBothBeforeAndAfter_ReturnsFailureForEntity()
         {
             // Arrange
             var cancellationToken = TestContext.Current.CancellationToken;
             var boardId = await _boardService.CreateAsync("Testboard");
             var columnId = new ColumnId(Guid.NewGuid());
+            var entityId = new EntityId(Guid.NewGuid());
 
             await _columnService.CreateAsync(
                 new CreateColumnDto(
@@ -334,21 +333,27 @@ namespace kanban_lia.Integration.Tests.Services
 
             var operation = new PlacementOperationDto(
                 new CreatePlacementDto(
-                    [new(Guid.NewGuid())],
+                    [entityId],
                     boardId,
                     columnId,
-                    [new(Guid.NewGuid())],
-                    [new(Guid.NewGuid())]),
+                    [new EntityId(Guid.NewGuid())],
+                    [new EntityId(Guid.NewGuid())]),
                 []);
 
-            // Act and Assert
-            await Assert.ThrowsAsync<InvalidDomainException>(
-                () => _placementService.CreateAsync(
-                    [operation],
-                    Guid.NewGuid(),
-                    null,
-                    new Actor("-1", "TestActor"),
-                    cancellationToken));
+            // Act
+            var result = await _placementService.CreateAsync(
+                [operation],
+                Guid.NewGuid(),
+                null,
+                new Actor("-1", "TestActor"),
+                cancellationToken);
+
+            // Assert
+            Assert.Empty(result.SucceededEntityIds);
+
+            var failure = Assert.Single(result.Failures);
+            Assert.Equal(entityId, failure.EntityId);
+            Assert.Contains("Only one", failure.Error);
         }
 
         [Fact]
@@ -479,11 +484,11 @@ namespace kanban_lia.Integration.Tests.Services
             await CreatePlacementAsync(anchorEntityId, otherColumnId);
 
             var afterEntityIds = useAfterAnchor
-                ? new[] { anchorEntityId }
+                ? [anchorEntityId]
                 : Array.Empty<EntityId>();
             var beforeEntityIds = useAfterAnchor
                 ? Array.Empty<EntityId>()
-                : new[] { anchorEntityId };
+                : [anchorEntityId];
 
             var operationWithMissingTargetAnchor = new PlacementOperationDto(
                 new CreatePlacementDto(
@@ -511,13 +516,14 @@ namespace kanban_lia.Integration.Tests.Services
         }
 
         [Fact]
-        public async Task CreateAsync_WhenColumnBelongsToDifferentBoard_ThrowsInvalidDomainException()
+        public async Task CreateAsync_WhenColumnBelongsToDifferentBoard_ReturnsFailureForEntity()
         {
             // Arrange
             var cancellationToken = TestContext.Current.CancellationToken;
             var requestedBoardId = await _boardService.CreateAsync("Requested board");
             var columnOwnerBoardId = await _boardService.CreateAsync("Column owner board");
             var columnId = new ColumnId(Guid.NewGuid());
+            var entityId = new EntityId(Guid.NewGuid());
 
             await _columnService.CreateAsync(
                 new CreateColumnDto(
@@ -532,48 +538,138 @@ namespace kanban_lia.Integration.Tests.Services
 
             var operation = new PlacementOperationDto(
                 new CreatePlacementDto(
-                    [new EntityId(Guid.NewGuid())],
+                    [entityId],
                     requestedBoardId,
                     columnId,
                     [],
                     []),
                 []);
 
-            // Act and Assert
-            await Assert.ThrowsAsync<InvalidDomainException>(
-                () => _placementService.CreateAsync(
-                    [operation],
-                    Guid.NewGuid(),
-                    null,
-                    new Actor("-1", "TestActor"),
-                    cancellationToken));
+            // Act
+            var result = await _placementService.CreateAsync(
+                [operation],
+                Guid.NewGuid(),
+                null,
+                new Actor("-1", "TestActor"),
+                cancellationToken);
+
+            // Assert
+            Assert.Empty(result.SucceededEntityIds);
+
+            var failure = Assert.Single(result.Failures);
+            Assert.Equal(entityId, failure.EntityId);
+            Assert.Contains("does not belong", failure.Error);
         }
 
         [Fact]
-        public async Task CreateAsync_WithNonExistingColumn_ThrowsException()
+        public async Task CreateAsync_WithNonExistingColumn_ReturnsFailureForEntity()
         {
             // Arrange
             var cancellationToken = TestContext.Current.CancellationToken;
             var boardId = await _boardService.CreateAsync("Testboard");
             var columnId = new ColumnId(Guid.NewGuid());
+            var entityId = new EntityId(Guid.NewGuid());
 
             var operation = new PlacementOperationDto(
                 new CreatePlacementDto(
-                    [new(Guid.NewGuid())],
+                    [entityId],
                     boardId,
                     columnId,
                     [],
                     []),
                 []);
 
-            // Act and Assert
-            await Assert.ThrowsAsync<ColumnNotFoundException>(
-                () => _placementService.CreateAsync(
-                    [operation],
-                    Guid.NewGuid(),
-                    null,
-                    new Actor("-1", "TestActor"),
-                    cancellationToken));
+            // Act
+            var result = await _placementService.CreateAsync(
+                [operation],
+                Guid.NewGuid(),
+                null,
+                new Actor("-1", "TestActor"),
+                cancellationToken);
+
+            // Assert
+            Assert.Empty(result.SucceededEntityIds);
+
+            var failure = Assert.Single(result.Failures);
+            Assert.Equal(entityId, failure.EntityId);
+            Assert.Contains(columnId.Id.ToString(), failure.Error);
+        }
+
+        [Fact]
+        public async Task CreateAsync_WhenLaterOperationForEntityFails_RollsBackEarlierPlacementAndOutboxMessage()
+        {
+            // Arrange
+            var cancellationToken = TestContext.Current.CancellationToken;
+            var firstBoardId = await _boardService.CreateAsync("First board");
+            var secondBoardId = await _boardService.CreateAsync("Second board");
+            var firstColumnId = new ColumnId(Guid.NewGuid());
+            var entityId = new EntityId(Guid.NewGuid());
+            var outboxRepository = new OutboxRepository(_database.DbFactory);
+
+            await _columnService.CreateAsync(
+                new CreateColumnDto(
+                    firstColumnId,
+                    "First column",
+                    1,
+                    firstBoardId,
+                    true),
+                Guid.NewGuid(),
+                new Actor("-1", "TestActor"),
+                cancellationToken);
+
+            var outboxBefore = (await outboxRepository
+                .GetUnprocessedAsync(cancellationToken))
+                .Select(message => message.Id)
+                .OrderBy(id => id)
+                .ToArray();
+
+            var validOperation = new PlacementOperationDto(
+                new CreatePlacementDto(
+                    [entityId],
+                    firstBoardId,
+                    firstColumnId,
+                    [],
+                    []),
+                []);
+
+            // Kolumnen tillhör firstBoardId, så operationen ska misslyckas
+            // när den anges tillsammans med secondBoardId.
+            var failingOperation = new PlacementOperationDto(
+                new CreatePlacementDto(
+                    [entityId],
+                    secondBoardId,
+                    firstColumnId,
+                    [],
+                    []),
+                []);
+
+            // Act
+            var result = await _placementService.CreateAsync(
+                [validOperation, failingOperation],
+                Guid.NewGuid(),
+                null,
+                new Actor("-1", "TestActor"),
+                cancellationToken);
+
+            // Assert
+            Assert.Empty(result.SucceededEntityIds);
+
+            var failure = Assert.Single(result.Failures);
+            Assert.Equal(entityId, failure.EntityId);
+
+            var placement = await _repository.GetCurrentAsync(
+                [entityId],
+                firstBoardId);
+
+            Assert.Empty(placement);
+
+            var outboxAfter = (await outboxRepository
+                .GetUnprocessedAsync(cancellationToken))
+                .Select(message => message.Id)
+                .OrderBy(id => id)
+                .ToArray();
+
+            Assert.Equal(outboxBefore, outboxAfter);
         }
     }
 }

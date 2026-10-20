@@ -20,6 +20,11 @@ namespace kanban_lia.Infrastructure.Repositories.Placements
             CancellationToken cancellationToken);
         Task CreateAsync(IEnumerable<Placement> placements, IDbTransaction transaction);
         Task<IEnumerable<Placement>> GetCurrentAsync(IEnumerable<EntityId> entityIds, BoardId boardId);
+        Task<IEnumerable<Placement>> GetCurrentAsync(
+            IEnumerable<EntityId> entityIds,
+            BoardId boardId,
+            IDbTransaction transaction,
+            CancellationToken cancellationToken);
         Task<IEnumerable<Placement>> GetCurrentByBoardAsync(BoardId boardId);
         Task<IEnumerable<Placement>> GetCurrentByColumnAsync(ColumnId columnId, BoardId boardId);
         Task<SortKeyRange> GetSortKeyRangeAsync(
