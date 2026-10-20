@@ -12,6 +12,7 @@ namespace kanban_lia.Integration.Tests.Fixture
             new MsSqlBuilder("mcr.microsoft.com/mssql/server:2022-latest")
                 .Build();
 
+        public string ConnectionString { get; private set; } = null!;
         public DbConnectionFactory DbFactory { get; private set; } = null!;
         private Respawner _respawner = null!;
 
@@ -37,6 +38,7 @@ namespace kanban_lia.Integration.Tests.Fixture
                 }.ConnectionString;
 
                 DbFactory = new DbConnectionFactory(connectionString);
+                ConnectionString = connectionString;
 
                 await ApplyMigrationsAsync();
 
