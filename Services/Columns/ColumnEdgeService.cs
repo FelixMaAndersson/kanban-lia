@@ -3,8 +3,8 @@ using kanban_lia.Infrastructure.Repositories.Columns;
 using kanban_lia.Models.Domain.Boards;
 using kanban_lia.Models.Domain.Columns;
 using kanban_lia.Models.Domain.Columns.DTOs;
-using kanban_lia.Models.Domain.Exceptions;
 using kanban_lia.Services.Columns.DTOs;
+using kanban_lia.Services.Columns.Exceptions;
 
 namespace kanban_lia.Services.Columns
 {
@@ -29,8 +29,7 @@ namespace kanban_lia.Services.Columns
 
             if (await _repository.ExistsAsync(newEdge))
             {
-                throw new InvalidDomainException(
-                    "These columns are already connected.");
+                throw new ColumnEdgeAlreadyExistsException(newEdge.FromColumnId, newEdge.ToColumnId);
             }
 
             await _repository.CreateAsync(newEdge);
