@@ -916,7 +916,7 @@ namespace kanban_lia.Integration.Tests.Services
         }
 
         [Fact]
-        public async Task CreateAsync_OneThousandConcurrentInsertionsInSameColumnInOneMinute_AllCompleteWithDistinctSortKeys_WithOutput()
+        public async Task CreateAsync_OneThousandFiveHundredConcurrentInsertionsInSameColumnInOneMinute_AllCompleteWithDistinctSortKeys_WithOutput()
         {
             var cancellationToken = TestContext.Current.CancellationToken;
             var boardId = await _boardService.CreateAsync("Sort-key load test");
