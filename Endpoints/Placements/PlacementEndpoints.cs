@@ -52,17 +52,6 @@ public static class PlacementEndpoints
 
             var boardId = new BoardId(request.BoardId);
 
-            var canBeWritten = await columnRepository.CanBeWrittenAsync(new ColumnId(request.ColumnId));
-
-            if (canBeWritten is null)
-                throw new ColumnNotFoundException(new ColumnId(request.ColumnId));
-
-            if (!canBeWritten.Value)
-                return Results.Problem(
-                    statusCode: StatusCodes.Status403Forbidden,
-                    title: "Column is not writable",
-                    detail: $"Column {request.ColumnId} does not accept new placements.");
-
             var connectedTargetColumnIds = await GetConnectedColumns(
                 new ColumnId(request.ColumnId),
                 columnEdgeRepository);
@@ -175,7 +164,8 @@ public static class PlacementEndpoints
                 correlationId,
                 causationEventId,
                 actor,
-                cancellationToken);
+                cancellationToken,
+                boardId);
 
             foreach (var failure in result.Failures)
             {

@@ -1,20 +1,21 @@
 ﻿using AutoMapper;
-using Microsoft.Extensions.Logging.Abstractions;
-
 using kanban_lia.Infrastructure.Repositories.Boards;
 using kanban_lia.Infrastructure.Repositories.Columns;
+using kanban_lia.Infrastructure.Repositories.Outbox;
 using kanban_lia.Infrastructure.Repositories.Placements;
+using kanban_lia.Integration.Tests.Fixture;
+using kanban_lia.Mappings;
+using kanban_lia.Models.Domain.Boards;
 using kanban_lia.Models.Domain.Columns;
 using kanban_lia.Models.Domain.Placements;
 using kanban_lia.Services.Boards;
 using kanban_lia.Services.Columns;
 using kanban_lia.Services.Columns.DTOs;
-using kanban_lia.Services.Placements;
-using kanban_lia.Mappings;
-using kanban_lia.Infrastructure.Repositories.Outbox;
-using kanban_lia.Services.Placements.DTOs;
-using kanban_lia.Integration.Tests.Fixture;
+using kanban_lia.Services.Columns.Exceptions;
 using kanban_lia.Services.IntegrationEvents.Models;
+using kanban_lia.Services.Placements;
+using kanban_lia.Services.Placements.DTOs;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace kanban_lia.Integration.Tests.Services
 {
@@ -43,6 +44,10 @@ namespace kanban_lia.Integration.Tests.Services
         private readonly ColumnService _columnService = new(
             new ColumnRepository(database.DbFactory),
             new BoardRepository(database.DbFactory),
+            new ColumnEdgeRepository(database.DbFactory),
+            _mapper);
+
+        private readonly ColumnEdgeService _columnEdgeService = new(
             new ColumnEdgeRepository(database.DbFactory),
             _mapper);
 
@@ -671,5 +676,200 @@ namespace kanban_lia.Integration.Tests.Services
 
             Assert.Equal(outboxBefore, outboxAfter);
         }
+
+        [Fact]
+        public async Task CreateAsync_WhenSourceColumnIsNotWritable_MovesCardOut()
+        {
+            // Arrange
+            var cancellationToken = TestContext.Current.CancellationToken;
+            var boardId = await _boardService.CreateAsync("Drag out board");
+            var archiveColumnId = new ColumnId(Guid.NewGuid());
+            var doingColumnId = new ColumnId(Guid.NewGuid());
+            var entityId = new EntityId(Guid.NewGuid());
+
+            await _columnService.CreateAsync(
+                new CreateColumnDto(archiveColumnId, "Archive", 1, boardId, true),
+                Guid.NewGuid(),
+                new Actor("-1", "TestActor"),
+                cancellationToken);
+
+            await _columnService.CreateAsync(
+                new CreateColumnDto(doingColumnId, "Doing", 2, boardId, true),
+                Guid.NewGuid(),
+                new Actor("-1", "TestActor"),
+                cancellationToken);
+
+            await _placementService.CreateAsync(
+                [new PlacementOperationDto(
+                    new CreatePlacementDto([entityId], boardId, archiveColumnId, [], []),
+                    [])],
+                Guid.NewGuid(),
+                null,
+                new Actor("-1", "TestActor"),
+                cancellationToken,
+                boardId);
+
+            await _columnService.SetRequestWritableAsync(archiveColumnId, false);
+
+            // Act
+            var result = await _placementService.CreateAsync(
+                [new PlacementOperationDto(
+                    new CreatePlacementDto([entityId], boardId, doingColumnId, [], []),
+                    [archiveColumnId])],
+                Guid.NewGuid(),
+                null,
+                new Actor("-1", "TestActor"),
+                cancellationToken,
+                boardId);
+
+            // Assert
+            Assert.Empty(result.Failures);
+            Assert.Contains(entityId, result.SucceededEntityIds);
+
+            var current = await _repository.GetCurrentAsync([entityId], boardId);
+            Assert.Equal(doingColumnId, Assert.Single(current).ColumnId);
+
+            Assert.Empty(await _repository.GetCurrentByColumnAsync(archiveColumnId, boardId));
+        }
+
+        [Fact]
+        public async Task CreateAsync_WhenRequestingBoardTargetsOwnReadOnlyColumn_ThrowsColumnNotWritableException()
+        {
+            // Arrange
+            var cancellationToken = TestContext.Current.CancellationToken;
+            var boardId = await _boardService.CreateAsync("Direct deny board");
+            var rejectedColumnId = new ColumnId(Guid.NewGuid());
+            var entityId = new EntityId(Guid.NewGuid());
+
+            await _columnService.CreateAsync(
+                new CreateColumnDto(rejectedColumnId, "Rejected", 1, boardId, false),
+                Guid.NewGuid(),
+                new Actor("-1", "TestActor"),
+                cancellationToken);
+
+            var operation = new PlacementOperationDto(
+                new CreatePlacementDto([entityId], boardId, rejectedColumnId, [], []),
+                []);
+
+            // Act
+            await Assert.ThrowsAsync<ColumnNotWritableException>(() =>
+                _placementService.CreateAsync(
+                    [operation],
+                    Guid.NewGuid(),
+                    null,
+                    new Actor("-1", "TestActor"),
+                    cancellationToken,
+                    boardId));
+
+            // Assert
+            Assert.Empty(await _repository.GetCurrentByColumnAsync(rejectedColumnId, boardId));
+            Assert.Empty(await _repository.GetCurrentAsync([entityId], boardId));
+        }
+
+        [Fact]
+        public async Task CreateAsync_WhenAnotherBoardSendsViaEdge_AllowsIntoReadOnlyColumn()
+        {
+            // Arrange
+            var cancellationToken = TestContext.Current.CancellationToken;
+            var setup = await CreateConnectedRejectColumnsAsync(cancellationToken);
+            var entityId = new EntityId(Guid.NewGuid());
+
+            var operations = CreateRejectFanOutOperations(entityId, setup);
+
+            // Act
+            var result = await _placementService.CreateAsync(
+                operations,
+                Guid.NewGuid(),
+                null,
+                new Actor("-1", "TestActor"),
+                cancellationToken,
+                setup.TestingBoardId);
+
+            // Assert
+            Assert.Empty(result.Failures);
+            Assert.Contains(entityId, result.SucceededEntityIds);
+
+            var inTesting = await _repository.GetCurrentByColumnAsync(
+                setup.TestingRejectId, setup.TestingBoardId);
+            Assert.Equal(entityId, Assert.Single(inTesting).EntityId);
+
+            var inDevelopment = await _repository.GetCurrentByColumnAsync(
+                setup.DevelopmentRejectedId, setup.DevelopmentBoardId);
+            Assert.Equal(entityId, Assert.Single(inDevelopment).EntityId);
+        }
+
+        [Fact]
+        public async Task CreateAsync_WhenRequestingBoardIsSame_DeniesDespiteEdge()
+        {
+            // Arrange
+            var cancellationToken = TestContext.Current.CancellationToken;
+            var setup = await CreateConnectedRejectColumnsAsync(cancellationToken);
+            var entityId = new EntityId(Guid.NewGuid());
+
+            var operations = CreateRejectFanOutOperations(entityId, setup);
+
+            // Act
+            await Assert.ThrowsAsync<ColumnNotWritableException>(() =>
+                _placementService.CreateAsync(
+                    operations,
+                    Guid.NewGuid(),
+                    null,
+                    new Actor("-1", "TestActor"),
+                    cancellationToken,
+                    setup.DevelopmentBoardId));
+
+            // Assert
+            Assert.Empty(await _repository.GetCurrentByColumnAsync(
+                setup.TestingRejectId, setup.TestingBoardId));
+            Assert.Empty(await _repository.GetCurrentByColumnAsync(
+                setup.DevelopmentRejectedId, setup.DevelopmentBoardId));
+        }
+
+        private sealed record ConnectedRejectSetup(
+            BoardId DevelopmentBoardId,
+            BoardId TestingBoardId,
+            ColumnId DevelopmentRejectedId,
+            ColumnId TestingRejectId);
+
+        private async Task<ConnectedRejectSetup> CreateConnectedRejectColumnsAsync(
+            CancellationToken cancellationToken)
+        {
+            var developmentBoardId = await _boardService.CreateAsync("Development");
+            var testingBoardId = await _boardService.CreateAsync("Testing");
+            var developmentRejectedId = new ColumnId(Guid.NewGuid());
+            var testingRejectId = new ColumnId(Guid.NewGuid());
+
+            await _columnService.CreateAsync(
+                new CreateColumnDto(developmentRejectedId, "Rejected", 1, developmentBoardId, false),
+                Guid.NewGuid(),
+                new Actor("-1", "TestActor"),
+                cancellationToken);
+
+            await _columnService.CreateAsync(
+                new CreateColumnDto(testingRejectId, "Reject", 1, testingBoardId, true),
+                Guid.NewGuid(),
+                new Actor("-1", "TestActor"),
+                cancellationToken);
+
+            await _columnEdgeService.CreateAsync(
+                new CreateColumnEdgeDto(developmentRejectedId, testingRejectId));
+
+            return new ConnectedRejectSetup(
+                developmentBoardId, testingBoardId, developmentRejectedId, testingRejectId);
+        }
+
+        private static PlacementOperationDto[] CreateRejectFanOutOperations(
+            EntityId entityId,
+            ConnectedRejectSetup setup) =>
+                [
+                    new PlacementOperationDto(
+                        new CreatePlacementDto(
+                            [entityId], setup.TestingBoardId, setup.TestingRejectId, [], []),
+                        []),
+                    new PlacementOperationDto(
+                        new CreatePlacementDto(
+                            [entityId], setup.DevelopmentBoardId, setup.DevelopmentRejectedId, [], []),
+                        [])
+                ];
     }
 }
