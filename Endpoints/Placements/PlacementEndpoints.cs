@@ -170,7 +170,32 @@ public static class PlacementEndpoints
 
             var (correlationId, causationEventId, actor) = GetEventMetadata(httpRequest);
 
-            await placementService.CreateAsync(placementOperations, correlationId, causationEventId, actor, cancellationToken);
+            var result = await placementService.CreateAsync(
+                placementOperations,
+                correlationId,
+                causationEventId,
+                actor,
+                cancellationToken);
+
+            foreach (var failure in result.Failures)
+            {
+                logger.LogWarning(
+                    "Placement failed for entity {EntityId}: {Error}",
+                    failure.EntityId.Id,
+                    failure.Error);
+            }
+
+            if (result.SucceededEntityIds.Count == 0 && result.Failures.Count > 0)
+            {
+                return Results.Problem(
+                    statusCode: StatusCodes.Status400BadRequest,
+                    title: "No placements were created",
+                    detail: string.Join("; ", result.Failures.Select(failure => failure.Error)));
+            }
+
+            var succeededEntityIds = result.SucceededEntityIds
+                .Select(entityId => entityId.Id)
+                .ToArray();
 
             try
             {
@@ -179,23 +204,21 @@ public static class PlacementEndpoints
                     await hub.Clients.Group(BoardHub.GroupName(affectedBoardId)).SendAsync(
                         "PlacementCreated",
                         new PlacementCreatedEvent(
-                            [.. entityIds.Select(id => id.Id)],
+                            succeededEntityIds,
                             changes,
-                            actor
-                        ),
+                            actor),
                         cancellationToken);
                 }
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
-                // The placements are already committed — a broadcast failure must not
-                // turn into a 500; clients will converge on the next fetch.
-                logger.LogError(ex,
+                logger.LogError(
+                    ex,
                     "PlacementCreated broadcast failed after commit for {EntityCount} entities",
-                    entityIds.Count);
+                    succeededEntityIds.Length);
             }
 
-            return Results.Ok();
+            return Results.Ok(result);
         });
 
         group.MapGet("/get", async (

@@ -89,6 +89,56 @@ namespace kanban_lia.Infrastructure.Repositories.Placements
 
         public async Task<IEnumerable<Placement>> GetCurrentAsync(
             IEnumerable<EntityId> entityIds,
+            BoardId boardId,
+            IDbTransaction transaction,
+            CancellationToken cancellationToken)
+        {
+            var connection = transaction.Connection
+                ?? throw new InvalidOperationException(
+                    "The transaction has no connection.");
+
+            const string sql = $@"
+                WITH CurrentPlacements AS
+                (
+                    SELECT
+                        p.{Schema.Placements.EntityId},
+                        p.{Schema.Placements.BoardId},
+                        p.{Schema.Placements.ColumnId},
+                        p.{Schema.Placements.SortKey},
+                        p.{Schema.Placements.Timestamp},
+                        ROW_NUMBER() OVER
+                        (
+                            PARTITION BY p.{Schema.Placements.EntityId}
+                            ORDER BY p.{Schema.Placements.Timestamp} DESC
+                        ) AS rn
+                    FROM {Schema.Placements.Table} AS p
+                    WHERE p.{Schema.Placements.EntityId} IN @EntityIds
+                      AND p.{Schema.Placements.BoardId} = @BoardId
+                )
+                SELECT
+                    {Schema.Placements.EntityId},
+                    {Schema.Placements.BoardId},
+                    {Schema.Placements.ColumnId},
+                    {Schema.Placements.SortKey},
+                    {Schema.Placements.Timestamp}
+                FROM CurrentPlacements
+                WHERE rn = 1;
+            ";
+
+            return await connection.QueryAsync<Placement>(
+                new CommandDefinition(
+                    sql,
+                    new
+                    {
+                        EntityIds = entityIds.Select(entity => entity.Id).ToArray(),
+                        BoardId = boardId.Id
+                    },
+                    transaction,
+                    cancellationToken: cancellationToken));
+        }
+
+        public async Task<IEnumerable<Placement>> GetCurrentAsync(
+            IEnumerable<EntityId> entityIds,
             BoardId boardId)
         {
             using var connection = _connectionFactory.CreateConnection();
@@ -124,7 +174,7 @@ namespace kanban_lia.Infrastructure.Repositories.Placements
             return await connection.QueryAsync<Placement>(
                 sql, new
                 {
-                    EntityIds = entityIds.Select(x => x.Id),
+                    EntityIds = entityIds.Select(entity => entity.Id).ToArray(),
                     BoardId = boardId.Id
                 });
         }
@@ -170,6 +220,8 @@ namespace kanban_lia.Infrastructure.Repositories.Placements
                });
         }
 
+        // Either change from Columns.BoardId to Placements.BoardId or it needs to be documented
+        // why it needs to get the boardId from the columnId instead of just using the boardId parameter
         public async Task<IEnumerable<Placement>> GetCurrentByBoardAsync(BoardId boardId)
         {
             using var connection = _connectionFactory.CreateConnection();
