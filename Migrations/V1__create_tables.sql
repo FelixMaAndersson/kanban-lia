@@ -53,7 +53,8 @@ CREATE TABLE ColumnEdges
 	CONSTRAINT FK_ColumnEdges_FromColumn
 		FOREIGN KEY (FromColumnId) REFERENCES Columns(Id),
 	CONSTRAINT FK_ColumnEdges_ToColumn
-		FOREIGN KEY (ToColumnId) REFERENCES Columns(Id)
+		FOREIGN KEY (ToColumnId) REFERENCES Columns(Id),
+	CONSTRAINT UQ_ColumnEdges_FromTo UNIQUE (FromColumnId, ToColumnId)
 );
 
 CREATE TABLE OutboxMessages

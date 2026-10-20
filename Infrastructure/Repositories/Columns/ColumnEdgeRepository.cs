@@ -27,6 +27,27 @@ namespace kanban_lia.Infrastructure.Repositories.Columns
                 }
             );
         }
+
+        public async Task<bool> ExistsAsync(ColumnEdge columnEdge)
+        {
+            using var connection = _connectionFactory.CreateConnection();
+
+            var count = await connection.ExecuteScalarAsync<int>(
+                $@"
+                SELECT COUNT(*)
+                FROM {Schema.ColumnEdges.Table}
+                WHERE ({Schema.ColumnEdges.FromColumnId} = @FromColumnId
+                   AND {Schema.ColumnEdges.ToColumnId} = @ToColumnId)
+                   OR ({Schema.ColumnEdges.FromColumnId} = @ToColumnId
+                   AND {Schema.ColumnEdges.ToColumnId} = @FromColumnId)",
+                new
+                {
+                    FromColumnId = columnEdge.FromColumnId.Id,
+                    ToColumnId = columnEdge.ToColumnId.Id
+                });
+
+            return count > 0;
+        }
         public async Task<IEnumerable<ColumnEdge>> GetByBoardIdAsync(BoardId boardId)
         {
             using var connection = _connectionFactory.CreateConnection();
@@ -95,9 +116,9 @@ namespace kanban_lia.Infrastructure.Repositories.Columns
 
             var rowsAffected = await connection.ExecuteAsync(
                 $@"
-            DELETE FROM {Schema.ColumnEdges.Table}
-            WHERE       {Schema.ColumnEdges.FromColumnId} = @FromColumnId
-              AND       {Schema.ColumnEdges.ToColumnId} = @ToColumnId",
+                DELETE FROM {Schema.ColumnEdges.Table}
+                WHERE {Schema.ColumnEdges.FromColumnId} = @FromColumnId AND {Schema.ColumnEdges.ToColumnId} = @ToColumnId
+                   OR {Schema.ColumnEdges.FromColumnId} = @ToColumnId AND {Schema.ColumnEdges.ToColumnId} = @FromColumnId",
                 new
                 {
                     FromColumnId = columnEdge.FromColumnId.Id,
