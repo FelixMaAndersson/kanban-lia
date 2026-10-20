@@ -22,12 +22,15 @@ namespace kanban_lia.Integration.Tests.Endpoints
         [Fact]
         public async Task GetBoard_Unknown_Returns404_WithProblemTitle()
         {
+            // Arrange
             var cancellationToken = TestContext.Current.CancellationToken;
 
             var client = _factory.CreateClient();
 
+            // Act
             var response = await client.GetAsync($"/api/boards/{Guid.NewGuid()}", cancellationToken);
 
+            // Assert
             Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
             var problem = await response.Content.ReadFromJsonAsync<ProblemDetails>(cancellationToken);
             Assert.Equal("Board could not be found", problem!.Title);
@@ -36,13 +39,15 @@ namespace kanban_lia.Integration.Tests.Endpoints
         [Fact]
         public async Task CreateBoard_WhitespaceTitle_Returns400()
         {
+            // Arrange
             var cancellationToken = TestContext.Current.CancellationToken;
 
             var client = _factory.CreateClient();
 
-            // 'string title' binds from QUERY in minimal APIs (no [FromBody])
+            // Act
             var response = await client.PostAsync("/api/boards/create?title=%20%20%20", null, cancellationToken);
 
+            // Assert
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         }
     }
