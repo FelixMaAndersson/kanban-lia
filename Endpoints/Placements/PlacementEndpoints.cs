@@ -164,7 +164,8 @@ public static class PlacementEndpoints
                 correlationId,
                 causationEventId,
                 actor,
-                cancellationToken);
+                cancellationToken,
+                boardId);
 
             foreach (var failure in result.Failures)
             {
