@@ -354,10 +354,11 @@ namespace kanban_lia.Integration.Tests.Services
                 cancellationToken);
 
             await _columnEdgeService.CreateAsync(new CreateColumnEdgeDto(columnA, columnB));
-            await _columnEdgeService.CreateAsync(new CreateColumnEdgeDto(columnB, columnA));
             await _columnEdgeService.CreateAsync(new CreateColumnEdgeDto(columnB, columnC));
 
-            Assert.NotEmpty(await _columnEdgeService.GetByFromColumnIdAsync(columnA));
+            var edgesTouchingA = (await _columnEdgeService.GetByFromColumnIdAsync(columnA))
+                .Concat(await _columnEdgeService.GetByToColumnIdAsync(columnA));
+            Assert.NotEmpty(edgesTouchingA);
 
             // Act
             var deleted = await _columnService.DeleteAsync(columnA);
@@ -367,9 +368,11 @@ namespace kanban_lia.Integration.Tests.Services
             Assert.Empty(await _columnEdgeService.GetByFromColumnIdAsync(columnA));
             Assert.Empty(await _columnEdgeService.GetByToColumnIdAsync(columnA));
 
-            var remaining = await _columnEdgeService.GetByFromColumnIdAsync(columnB);
+            var remaining = await _columnEdgeService.GetByBoardIdAsync(boardId);
             var item = Assert.Single(remaining);
-            Assert.Equal(columnC, item.ToColumnId);
+            Assert.True(
+                item.FromColumnId == columnB && item.ToColumnId == columnC ||
+                item.FromColumnId == columnC && item.ToColumnId == columnB);
         }
 
         [Fact]

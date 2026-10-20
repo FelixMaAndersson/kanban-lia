@@ -223,11 +223,9 @@ public static class PlacementEndpoints
 
             var dto = mapper.Map<GetPlacementDto>(request);
 
-            var placement = await placementService.GetCurrentAsync(dto);
+            var placements = await placementService.GetCurrentAsync(dto);
 
-            return placement is null
-                ? Results.NotFound()
-                : Results.Ok(placement);
+            return Results.Ok(placements);
         });
 
         group.MapGet("/board/{boardId:guid}", async (

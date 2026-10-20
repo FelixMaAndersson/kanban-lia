@@ -17,6 +17,9 @@ using kanban_lia.Services.Placements;
 using Actor = kanban_lia.Services.IntegrationEvents.Models.Actor;
 using Microsoft.Extensions.Logging.Abstractions;
 using kanban_lia.Services.Placements.DTOs;
+using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.Data.SqlClient;
+using Dapper;
 
 
 namespace kanban_lia.Integration.Tests.Services
@@ -255,6 +258,58 @@ namespace kanban_lia.Integration.Tests.Services
         }
 
         [Fact]
+        public async Task AddRootAsync_ConcurrentSameRoot_SingleRowOrThrows()
+        {
+            // Arrange
+            var boardId = await _service.CreateAsync("Testboard");
+            var entityId = new EntityId(Guid.NewGuid());
+            var dto = new AddRootDto(boardId, entityId);
+
+            const int concurrency = 8;
+            var gate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            // Act
+            var attempts = Enumerable.Range(0, concurrency)
+                .Select(async _ =>
+                {
+                    await gate.Task;
+                    try
+                    {
+                        await _service.AddRootAsync(dto);
+                        return (Ok: true, Ex: (Exception?)null);
+                    }
+                    catch (Exception ex)
+                    {
+                        return (Ok: false, Ex: ex);
+                    }
+                })
+                .ToArray();
+
+            gate.SetResult();
+            var results = await Task.WhenAll(attempts);
+
+            // Assert
+            Assert.Equal(1, results.Count(r => r.Ok));
+            foreach (var failure in results.Where(r => !r.Ok))
+                Assert.True(
+                    failure.Ex is RootAlreadyExistsException
+                        or SqlException { Number: 2627 or 2601 },
+                    $"Unexpected exception: {failure.Ex}");
+
+            await using var connection = _database.DbFactory.CreateConnection();
+            await connection.OpenAsync(TestContext.Current.CancellationToken);
+
+            var rows = await connection.ExecuteScalarAsync<int>(
+                """
+                SELECT COUNT(*) FROM dbo.BoardRoots
+                WHERE BoardId = @BoardId 
+                  AND EntityId = @EntityId
+                """,
+                new { BoardId = boardId.Id, EntityId = entityId.Id });
+            Assert.Equal(1, rows);
+        }
+
+        [Fact]
         public async Task DeleteAsync_WithExistingBoard_DeletesBoard()
         {
             // Arrange
@@ -300,11 +355,9 @@ namespace kanban_lia.Integration.Tests.Services
 
             await _columnService.CreateAsync(columnDto2, Guid.NewGuid(), actor, cancellationToken);
 
-            var columnEdgeDto1 = new CreateColumnEdgeDto(columnId1, columnId2);
-            var columnEdgeDto2 = new CreateColumnEdgeDto(columnId2, columnId1);
+            var columnEdgeDto = new CreateColumnEdgeDto(columnId1, columnId2);
 
-            await _columnEdgeService.CreateAsync(columnEdgeDto1);
-            await _columnEdgeService.CreateAsync(columnEdgeDto2);
+            await _columnEdgeService.CreateAsync(columnEdgeDto);
 
             var entityId1 = new EntityId(Guid.NewGuid());
             var entityId2 = new EntityId(Guid.NewGuid());
