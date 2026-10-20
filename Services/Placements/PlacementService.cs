@@ -18,6 +18,7 @@ using kanban_lia.Services.IntegrationEvents.Models;
 using kanban_lia.Services.Placements.DTOs;
 using System.Data;
 using System.Text.Json;
+using System.Transactions;
 
 namespace kanban_lia.Services.Placements
 {
@@ -36,115 +37,39 @@ namespace kanban_lia.Services.Placements
         private readonly IOutboxRepository _outboxRepository = outboxRepository;
         private readonly IMapper _mapper = mapper;
 
-        public record PlacementCreatedEvent(
-            Guid EntityId,
-            Guid? SourceColumnId,
-            Guid TargetColumnId
-        );
-
-        /// <summary>
-        /// Create placements for the specified placement operations, persist them, and enqueue placement-created
-        /// integration events in the outbox within a single database transaction per DTO.
-        /// </summary>
-        /// <remarks>Each DTO is processed sequentially. Positioning is determined by inspecting current
-        /// placements on the board to choose a before/after/last lookup; order keys are generated between neighbors,
-        /// placements are persisted, and corresponding outbox messages are enqueued within the same transaction.
-        /// Transactions are rolled back on error.</remarks>
-        /// <param name="dtos">Placement operations that contain entity ids, target board and column, and optional AfterEntityIds or
-        /// BeforeEntityIds to determine ordering.</param>
-        /// <param name="correlationId">Correlation identifier applied to produced integration events.</param>
-        /// <param name="causationEventId">Optional causation event identifier included on produced integration events.</param>
-        /// <param name="actor">Actor performing the operation and recorded on produced integration events.</param>
-        /// <param name="cancellationToken">Token to cancel the operation and any underlying I/O.</param>
-        /// <returns>A task that completes when all placements and corresponding outbox messages have been persisted and the
-        /// transaction committed for each DTO.</returns>
-        /// <exception cref="ColumnNotFoundException">Thrown when a referenced column cannot be found.</exception>
-        /// <exception cref="BoardNotFoundException">Thrown when a referenced board cannot be found.</exception>
-        /// <exception cref="InvalidDomainException">Thrown when both AfterEntityIds and BeforeEntityIds are provided, 
-        /// or when the specified column does not belong to the specified board.</exception>
-        public async Task CreateAsync(
+        public async Task<PlacementCreateResult> CreateAsync(
             IEnumerable<PlacementOperationDto> dtos,
             Guid correlationId,
             Guid? causationEventId,
             Actor actor,
             CancellationToken cancellationToken)
         {
+            var operationsByEntity = GroupOperationsByEntity(dtos);
+            var succeededEntityIds = new List<EntityId>();
+            var failures = new List<PlacementFailure>();
 
-            foreach (var dto in dtos)
+            foreach (var entityGroup in operationsByEntity)
             {
-                var entityIds = dto.Dto.EntityIds.ToArray();
-
-                var (column, board) = await ValidateAsync(dto);
-
-                using var connection = _connectionFactory.CreateConnection();
-
-                await connection.OpenAsync(cancellationToken);
-
-                using var transaction = await connection.BeginTransactionAsync(cancellationToken);
-
                 try
                 {
-                    var columnsToLock = dto.SourceColumnIds
-                        .Append(dto.Dto.ColumnId)
-                        .Distinct()
-                        .OrderBy(id => id.Id)
-                        .ToArray();
+                    await ProcessEntityGroupAsync(
+                        entityGroup,
+                        correlationId,
+                        causationEventId,
+                        actor,
+                        cancellationToken);
 
-                    foreach (var columnId in columnsToLock)
-                    {
-                        await _repository.AcquireSortKeyLockAsync(
-                            transaction, columnId, cancellationToken);
-                    }
-
-                    var range = await GetSortKeyRangeAsync(
-                        dto.Dto, transaction, cancellationToken);
-                    var placements = new List<Placement>();
-                    var previous = range.Previous;
-                    var next = range.Next;
-
-                    foreach (var entityId in entityIds)
-                    {
-                        var sortKey = OrderKeyGenerator.GenerateKeyBetween(previous, next);
-                        placements.Add(Placement.Create(entityId, board.Id, column.Id, sortKey));
-                        previous = sortKey;
-                    }
-
-                    await _repository.CreateAsync(
-                        placements,
-                        transaction);
-
-                    foreach (var placement in placements)
-                    {
-                        var integrationEvent =
-                            IntegrationEventFactory.CreatePlacementCreated(
-                                entityId: placement.EntityId.Id,
-                                columnId: placement.ColumnId.Id,
-                                correlationId: correlationId,
-                                causationEventId: causationEventId,
-                                actor: actor);
-
-                        var message = new OutboxMessage(
-                            Id: integrationEvent.EventId,
-                            EventType: integrationEvent.EventType,
-                            Content: JsonSerializer.Serialize(integrationEvent),
-                            OccurredOn: DateTime.UtcNow,
-                            ProcessedOn: null,
-                            Error: null);
-
-                        await _outboxRepository.AddAsync(
-                            message,
-                            transaction,
-                            cancellationToken);
-                    }
-
-                    await transaction.CommitAsync(cancellationToken);
+                    succeededEntityIds.Add(entityGroup.EntityId);
                 }
-                catch
+                catch (Exception exception) when (IsPlacementFailure(exception))
                 {
-                    await transaction.RollbackAsync(cancellationToken);
-                    throw;
+                    failures.Add(new PlacementFailure(
+                        entityGroup.EntityId,
+                        exception.Message));
                 }
             }
+
+            return new PlacementCreateResult(succeededEntityIds, failures);
         }
 
         /// <summary>
@@ -199,7 +124,202 @@ namespace kanban_lia.Services.Placements
             return _mapper.Map<IEnumerable<PlacementDto>>(placements);
         }
 
-        // helper methods
+        //HELPER METHODS
+
+        private static bool IsPlacementFailure(Exception exception)
+        {
+            return exception is ColumnNotFoundException
+                or BoardNotFoundException
+                or InvalidDomainException
+                or ArgumentException
+                || exception is Microsoft.Data.SqlClient.SqlException
+                { Number: 547 or 2601 or 2627 };
+        }
+
+        private static EntityPlacementGroup[] GroupOperationsByEntity(
+            IEnumerable<PlacementOperationDto> dtos)
+        {
+            var operations = dtos
+                .Select(operation => operation with
+                {
+                    Dto = operation.Dto with
+                    {
+                        EntityIds = operation.Dto.EntityIds.ToArray(),
+                        AfterEntityIds = operation.Dto.AfterEntityIds.ToArray(),
+                        BeforeEntityIds = operation.Dto.BeforeEntityIds.ToArray()
+                    },
+                    SourceColumnIds = operation.SourceColumnIds.ToArray()
+                })
+                .ToArray();
+
+            return operations
+                .SelectMany(operation =>
+                    operation.Dto.EntityIds.Select(entityId => new
+                    {
+                        EntityId = entityId,
+                        Operation = operation with
+                        {
+                            Dto = operation.Dto with
+                            {
+                                EntityIds = [entityId]
+                            }
+                        }
+                    }))
+                .GroupBy(item => item.EntityId)
+                .Select(group => new EntityPlacementGroup(
+                    group.Key,
+                    group.Select(item => item.Operation).ToArray()))
+                .ToArray();
+        }
+
+        private async Task ProcessEntityGroupAsync(
+            EntityPlacementGroup entityGroup,
+            Guid correlationId,
+            Guid? causationEventId,
+            Actor actor,
+            CancellationToken cancellationToken)
+        {
+            using var connection = _connectionFactory.CreateConnection();
+            await connection.OpenAsync(cancellationToken);
+
+            using var transaction =
+                await connection.BeginTransactionAsync(cancellationToken);
+
+            try
+            {
+                await AcquireSortKeyLocksAsync(
+                    entityGroup,
+                    transaction,
+                    cancellationToken);
+
+                foreach (var operation in entityGroup.Operations)
+                {
+                    await ProcessOperationAsync(
+                        operation,
+                        transaction,
+                        correlationId,
+                        causationEventId,
+                        actor,
+                        cancellationToken);
+                }
+
+                await transaction.CommitAsync(cancellationToken);
+            }
+            catch
+            {
+                // Rollback ska kunna köras även om anropets token har avbrutits.
+                await transaction.RollbackAsync(CancellationToken.None);
+                throw;
+            }
+        }
+
+        private async Task AcquireSortKeyLocksAsync(
+            EntityPlacementGroup entityGroup,
+            IDbTransaction transaction,
+            CancellationToken cancellationToken)
+        {
+            var columnsToLock = entityGroup.Operations
+                .Select(operation => operation.Dto.ColumnId)
+                .Distinct()
+                .OrderBy(columnId => columnId.Id);
+
+            foreach (var columnId in columnsToLock)
+            {
+                await _repository.AcquireSortKeyLockAsync(
+                    transaction,
+                    columnId,
+                    cancellationToken);
+            }
+        }
+
+        private async Task ProcessOperationAsync(
+            PlacementOperationDto operation,
+            IDbTransaction transaction,
+            Guid correlationId,
+            Guid? causationEventId,
+            Actor actor,
+            CancellationToken cancellationToken)
+        {
+            var (column, board) = await ValidateAsync(operation);
+
+            var range = await GetSortKeyRangeAsync(
+                operation.Dto,
+                transaction,
+                cancellationToken);
+
+            var placements = CreatePlacements(
+                operation.Dto.EntityIds,
+                board.Id,
+                column.Id,
+                range);
+
+            await _repository.CreateAsync(placements, transaction);
+
+            foreach (var placement in placements)
+            {
+                await AddPlacementCreatedEventAsync(
+                    placement,
+                    transaction,
+                    correlationId,
+                    causationEventId,
+                    actor,
+                    cancellationToken);
+            }
+        }
+
+        private static List<Placement> CreatePlacements(
+            IEnumerable<EntityId> entityIds,
+            BoardId boardId,
+            ColumnId columnId,
+            SortKeyRange range)
+        {
+            var placements = new List<Placement>();
+            var previous = range.Previous;
+            var next = range.Next;
+
+            foreach (var entityId in entityIds)
+            {
+                var sortKey =
+                    OrderKeyGenerator.GenerateKeyBetween(previous, next);
+
+                placements.Add(
+                    Placement.Create(entityId, boardId, columnId, sortKey));
+
+                previous = sortKey;
+            }
+
+            return placements;
+        }
+
+        private async Task AddPlacementCreatedEventAsync(
+            Placement placement,
+            IDbTransaction transaction,
+            Guid correlationId,
+            Guid? causationEventId,
+            Actor actor,
+            CancellationToken cancellationToken)
+        {
+            var integrationEvent =
+                IntegrationEventFactory.CreatePlacementCreated(
+                    entityId: placement.EntityId.Id,
+                    columnId: placement.ColumnId.Id,
+                    correlationId: correlationId,
+                    causationEventId: causationEventId,
+                    actor: actor);
+
+            var message = new OutboxMessage(
+                Id: integrationEvent.EventId,
+                EventType: integrationEvent.EventType,
+                Content: JsonSerializer.Serialize(integrationEvent),
+                OccurredOn: DateTime.UtcNow,
+                ProcessedOn: null,
+                Error: null);
+
+            await _outboxRepository.AddAsync(
+                message,
+                transaction,
+                cancellationToken);
+        }
 
         /// <summary>
         /// Validates that the specified column and board exist and that placement arguments are consistent.
@@ -250,16 +370,19 @@ namespace kanban_lia.Services.Placements
         }
 
         /// <summary>
-        /// Determines the SortKeyRange for a new placement by inspecting adjacent placements in the specified column.
+        /// Determines the sort-key range for inserting a new placement in the specified column based on adjacent entity
+        /// identifiers.
         /// </summary>
-        /// <remarks>Checks AfterEntityIds first and uses the first entity currently in the same column to
-        /// select a lookup of After. If no matching after-entity is found, checks BeforeEntityIds and uses the first
-        /// matching entity to select a lookup of Before. If neither yields a neighbor, selects Last. The method queries
-        /// the repository for current placements and delegates to the repository's GetSortKeyRangeAsync with the
-        /// determined lookup and neighbor entity identifiers.</remarks>
-        /// <param name="dto">CreatePlacementDto containing BoardId, ColumnId, and ordered AfterEntityIds and BeforeEntityIds used to find
-        /// neighboring placements.</param>
-        /// <returns>A SortKeyRange that defines the sort-key bounds to use when inserting the new placement.</returns>
+        /// <remarks>Prefers an entity from dto.AfterEntityIds that is already in the target column to use
+        /// an After lookup; if none is found, uses the first matching entity from dto.BeforeEntityIds for a Before
+        /// lookup; otherwise defaults to Last. Invokes the repository to obtain the final sort-key range with the
+        /// chosen lookup and adjacent entity identifiers.</remarks>
+        /// <param name="dto">Placement creation details including BoardId, ColumnId, AfterEntityIds, and BeforeEntityIds used to locate
+        /// adjacent placements.</param>
+        /// <param name="transaction">The active database transaction used for repository operations.</param>
+        /// <param name="cancellationToken">A CancellationToken to observe while performing asynchronous repository calls.</param>
+        /// <returns>A SortKeyRange representing the computed range or position for the new placement's sort key within the
+        /// column.</returns>
         private async Task<SortKeyRange> GetSortKeyRangeAsync(
             CreatePlacementDto dto,
             IDbTransaction transaction,
@@ -273,7 +396,9 @@ namespace kanban_lia.Services.Placements
             {
                 var currentPlacements = await _repository.GetCurrentAsync(
                     [entityId],
-                    dto.BoardId);
+                    dto.BoardId,
+                    transaction,
+                    cancellationToken);
 
                 var placement = currentPlacements.FirstOrDefault();
 
@@ -293,7 +418,9 @@ namespace kanban_lia.Services.Placements
                 {
                     var currentPlacements = await _repository.GetCurrentAsync(
                         [entityId],
-                        dto.BoardId);
+                        dto.BoardId,
+                        transaction,
+                        cancellationToken);
 
                     var placement = currentPlacements.FirstOrDefault();
 
@@ -304,14 +431,9 @@ namespace kanban_lia.Services.Placements
                     }
                 }
 
-                if (beforeEntityId is not null)
-                {
-                    lookup = SortKeyLookup.Before;
-                }
-                else
-                {
-                    lookup = SortKeyLookup.Last;
-                }
+                lookup = beforeEntityId is not null
+                    ? SortKeyLookup.Before
+                    : SortKeyLookup.Last;
             }
 
             return await _repository.GetSortKeyRangeAsync(
@@ -322,5 +444,9 @@ namespace kanban_lia.Services.Placements
                 beforeEntityId,
                 cancellationToken);
         }
+
+        private sealed record EntityPlacementGroup(
+            EntityId EntityId,
+            PlacementOperationDto[] Operations);
     }
 }

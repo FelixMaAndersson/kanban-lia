@@ -66,4 +66,56 @@ public class PlacementRepositoryTests(DatabaseFixture database) : IAsyncLifetime
 
         await transaction.RollbackAsync(TestContext.Current.CancellationToken);
     }
+
+    [Fact]
+    public async Task GetCurrentAsync_WithTransaction_CanReadPlacementCreatedInSameTransaction()
+    {
+        // Arrange
+        var cancellationToken = TestContext.Current.CancellationToken;
+        var boardId = Guid.NewGuid();
+        var columnId = Guid.NewGuid();
+        var entityId = new EntityId(Guid.NewGuid());
+
+        await using var connection = _database.DbFactory.CreateConnection();
+        await connection.OpenAsync(cancellationToken);
+
+        await connection.ExecuteAsync(
+            """
+            INSERT INTO dbo.Boards (Id, Title)
+            VALUES (@BoardId, 'Transaction read test');
+
+            INSERT INTO dbo.Columns (Id, BoardId, Title, Position, RequestWritable)
+            VALUES (@ColumnId, @BoardId, 'Column', 1, 1);
+            """,
+            new { BoardId = boardId, ColumnId = columnId });
+
+        var repository = new PlacementRepository(_database.DbFactory);
+        var board = new BoardId(boardId);
+        var column = new ColumnId(columnId);
+
+        await using var transaction =
+            await connection.BeginTransactionAsync(cancellationToken);
+
+        var placement = Placement.Create(
+            entityId,
+            board,
+            column,
+            "a0");
+
+        // Act
+        await repository.CreateAsync([placement], transaction);
+
+        var currentPlacements = await repository.GetCurrentAsync(
+            [entityId],
+            board,
+            transaction,
+            cancellationToken);
+
+        // Assert
+        var currentPlacement = Assert.Single(currentPlacements);
+        Assert.Equal(entityId, currentPlacement.EntityId);
+        Assert.Equal(column, currentPlacement.ColumnId);
+
+        await transaction.RollbackAsync(cancellationToken);
+    }
 }
