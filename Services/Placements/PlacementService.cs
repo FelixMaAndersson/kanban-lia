@@ -42,7 +42,8 @@ namespace kanban_lia.Services.Placements
             Guid correlationId,
             Guid? causationEventId,
             Actor actor,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            BoardId? requestingBoardId = null)
         {
             var operationsByEntity = GroupOperationsByEntity(dtos);
             var succeededEntityIds = new List<EntityId>();
@@ -57,7 +58,8 @@ namespace kanban_lia.Services.Placements
                         correlationId,
                         causationEventId,
                         actor,
-                        cancellationToken);
+                        cancellationToken,
+                        requestingBoardId);
 
                     succeededEntityIds.Add(entityGroup.EntityId);
                 }
@@ -177,7 +179,8 @@ namespace kanban_lia.Services.Placements
             Guid correlationId,
             Guid? causationEventId,
             Actor actor,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            BoardId? requestingBoardId)
         {
             using var connection = _connectionFactory.CreateConnection();
             await connection.OpenAsync(cancellationToken);
@@ -200,7 +203,8 @@ namespace kanban_lia.Services.Placements
                         correlationId,
                         causationEventId,
                         actor,
-                        cancellationToken);
+                        cancellationToken,
+                        requestingBoardId);
                 }
 
                 await transaction.CommitAsync(cancellationToken);
@@ -238,9 +242,10 @@ namespace kanban_lia.Services.Placements
             Guid correlationId,
             Guid? causationEventId,
             Actor actor,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            BoardId? requestingBoardId)
         {
-            var (column, board) = await ValidateAsync(operation);
+            var (column, board) = await ValidateAsync(operation, requestingBoardId);
 
             var range = await GetSortKeyRangeAsync(
                 operation.Dto,
@@ -328,10 +333,13 @@ namespace kanban_lia.Services.Placements
         /// identifiers (AfterEntityIds/BeforeEntityIds).</param>
         /// <returns>A tuple containing the validated Column and Board.</returns>
         /// <exception cref="ColumnNotFoundException">Thrown when a column with the specified ID cannot be found.</exception>
+        /// <exception cref="ColumnNotWritableException">Thrown when a column is not writable, hence the placement cannot be created inside of it.</exception>
         /// <exception cref="BoardNotFoundException">Thrown when a board with the specified ID cannot be found.</exception>
         /// <exception cref="InvalidDomainException">Thrown when the column does not belong to the specified board, or when both AfterEntityIds and
         /// BeforeEntityIds are provided.</exception>
-        private async Task<(Column column, Board board)> ValidateAsync(PlacementOperationDto dto)
+        private async Task<(Column column, Board board)> ValidateAsync(
+            PlacementOperationDto dto,
+            BoardId? requestingBoardId)
         {
             var column = await _columnRepository.GetByIdAsync(dto.Dto.ColumnId);
 
@@ -340,6 +348,12 @@ namespace kanban_lia.Services.Placements
             if (column is null)
             {
                 throw new ColumnNotFoundException(dto.Dto.ColumnId);
+            }
+
+            if (!column.RequestWritable
+                && (requestingBoardId is null || column.BoardId == requestingBoardId))
+            {
+                throw new ColumnNotWritableException(column.Id);
             }
 
             if (board is null)
