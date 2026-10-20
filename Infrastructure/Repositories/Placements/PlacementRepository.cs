@@ -116,15 +116,7 @@ namespace kanban_lia.Infrastructure.Repositories.Placements
                     transaction));
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="entityIds"></param>
-        /// <param name="boardId"></param>
-        /// <param name="transaction"></param>
-        /// <param name="cancellationToken"></param>
-        /// <returns></returns>
-        /// <exception cref="InvalidOperationException"></exception>
+        // see comments above about concurrent moves and tie-breakers
         public async Task<IEnumerable<Placement>> GetCurrentAsync(
             IEnumerable<EntityId> entityIds,
             BoardId boardId,
@@ -175,6 +167,7 @@ namespace kanban_lia.Infrastructure.Repositories.Placements
                     cancellationToken: cancellationToken));
         }
 
+        // see comments above about concurrent moves and tie-breakers
         public async Task<IEnumerable<Placement>> GetCurrentAsync(
             IEnumerable<EntityId> entityIds,
             BoardId boardId)
@@ -217,6 +210,7 @@ namespace kanban_lia.Infrastructure.Repositories.Placements
                 });
         }
 
+        // see comments above about concurrent moves and tie-breakers
         public async Task<IEnumerable<Placement>> GetCurrentByColumnAsync(
             ColumnId columnId,
             BoardId boardId)
@@ -262,6 +256,7 @@ namespace kanban_lia.Infrastructure.Repositories.Placements
         //since we now have BoardID in placement, we can just use that to get all placements for a board.
         //if something crashes this change might be the bad guy,
         //but it should be fine since we are not using the columnID for anything else.
+        // ALSO: see comments above about concurrent moves and tie-breakers
         public async Task<IEnumerable<Placement>> GetCurrentByBoardAsync(BoardId boardId)
         {
             using var connection = _connectionFactory.CreateConnection();
@@ -304,6 +299,7 @@ namespace kanban_lia.Infrastructure.Repositories.Placements
                 });
         }
 
+        // see comments above about concurrent moves and tie-breakers
         /// <summary>
         /// Retrieves the previous and next sort keys for inserting or moving an entity within a column asynchronously.
         /// </summary>
