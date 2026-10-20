@@ -19,8 +19,6 @@ using Microsoft.Extensions.Logging.Abstractions;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Text.Json;
-using static kanban_lia.Infrastructure.Schemas.Schema;
-using static Microsoft.ApplicationInsights.MetricDimensionNames.TelemetryContext;
 
 namespace kanban_lia.Integration.Tests.Services
 {
