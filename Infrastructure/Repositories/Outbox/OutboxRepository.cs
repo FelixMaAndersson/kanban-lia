@@ -61,9 +61,9 @@ namespace kanban_lia.Infrastructure.Repositories.Outbox
             """;
 
             var rows = await connection.QueryAsync<OutboxMessageRow>(
-    new CommandDefinition(
-        sql,
-        cancellationToken: cancellationToken));
+                new CommandDefinition(
+                    sql,
+                    cancellationToken: cancellationToken));
 
             return rows.Select(row => new OutboxMessage(
                 row.Id,
@@ -98,23 +98,25 @@ namespace kanban_lia.Infrastructure.Repositories.Outbox
                     cancellationToken: cancellationToken));
         }
 
-        public async Task MarkAsFailedAsync(Guid id,
+        public async Task MarkAsFailedAsync(
+            Guid id,
             string error,
             CancellationToken cancellationToken)
         {
             using var connection = _connectionFactory.CreateConnection();
 
-            const string sql = $"""
-            UPDATE {Schema.OutBoxMessages.Table}
-            SET {Schema.OutBoxMessages.Error} = @Error,
-                {Schema.OutBoxMessages.RetryCount} = {Schema.OutBoxMessages.RetryCount} + 1,
-                {Schema.OutBoxMessages.ProcessedOn} = CASE
-                    WHEN {Schema.OutBoxMessages.RetryCount} + 1 >= @MaxAttempts THEN @ProcessedOn
-                    ELSE NULL
-                 END
-             WHERE {Schema.OutBoxMessages.Id} = @Id
-              AND {Schema.OutBoxMessages.ProcessedOn} IS NULL;
-            """;
+            const string sql =
+                $"""
+                UPDATE {Schema.OutBoxMessages.Table}
+                SET {Schema.OutBoxMessages.Error} = @Error,
+                    {Schema.OutBoxMessages.RetryCount} = {Schema.OutBoxMessages.RetryCount} + 1,
+                    {Schema.OutBoxMessages.ProcessedOn} = CASE
+                        WHEN {Schema.OutBoxMessages.RetryCount} + 1 >= @MaxAttempts THEN @ProcessedOn
+                        ELSE NULL
+                     END
+                 WHERE {Schema.OutBoxMessages.Id} = @Id
+                  AND {Schema.OutBoxMessages.ProcessedOn} IS NULL;
+                """;
 
             await connection.ExecuteAsync(
                 new CommandDefinition(
@@ -128,7 +130,7 @@ namespace kanban_lia.Infrastructure.Repositories.Outbox
                     },
                     cancellationToken: cancellationToken));
         }
-        #pragma warning disable S1144
+#pragma warning disable S1144
         private sealed class OutboxMessageRow
         {
             public Guid Id { get; set; }
@@ -139,6 +141,6 @@ namespace kanban_lia.Infrastructure.Repositories.Outbox
             public string? Error { get; set; }
             public int RetryCount { get; set; }
         }
-        #pragma warning restore S1144
+#pragma warning restore S1144
     }
 }
