@@ -78,6 +78,184 @@ namespace kanban_lia.Integration.Tests.Services
         }
 
         [Fact]
+        public async Task GetCurrentAsync_ReturnsLatestPerEntity()
+        {
+            // Arrange
+            var cancellationToken = TestContext.Current.CancellationToken;
+            var boardId = await _boardService.CreateAsync("Testboard");
+            var columnId1 = new ColumnId(Guid.NewGuid());
+            var columnId2 = new ColumnId(Guid.NewGuid());
+            var entityId = new EntityId(Guid.NewGuid());
+
+            await _columnService.CreateAsync(
+                new CreateColumnDto(columnId1, "Column 1", 1, boardId, true),
+                Guid.NewGuid(),
+                new Actor("-1", "TestActor"),
+                cancellationToken);
+
+            await _columnService.CreateAsync(
+                new CreateColumnDto(columnId2, "Column 2", 2, boardId, true),
+                Guid.NewGuid(),
+                new Actor("-1", "TestActor"),
+                cancellationToken);
+
+            var operation1 = new PlacementOperationDto(
+                new CreatePlacementDto([entityId], boardId, columnId1, [], []),
+                []);
+            var operation2 = new PlacementOperationDto(
+                new CreatePlacementDto([entityId], boardId, columnId2, [], []),
+                []);
+
+            // Act
+            var firstResult = await _placementService.CreateAsync(
+                [operation1],
+                Guid.NewGuid(),
+                null,
+                new Actor("-1", "TestActor"),
+                cancellationToken);
+
+            var secondResult = await _placementService.CreateAsync(
+                [operation2],
+                Guid.NewGuid(),
+                null,
+                new Actor("-1", "TestActor"),
+                cancellationToken);
+
+            // Assert
+            Assert.Contains(entityId, firstResult.SucceededEntityIds);
+            Assert.Empty(firstResult.Failures);
+            Assert.Contains(entityId, secondResult.SucceededEntityIds);
+            Assert.Empty(secondResult.Failures);
+            var placements = await _repository.GetCurrentAsync([entityId], boardId);
+            Assert.Equal(columnId2, Assert.Single(placements).ColumnId);
+        }
+
+        [Fact]
+        public async Task GetCurrentByColumnAsync_SortedByBinaryCollation()
+        {
+            // Arrange
+            var cancellationToken = TestContext.Current.CancellationToken;
+            var boardId = await _boardService.CreateAsync("Testboard");
+            var columnId = new ColumnId(Guid.NewGuid());
+
+            await _columnService.CreateAsync(
+                new CreateColumnDto(columnId, "Column 1", 1, boardId, true),
+                Guid.NewGuid(),
+                new Actor("-1", "TestActor"),
+                cancellationToken);
+
+            var entityIds = Enumerable.Range(0, 10)
+                .Select(_ => new EntityId(Guid.NewGuid()))
+                .ToArray();
+
+            var operations = entityIds.Select(entityId =>
+                new PlacementOperationDto(
+                    new CreatePlacementDto([entityId], boardId, columnId, [], []),
+                    [])).ToArray();
+            
+            // Act
+            var result = await _placementService.CreateAsync(
+                operations,
+                Guid.NewGuid(),
+                null,
+                new Actor("-1", "TestActor"),
+                cancellationToken);
+            
+            // Assert
+            var placements = (await _repository.GetCurrentByColumnAsync(columnId, boardId))
+                .ToArray();
+
+            Assert.Equal(entityIds, result.SucceededEntityIds);
+            Assert.Empty(result.Failures);
+
+            Assert.Equal(entityIds.Length, placements.Length);
+            Assert.Equal(
+                placements.Length,
+                placements.Select(placement => placement.SortKey).Distinct().Count());
+            
+            for (var i = 1; i < placements.Length; i++)
+            {
+                Assert.True(
+                    string.CompareOrdinal(
+                        placements[i - 1].SortKey,
+                        placements[i].SortKey) < 0,
+                    $"Expected placement {i} to be after placement {i - 1}. " +
+                    $"placement {i - 1} SortKey: '{placements[i - 1].SortKey}', " +
+                    $"placement {i} SortKey: '{placements[i].SortKey}'");
+            }
+        }
+
+
+        [Fact]
+        public async Task GetCurrentByBoardAsync_GroupsByColumn()
+        {
+            // Arrange
+            var cancellationToken = TestContext.Current.CancellationToken;
+            var boardId = await _boardService.CreateAsync("Testboard");
+            var columnId1 = new ColumnId(Guid.NewGuid());
+            var columnId2 = new ColumnId(Guid.NewGuid());
+            
+            await _columnService.CreateAsync(
+                new CreateColumnDto(columnId1, "Column 1", 1, boardId, true),
+                Guid.NewGuid(),
+                new Actor("-1", "TestActor"),
+                cancellationToken);
+            
+            await _columnService.CreateAsync(
+                new CreateColumnDto(columnId2, "Column 2", 2, boardId, true),
+                Guid.NewGuid(),
+                new Actor("-1", "TestActor"),
+                cancellationToken);
+            
+            var entityIdsColumn1 = Enumerable.Range(0, 5)
+                .Select(_ => new EntityId(Guid.NewGuid()))
+                .ToArray();         
+            var entityIdsColumn2 = Enumerable.Range(0, 5)
+                .Select(_ => new EntityId(Guid.NewGuid()))
+                .ToArray();
+            
+            var operationsColumn1 = entityIdsColumn1.Select(entityId =>
+                new PlacementOperationDto(
+                    new CreatePlacementDto([entityId], boardId, columnId1, [], []),
+                    [])).ToArray();
+            var operationsColumn2 = entityIdsColumn2.Select(entityId =>
+                new PlacementOperationDto(
+                    new CreatePlacementDto([entityId], boardId, columnId2, [], []),
+                    [])).ToArray();
+            
+            // Act
+            await _placementService.CreateAsync(
+                operationsColumn1,
+                Guid.NewGuid(),
+                null,
+                new Actor("-1", "TestActor"),
+                cancellationToken);
+            await _placementService.CreateAsync(
+                operationsColumn2,
+                Guid.NewGuid(),
+                null,
+                new Actor("-1", "TestActor"),
+                cancellationToken);
+
+            // Assert
+            var placementsByBoard = (await _repository.GetCurrentByBoardAsync(boardId))
+                .GroupBy(placement => placement.ColumnId)
+                .ToDictionary(group => group.Key, group => group.ToList());
+            Assert.Equal(2, placementsByBoard.Count);
+
+            Assert.Equal(
+                entityIdsColumn1,
+                placementsByBoard[columnId1].Select(placement => placement.EntityId));
+
+            Assert.Equal(
+                entityIdsColumn2,
+                placementsByBoard[columnId2].Select(placement => placement.EntityId));
+
+            Assert.Equal(entityIdsColumn1.Length, placementsByBoard[columnId1].Count);
+            Assert.Equal(entityIdsColumn2.Length, placementsByBoard[columnId2].Count);
+        }
+
+        [Fact]
         public async Task CreateAsync_WithAfterEntityId_UsesAfterLookup()
         {
             // Arrange
@@ -642,8 +820,6 @@ namespace kanban_lia.Integration.Tests.Services
                     []),
                 []);
 
-            // Kolumnen tillhör firstBoardId, så operationen ska misslyckas
-            // när den anges tillsammans med secondBoardId.
             var failingOperation = new PlacementOperationDto(
                 new CreatePlacementDto(
                     [entityId],
@@ -1008,6 +1184,242 @@ namespace kanban_lia.Integration.Tests.Services
                     failures.Add($"Entity {entityId.Id}: {error}");
                 }
             }
+        }
+
+        [Fact]
+        public async Task CreateAsync_UnknownBoard_ReturnsFailure()
+        {
+            // Arrange
+            var expectedBoardId = await _boardService.CreateAsync("Expected board");
+            var columnId = new ColumnId(Guid.NewGuid());
+            var cancellationToken = TestContext.Current.CancellationToken;
+
+            await _columnService.CreateAsync(
+                new CreateColumnDto(columnId, "Column 1", 1, expectedBoardId, true),
+                Guid.NewGuid(),
+                new Actor("-1", "TestActor"),
+                cancellationToken);
+
+            var unknownBoardId = new BoardId(Guid.NewGuid());
+            var entityId = new EntityId(Guid.NewGuid());
+
+            var operation = new PlacementOperationDto(
+                new CreatePlacementDto([entityId], unknownBoardId, columnId, [], []),
+                []);
+
+            // Act
+            var result = await _placementService.CreateAsync(
+                [operation],
+                Guid.NewGuid(),
+                null,
+                new Actor("-1", "TestActor"),
+                cancellationToken);
+
+            // Assert
+            Assert.Empty(result.SucceededEntityIds);
+
+            var failure = Assert.Single(result.Failures);
+            Assert.Contains("Board with id", failure.Error);
+            Assert.Contains(unknownBoardId.Id.ToString(), failure.Error);
+        }
+
+        [Fact]
+        public async Task CreateAsync_MultipleIds_StrictlyIncreasingSortKeys()
+        {
+            // Arrange
+            var cancellationToken = TestContext.Current.CancellationToken;
+            var boardId = await _boardService.CreateAsync("Testboard");
+            var columnId = new ColumnId(Guid.NewGuid());
+
+            var entityIds = Enumerable.Range(0, 10)
+                .Select(_ => new EntityId(Guid.NewGuid()))
+                .ToArray();
+
+            var operation = new PlacementOperationDto(
+                new CreatePlacementDto(entityIds, boardId, columnId, [], []),
+                []);
+
+            // Act
+            var result = await _placementService.CreateAsync(
+                [operation],
+                Guid.NewGuid(),
+                null,
+                new Actor("-1", "TestActor"),
+                cancellationToken);
+
+            // Assert
+            Assert.Equal(entityIds, result.SucceededEntityIds);
+
+            var placements = (await _repository.GetCurrentByColumnAsync(columnId, boardId))
+                .ToArray();
+
+            Assert.Equal(entityIds.Length, placements.Length);
+            Assert.Equal(entityIds, placements.Select(p => p.EntityId));
+
+            for (var i = 1; i < placements.Length; i++)
+            {
+                Assert.True(
+                    StringComparer.Ordinal.Compare(
+                        placements[i - 1].SortKey,
+                        placements[i].SortKey) < 0,
+                    "Sort keys should be strictly increasing.");
+            }
+        }
+
+        [Fact]
+        public async Task CreateAsync_WritesOneOutboxRowPerPlacement()
+        {
+            // Arrange
+            var boardId = await _boardService.CreateAsync("Testboard");
+            var columnId = new ColumnId(Guid.NewGuid());
+            var cancellationToken = TestContext.Current.CancellationToken;
+            var entityIds = Enumerable.Range(0, 5)
+            .Select(_ => new EntityId(Guid.NewGuid()))
+            .ToArray();
+
+            var operation = new PlacementOperationDto(
+                new CreatePlacementDto(entityIds, boardId, columnId, [], []),
+                []);
+
+            var outboxRepository = new OutboxRepository(_database.DbFactory);
+
+            await _columnService.CreateAsync(
+                new CreateColumnDto(columnId, "Column 1", 1, boardId, true),
+                Guid.NewGuid(),
+                new Actor("-1", "TestActor"),
+                cancellationToken);
+
+            var outboxBefore = (await outboxRepository.GetUnprocessedAsync(cancellationToken))
+                .Select(message => message.Id)
+                .ToHashSet();
+
+            // Act
+            var result = await _placementService.CreateAsync(
+                [operation],
+                Guid.NewGuid(),
+                null,
+                new Actor("-1", "TestActor"),
+                cancellationToken);
+
+            // Assert
+            Assert.Equal(entityIds, result.SucceededEntityIds);
+            Assert.Empty(result.Failures);
+
+            var outboxAfter = await outboxRepository.GetUnprocessedAsync(cancellationToken);
+            var newMessages = outboxAfter
+                .Where(message => !outboxBefore.Contains(message.Id))
+                .ToArray();
+
+            Assert.Equal(entityIds.Length, newMessages.Length);
+        }
+
+        [Fact]
+        public async Task CreateAsync_CorrelationHeaders_EndUpInOutBox()
+        {
+            // Arrange
+            var boardId = await _boardService.CreateAsync("Testboard");
+            var columnId = new ColumnId(Guid.NewGuid());
+            var cancellationToken = TestContext.Current.CancellationToken;
+            var entityIds = Enumerable.Range(0, 3)
+                .Select(_ => new EntityId(Guid.NewGuid()))
+                .ToArray();
+            var operation = new PlacementOperationDto(
+                new CreatePlacementDto(entityIds, boardId, columnId, [], []),
+                []);
+            var outboxRepository = new OutboxRepository(_database.DbFactory);
+            
+            await _columnService.CreateAsync(
+                new CreateColumnDto(columnId, "Column 1", 1, boardId, true),
+                Guid.NewGuid(),
+                new Actor("-1", "TestActor"),
+                cancellationToken);
+            
+            var correlationId = Guid.NewGuid();
+            var causationEventId = Guid.NewGuid();
+
+            var outboxBefore = (await outboxRepository.GetUnprocessedAsync(cancellationToken))
+                .Select(message => message.Id)
+                .ToHashSet();
+
+            // Act
+            var result = await _placementService.CreateAsync(
+                [operation],
+                correlationId,
+                causationEventId,
+                new Actor("-1", "TestActor"),
+                cancellationToken);
+
+            // Assert
+            Assert.Equal(entityIds, result.SucceededEntityIds);
+            Assert.Empty(result.Failures);
+
+            var outboxAfter = await outboxRepository.GetUnprocessedAsync(cancellationToken);
+            var newMessages = outboxAfter
+                .Where(message => !outboxBefore.Contains(message.Id))
+                .ToArray();
+
+            Assert.Equal(entityIds.Length, newMessages.Length);
+
+            Assert.All(newMessages, message =>
+            {
+                using var document = JsonDocument.Parse(message.Content);
+                var root = document.RootElement;
+
+                Assert.Equal(
+                    correlationId,
+                    root.GetProperty("correlationId").GetGuid());
+
+                Assert.Equal(
+                    causationEventId,
+                    root.GetProperty("causationEventId").GetGuid());
+            });
+        }
+
+        [Fact]
+        public async Task CreateAsync_SecondOpInvalid_FirstRemainsCommitted()
+        {
+            // Arrange
+            var cancellationToken = TestContext.Current.CancellationToken;
+            var boardId = await _boardService.CreateAsync("Testboard");
+            var columnId = new ColumnId(Guid.NewGuid());
+            var entityId1 = new EntityId(Guid.NewGuid());
+            var entityId2 = new EntityId(Guid.NewGuid());
+
+            await _columnService.CreateAsync(
+                new CreateColumnDto(columnId, "Column 1", 1, boardId, true),
+                Guid.NewGuid(),
+                new Actor("-1", "TestActor"),
+                cancellationToken);
+
+            var operation1 = new PlacementOperationDto(
+                new CreatePlacementDto([entityId1], boardId, columnId, [], []),
+                []);
+            var operation2 = new PlacementOperationDto(
+                new CreatePlacementDto([entityId2], boardId, new ColumnId(Guid.NewGuid()), [], []),
+                []);
+
+            // Act
+            var result = await _placementService.CreateAsync(
+                [operation1, operation2],
+                Guid.NewGuid(),
+                null,
+                new Actor("-1", "TestActor"),
+                cancellationToken);
+
+            // Assert
+            Assert.Contains(entityId1, result.SucceededEntityIds);
+            Assert.DoesNotContain(entityId2, result.SucceededEntityIds);
+
+            var placement1 = await _repository.GetCurrentAsync([entityId1], boardId);
+
+            Assert.Equal(columnId, Assert.Single(placement1).ColumnId);
+
+            var placement2 = await _repository.GetCurrentAsync([entityId2], boardId);
+
+            Assert.Empty(placement2);
+
+            var failure = Assert.Single(result.Failures);
+            Assert.Equal(entityId2, failure.EntityId);
         }
 
         private sealed record ConnectedRejectSetup(
