@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Text.Json;
 
 using kanban_lia.Infrastructure.Repositories.Boards;
 using kanban_lia.Infrastructure.Repositories.Columns;
@@ -1238,6 +1239,12 @@ namespace kanban_lia.Integration.Tests.Services
             var operation = new PlacementOperationDto(
                 new CreatePlacementDto(entityIds, boardId, columnId, [], []),
                 []);
+
+            await _columnService.CreateAsync(
+                new CreateColumnDto(columnId, "Column 1", 1, boardId, true),
+                Guid.NewGuid(),
+                new Actor("-1", "TestActor"),
+                cancellationToken);
 
             // Act
             var result = await _placementService.CreateAsync(

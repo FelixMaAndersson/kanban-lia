@@ -80,6 +80,9 @@ builder.Services.Configure<RabbitMqOptions>(builder.Configuration.GetSection("Ra
 
 var app = builder.Build();
 
+var exceptionLogger = app.Services.GetRequiredService<ILoggerFactory>()
+    .CreateLogger("GlobalExceptionHandler");
+
 app.UseExceptionHandler(errorApp =>
 {
     errorApp.Run(async context =>
@@ -104,7 +107,25 @@ app.UseExceptionHandler(errorApp =>
             _ => StatusCodes.Status500InternalServerError
         };
 
+        var isUnexpected = statusCode == StatusCodes.Status500InternalServerError;
+
+        if (isUnexpected)
+        {
+            exceptionLogger.LogError(
+                exception,
+                "Unhandled exception while processing {Method} {Path}",
+                context.Request.Method,
+                context.Request.Path);
+        }
+
         context.Response.StatusCode = statusCode;
+
+        string? detail = statusCode switch
+        {
+            StatusCodes.Status500InternalServerError => null,
+            _ when exception is SqlException => "The operation could not be completed due to a data conflict.",
+            _ => exception?.Message
+        };
 
         await Results.Problem(
             statusCode: statusCode,
@@ -120,11 +141,9 @@ app.UseExceptionHandler(errorApp =>
                 ArgumentException => "Invalid request parameters",
                 SqlException { Number: 547 } => "Operation conflicts with related records",
                 SqlException { Number: 2627 } or SqlException { Number: 2601 } => "A record with the same key already exists",
-                _ => "Internal server error"
+                _ => "An unexpected error occurred"
             },
-            detail: exception is SqlException
-                ? "The operation could not be completed due to a data conflict."
-                : exception?.Message
+            detail: detail
         ).ExecuteAsync(context);
     });
 });

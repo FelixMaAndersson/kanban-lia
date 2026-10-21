@@ -15,9 +15,11 @@ namespace kanban_lia.Infrastructure.Repositories.Outbox
     /// swallowed, so the loop keeps polling until the host is stopped.</remarks>
     /// <param name="scopeFactory">Factory used to create a fresh service scope on every polling pass.</param>
     /// <param name="integrationEventPublisher">Publisher used to deliver each unprocessed outbox message.</param>
+    /// <param name="logger">Logger used for start-up, per-message progress and failure reporting.</param>
     public sealed class OutboxWorker(
         IServiceScopeFactory scopeFactory,
-        IIntegrationEventPublisher integrationEventPublisher)
+        IIntegrationEventPublisher integrationEventPublisher,
+        ILogger<OutboxWorker> logger)
         : BackgroundService
     {
         /// <summary>
@@ -25,7 +27,7 @@ namespace kanban_lia.Infrastructure.Repositories.Outbox
         /// </summary>
         /// <remarks>Each iteration creates its own service scope, publishes every currently unprocessed message and
         /// then waits one second before polling again. Per-message errors are recorded via MarkAsFailedAsync and
-        /// loop-level errors are written to the console; neither rethrows. The loop exits when
+        /// loop-level errors are logged; neither rethrows. The loop exits when
         /// <paramref name="stoppingToken"/> is canceled, which happens on host shutdown.</remarks>
         /// <param name="stoppingToken">Token canceled when the host is shutting down.</param>
         /// <returns>A task that completes when the loop has been canceled.</returns>
@@ -35,7 +37,7 @@ namespace kanban_lia.Infrastructure.Repositories.Outbox
         protected override async Task ExecuteAsync(
             CancellationToken stoppingToken)
         {
-            Console.WriteLine("[OutboxWorker] ExecuteAsync started");
+            logger.LogInformation("[OutboxWorker] ExecuteAsync started");
             while (!stoppingToken.IsCancellationRequested)
             {
                 try
@@ -48,34 +50,41 @@ namespace kanban_lia.Infrastructure.Repositories.Outbox
                     var messages =
                         await outboxRepository.GetUnprocessedAsync(stoppingToken);
 
-                    Console.WriteLine(
-                        $"[OutboxWorker] Found {messages.Count()} unprocessed message(s).");
+                    logger.LogInformation(
+                        "[OutboxWorker] Found {MessageCount} unprocessed message(s).",
+                        messages.Count());
 
                     foreach (var message in messages)
                     {
                         try
                         {
-                            Console.WriteLine(
-                                $"[OutboxWorker] Publishing {message.Id} ({message.EventType}).");
+                            logger.LogInformation(
+                                "[OutboxWorker] Publishing {MessageId} ({EventType}).",
+                                message.Id,
+                                message.EventType);
                             await integrationEventPublisher.PublishAsync(
                                 message.Id,
                                 message.EventType,
                                 message.Content,
                                 stoppingToken);
-                            Console.WriteLine(
-                                $"[OutboxWorker] Publish completed for {message.Id}.");
+                            logger.LogInformation(
+                                "[OutboxWorker] Publish completed for {MessageId}.",
+                                message.Id);
 
                             await outboxRepository.MarkAsProcessedAsync(
                                 message.Id,
                                 stoppingToken);
 
-                            Console.WriteLine(
-                                $"[OutboxWorker] Marked {message.Id} as processed.");
+                            logger.LogInformation(
+                                "[OutboxWorker] Marked {MessageId} as processed.",
+                                message.Id);
                         }
                         catch (Exception ex)
                         {
-                            Console.WriteLine(
-                                $"[OutboxWorker] Failed to process {message.Id}: {ex}");
+                            logger.LogError(
+                                ex,
+                                "[OutboxWorker] Failed to process {MessageId}.",
+                                message.Id);
 
                             await outboxRepository.MarkAsFailedAsync(
                                 message.Id,
@@ -86,8 +95,9 @@ namespace kanban_lia.Infrastructure.Repositories.Outbox
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine(
-                        $"[OutboxWorker] Failed to process messages: {ex}");
+                    logger.LogError(
+                        ex,
+                        "[OutboxWorker] Failed to process messages.");
                 }
 
                 await Task.Delay(
