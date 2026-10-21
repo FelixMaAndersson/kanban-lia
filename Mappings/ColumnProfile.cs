@@ -8,8 +8,17 @@ using kanban_lia.Services.Columns.DTOs;
 
 namespace kanban_lia.Mappings
 {
+    /// <summary>
+    /// AutoMapper profile defining mappings for column requests, DTOs and domain objects.
+    /// </summary>
+    /// <remarks>Maps CreateColumnRequest onto CreateColumnDto (leaving the column ID null so the domain layer
+    /// generates one) and RenameColumnRequest onto RenameColumnDto (wrapping the raw ID in a ColumnId), plus the
+    /// domain Column onto its ColumnDto projection.</remarks>
     public class ColumnProfile : Profile
     {
+        /// <summary>
+        /// Creates the profile and registers the column mapping configuration.
+        /// </summary>
         public ColumnProfile()
         {
             CreateMap<CreateColumnRequest, CreateColumnDto>()

@@ -1,4 +1,5 @@
 ﻿using Dapper;
+
 using kanban_lia.Infrastructure.Database;
 using kanban_lia.Infrastructure.Schemas;
 using kanban_lia.Models.Domain.Boards;
@@ -6,10 +7,22 @@ using kanban_lia.Models.Domain.Columns;
 
 namespace kanban_lia.Infrastructure.Repositories.Columns
 {
+    /// <summary>
+    /// Dapper repository for reading and writing column edges, which model connectivity between columns (including
+    /// across boards).
+    /// </summary>
+    /// <remarks>Edges are treated as undirected for existence checks and deletes: a stored edge matches the requested
+    /// column pair in either direction. Each method opens its own connection through
+    /// <see cref="DbConnectionFactory"/>.</remarks>
     public class ColumnEdgeRepository(DbConnectionFactory connectionFactory) : IColumnEdgeRepository
     {
         private readonly DbConnectionFactory _connectionFactory = connectionFactory;
 
+        /// <summary>
+        /// Inserts the given column edge into the database.
+        /// </summary>
+        /// <param name="columnEdge">The edge to insert; its FromColumnId and ToColumnId are stored as given.</param>
+        /// <returns>A task that completes when the row has been inserted.</returns>
         public async Task CreateAsync(ColumnEdge columnEdge)
         {
             using var connection = _connectionFactory.CreateConnection();
@@ -28,6 +41,12 @@ namespace kanban_lia.Infrastructure.Repositories.Columns
             );
         }
 
+        /// <summary>
+        /// Determines whether an edge connecting the two given columns already exists, in either direction.
+        /// </summary>
+        /// <param name="columnEdge">The candidate edge whose column pair is searched for.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result is <see langword="true"/> if a
+        /// matching edge exists in either direction; otherwise, <see langword="false"/>.</returns>
         public async Task<bool> ExistsAsync(ColumnEdge columnEdge)
         {
             using var connection = _connectionFactory.CreateConnection();
@@ -48,6 +67,12 @@ namespace kanban_lia.Infrastructure.Repositories.Columns
 
             return count > 0;
         }
+        /// <summary>
+        /// Gets all edges that touch any column belonging to the given board.
+        /// </summary>
+        /// <param name="boardId">Identifier of the board whose columns are used to match either edge endpoint.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result contains the matching edges.
+        /// </returns>
         public async Task<IEnumerable<ColumnEdge>> GetByBoardIdAsync(BoardId boardId)
         {
             using var connection = _connectionFactory.CreateConnection();
@@ -72,6 +97,12 @@ namespace kanban_lia.Infrastructure.Repositories.Columns
             return edges;
         }
 
+        /// <summary>
+        /// Gets all edges that originate from the given column.
+        /// </summary>
+        /// <param name="fromColumnId">Identifier of the originating column.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result contains the edges whose
+        /// FromColumnId matches.</returns>
         public async Task<IEnumerable<ColumnEdge>> GetByFromColumnIdAsync(ColumnId fromColumnId)
         {
             using var connection = _connectionFactory.CreateConnection();
@@ -91,6 +122,12 @@ namespace kanban_lia.Infrastructure.Repositories.Columns
             return edges;
         }
 
+        /// <summary>
+        /// Gets all edges that terminate at the given column.
+        /// </summary>
+        /// <param name="toColumnId">Identifier of the destination column.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result contains the edges whose
+        /// ToColumnId matches.</returns>
         public async Task<IEnumerable<ColumnEdge>> GetByToColumnIdAsync(ColumnId toColumnId)
         {
             using var connection = _connectionFactory.CreateConnection();
@@ -110,6 +147,12 @@ namespace kanban_lia.Infrastructure.Repositories.Columns
             return edges;
         }
 
+        /// <summary>
+        /// Deletes the edge connecting the two given columns, in either direction.
+        /// </summary>
+        /// <param name="columnEdge">The edge to remove; a stored row matching either direction is deleted.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result is <see langword="true"/> if a
+        /// row was deleted; otherwise, <see langword="false"/>.</returns>
         public async Task<bool> DeleteAsync(ColumnEdge columnEdge)
         {
             using var connection = _connectionFactory.CreateConnection();

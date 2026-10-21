@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+
 using Microsoft.AspNetCore.Mvc;
 
 using kanban_lia.Endpoints.Columns.Requests;
@@ -8,102 +9,114 @@ using kanban_lia.Services.Columns;
 using kanban_lia.Services.Columns.DTOs;
 using kanban_lia.Services.IntegrationEvents.Models;
 
-namespace kanban_lia.Endpoints.Columns;
-
-public static class ColumnEndpoints
+namespace kanban_lia.Endpoints.Columns
 {
-    public static void MapColumnEndpoints(WebApplication app)
+    /// <summary>
+    /// Maps column-related HTTP endpoints under /api/columns.
+    /// </summary>
+    /// <remarks>Registers endpoints for creating, retrieving, renaming, and deleting columns: POST /create, GET
+    /// /boardid/{id}, GET /{id}, PUT /rename, and DELETE /delete/{id}. The create endpoint reads Correlation-Id,
+    /// Actor-Id, and Actor-Type headers when present and passes them through to <see cref="IColumnService"/>; missing
+    /// values fall back to a new correlation id and a default actor.</remarks>
+    public static class ColumnEndpoints
     {
-        var group = app.MapGroup("/api/columns");
-
-        // Create a new column
-        group.MapPost("/create", async (
-            HttpRequest httpRequest,
-            [FromBody] CreateColumnRequest request,
-            IColumnService columnService,
-            IMapper mapper,
-            CancellationToken cancellationToken) =>
+        /// <summary>
+        /// Registers the column endpoint group on the given application.
+        /// </summary>
+        /// <param name="app">The WebApplication on which the column endpoints are configured.</param>
+        public static void MapColumnEndpoints(WebApplication app)
         {
-            var dto = mapper.Map<CreateColumnDto>(request);
+            var group = app.MapGroup("/api/columns");
 
-            Guid correlationId = Guid.NewGuid();
-            var actorId = "-1";
-            var actorType = "";
-
-            if (httpRequest.Headers.TryGetValue(
-                "Correlation-Id",
-                out var correlationHeader) &&
-                Guid.TryParse(correlationHeader, out var parsedCorrelationId))
+            // Create a new column
+            group.MapPost("/create", async (
+                HttpRequest httpRequest,
+                [FromBody] CreateColumnRequest request,
+                IColumnService columnService,
+                IMapper mapper,
+                CancellationToken cancellationToken) =>
             {
-                correlationId = parsedCorrelationId;
-            }
+                var dto = mapper.Map<CreateColumnDto>(request);
 
-            if (httpRequest.Headers.TryGetValue(
-                "Actor-Id",
-                out var actorIdHeader))
+                Guid correlationId = Guid.NewGuid();
+                var actorId = "-1";
+                var actorType = "";
+
+                if (httpRequest.Headers.TryGetValue(
+                    "Correlation-Id",
+                    out var correlationHeader) &&
+                    Guid.TryParse(correlationHeader, out var parsedCorrelationId))
+                {
+                    correlationId = parsedCorrelationId;
+                }
+
+                if (httpRequest.Headers.TryGetValue(
+                    "Actor-Id",
+                    out var actorIdHeader))
+                {
+                    actorId = actorIdHeader.ToString();
+                }
+
+                if (httpRequest.Headers.TryGetValue(
+                    "Actor-Type",
+                    out var actorTypeHeader))
+                {
+                    actorType = actorTypeHeader.ToString();
+                }
+
+                var actor = new Actor(actorId, actorType);
+
+                var columnId = await columnService.CreateAsync(dto, correlationId, actor, cancellationToken);
+
+                return Results.Ok(new { id = columnId.Id });
+            });
+
+            // Get columns by board id
+            group.MapGet("/boardid/{id:guid}", async (
+                Guid id,
+                IColumnService columnService) =>
             {
-                actorId = actorIdHeader.ToString();
-            }
+                var boardId = new BoardId(id);
 
-            if (httpRequest.Headers.TryGetValue(
-                "Actor-Type",
-                out var actorTypeHeader))
+                var columns = await columnService.GetByBoardIdAsync(boardId);
+
+                return Results.Ok(columns);
+            });
+
+            // Get by id
+            group.MapGet("/{id:guid}", async (
+                Guid id,
+                IColumnService columnService) =>
             {
-                actorType = actorTypeHeader.ToString();
-            }
+                var column = await columnService.GetByIdAsync(new ColumnId(id));
 
-            var actor = new Actor(actorId, actorType);
+                return Results.Ok(column);
+            });
 
-            var columnId = await columnService.CreateAsync(dto, correlationId, actor, cancellationToken);
+            // Rename a column
+            group.MapPut("/rename", async (
+                [FromBody] RenameColumnRequest request,
+                IColumnService columnService,
+                IMapper mapper) =>
+            {
+                var requestDto = mapper.Map<RenameColumnDto>(request);
 
-            return Results.Ok(new { id = columnId.Id });
-        });
+                var result = await columnService.RenameAsync(requestDto);
 
-        // Get columns by board id
-        group.MapGet("/boardid/{id:guid}", async (
-            Guid id,
-            IColumnService columnService) =>
-        {
-            var boardId = new BoardId(id);
+                return Results.Ok(result);
+            });
 
-            var columns = await columnService.GetByBoardIdAsync(boardId);
+            // Delete a column
+            group.MapDelete("/delete/{id:guid}", async (
+                Guid id,
+                IColumnService columnService) =>
+            {
+                var columnId = new ColumnId(id);
 
-            return Results.Ok(columns);
-        });
+                var result = await columnService.DeleteAsync(columnId);
 
-        // Get by id
-        group.MapGet("/{id:guid}", async (
-            Guid id,
-            IColumnService columnService) =>
-        {
-            var column = await columnService.GetByIdAsync(new ColumnId(id));
-
-            return Results.Ok(column);
-        });
-
-        // Rename a column
-        group.MapPut("/rename", async (
-            [FromBody] RenameColumnRequest request,
-            IColumnService columnService,
-            IMapper mapper) =>
-        {
-            var requestDto = mapper.Map<RenameColumnDto>(request);
-
-            var result = await columnService.RenameAsync(requestDto);
-
-            return Results.Ok(result);
-        });
-
-        // Delete a column
-        group.MapDelete("/delete/{id:guid}", async (
-            Guid id,
-            IColumnService columnService) =>
-        {
-            var columnId = new ColumnId(id);
-
-            var result = await columnService.DeleteAsync(columnId);
-
-            return Results.Ok(result);
-        });
+                return Results.Ok(result);
+            });
+        }
     }
 }

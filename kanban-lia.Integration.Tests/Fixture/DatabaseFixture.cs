@@ -1,8 +1,12 @@
 ﻿using Dapper;
-using kanban_lia.Infrastructure.Database;
-using Microsoft.Data.SqlClient;
+
 using Respawn;
+
 using Testcontainers.MsSql;
+
+using Microsoft.Data.SqlClient;
+
+using kanban_lia.Infrastructure.Database;
 
 namespace kanban_lia.Integration.Tests.Fixture
 {

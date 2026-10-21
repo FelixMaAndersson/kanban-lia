@@ -1,8 +1,9 @@
 ﻿using AutoMapper;
+
 using Dapper;
 
-using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Data.SqlClient;
+using Microsoft.Extensions.Logging.Abstractions;
 
 using kanban_lia.Infrastructure.Repositories.Boards;
 using kanban_lia.Infrastructure.Repositories.Columns;
@@ -18,10 +19,9 @@ using kanban_lia.Services.Boards.DTOs;
 using kanban_lia.Services.Boards.Exceptions;
 using kanban_lia.Services.Columns;
 using kanban_lia.Services.Columns.DTOs;
+using Actor = kanban_lia.Services.IntegrationEvents.Models.Actor;
 using kanban_lia.Services.Placements;
 using kanban_lia.Services.Placements.DTOs;
-
-using Actor = kanban_lia.Services.IntegrationEvents.Models.Actor;
 
 namespace kanban_lia.Integration.Tests.Services
 {

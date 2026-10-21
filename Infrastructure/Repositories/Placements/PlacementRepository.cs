@@ -1,10 +1,12 @@
 ﻿using Dapper;
+
+using System.Data;
+
 using kanban_lia.Infrastructure.Database;
 using kanban_lia.Infrastructure.Schemas;
 using kanban_lia.Models.Domain.Boards;
 using kanban_lia.Models.Domain.Columns;
 using kanban_lia.Models.Domain.Placements;
-using System.Data;
 
 namespace kanban_lia.Infrastructure.Repositories.Placements
 
@@ -17,6 +19,16 @@ namespace kanban_lia.Infrastructure.Repositories.Placements
 // Jocke thinks that ActorID is a good tie-breaker, but we don't have that in
 // the placement model yet.
 {
+    /// <summary>
+    /// Provides data access for placements using Dapper against SQL Server.
+    /// </summary>
+    /// <remarks>Placements are append-only move records; the current placement of an entity is the one with the
+    /// newest timestamp. Mutating operations run inside a caller-supplied transaction and take the per-column sort-key
+    /// application lock to serialize concurrent sort-key calculations. Reads that do not take part in a transaction
+    /// open their own connection. When two placements of the same entity share a timestamp, which one counts as
+    /// current is not deterministic; see the comment above this class.</remarks>
+    /// <param name="connectionFactory">Factory that creates the database connections used for operations that do not
+    /// take part in a caller-supplied transaction.</param>
     public class PlacementRepository(DbConnectionFactory connectionFactory) : IPlacementRepository
     {
         private readonly DbConnectionFactory _connectionFactory = connectionFactory;
@@ -73,6 +85,15 @@ namespace kanban_lia.Infrastructure.Repositories.Placements
             }
         }
 
+        /// <summary>
+        /// Inserts the given placements as new rows in the Placements table within the given transaction.
+        /// </summary>
+        /// <remarks>Every placement is appended as a separate history row; existing placements of the same entities
+        /// are left untouched. The rows become visible only when the transaction commits.</remarks>
+        /// <param name="placements">The placements to insert.</param>
+        /// <param name="transaction">The active database transaction the inserts commit with.</param>
+        /// <returns>A task that completes when the rows have been written.</returns>
+        /// <exception cref="InvalidOperationException">The transaction has no connection.</exception>
         public async Task CreateAsync(
             IEnumerable<Placement> placements,
             IDbTransaction transaction)
@@ -117,6 +138,18 @@ namespace kanban_lia.Infrastructure.Repositories.Placements
         }
 
         // see comments above about concurrent moves and tie-breakers
+        /// <summary>
+        /// Retrieves the current placement of each of the given entities on a board within an existing transaction.
+        /// </summary>
+        /// <remarks>For each entity, the placement with the newest timestamp on the given board is returned; entities
+        /// with no placements on the board are omitted from the result.</remarks>
+        /// <param name="entityIds">Identifiers of the entities whose current placements are retrieved.</param>
+        /// <param name="boardId">Identifier of the board to filter placements by.</param>
+        /// <param name="transaction">The active database transaction to run the query in.</param>
+        /// <param name="cancellationToken">A token used to cancel the query.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result contains the current placement
+        /// of each found entity.</returns>
+        /// <exception cref="InvalidOperationException">The transaction has no connection.</exception>
         public async Task<IEnumerable<Placement>> GetCurrentAsync(
             IEnumerable<EntityId> entityIds,
             BoardId boardId,
@@ -168,6 +201,15 @@ namespace kanban_lia.Infrastructure.Repositories.Placements
         }
 
         // see comments above about concurrent moves and tie-breakers
+        /// <summary>
+        /// Retrieves the current placement of each of the given entities on a board using a new connection.
+        /// </summary>
+        /// <remarks>For each entity, the placement with the newest timestamp on the given board is returned; entities
+        /// with no placements on the board are omitted from the result.</remarks>
+        /// <param name="entityIds">Identifiers of the entities whose current placements are retrieved.</param>
+        /// <param name="boardId">Identifier of the board to filter placements by.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result contains the current placement
+        /// of each found entity.</returns>
         public async Task<IEnumerable<Placement>> GetCurrentAsync(
             IEnumerable<EntityId> entityIds,
             BoardId boardId)
@@ -211,6 +253,16 @@ namespace kanban_lia.Infrastructure.Repositories.Placements
         }
 
         // see comments above about concurrent moves and tie-breakers
+        /// <summary>
+        /// Retrieves the entities currently placed in a column, ordered by sort key.
+        /// </summary>
+        /// <remarks>Only each entity's newest placement on the board is considered, and only entities whose current
+        /// placement is in the given column are returned. Sort keys are compared with binary collation, so the order
+        /// is the lexicographic order of the keys.</remarks>
+        /// <param name="columnId">Identifier of the column whose current placements are retrieved.</param>
+        /// <param name="boardId">Identifier of the board that contains the column.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result contains the column's current
+        /// placements ordered by sort key.</returns>
         public async Task<IEnumerable<Placement>> GetCurrentByColumnAsync(
             ColumnId columnId,
             BoardId boardId)
@@ -257,6 +309,15 @@ namespace kanban_lia.Infrastructure.Repositories.Placements
         //if something crashes this change might be the bad guy,
         //but it should be fine since we are not using the columnID for anything else.
         // ALSO: see comments above about concurrent moves and tie-breakers
+        /// <summary>
+        /// Retrieves the current placements for a whole board, ordered by column and sort key.
+        /// </summary>
+        /// <remarks>Only each entity's newest placement is considered. The result is ordered by column identifier and
+        /// then by sort key with binary collation. Filtering is done on the board identifier stored on the placement
+        /// itself rather than by looking up the board through the column.</remarks>
+        /// <param name="boardId">Identifier of the board whose current placements are retrieved.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result contains the board's current
+        /// placements ordered by column and sort key.</returns>
         public async Task<IEnumerable<Placement>> GetCurrentByBoardAsync(BoardId boardId)
         {
             using var connection = _connectionFactory.CreateConnection();
@@ -305,12 +366,14 @@ namespace kanban_lia.Infrastructure.Repositories.Placements
         /// </summary>
         /// <remarks>Only the latest placement per entity within the same board as the column is
         /// considered; sort-key comparisons use binary collation to determine ordering.</remarks>
+        /// <param name="transaction">The active database transaction used for the query.</param>
         /// <param name="columnId">Identifier of the column whose current placements are evaluated.</param>
         /// <param name="lookup">Specifies lookup mode: end of column, after a specified entity, or before a specified entity.</param>
         /// <param name="afterEntityId">Optional identifier of the entity after which to locate the range; used when lookup selects the 'after'
         /// mode.</param>
         /// <param name="beforeEntityId">Optional identifier of the entity before which to locate the range; 
         /// used when lookup selects the 'before' mode.</param>
+        /// <param name="cancellationToken">A token used to cancel the query.</param>
         /// <returns>A task that represents the asynchronous operation. The task result contains a SortKeyRange with the previous
         /// and next sort keys for the resolved position.</returns>
         public async Task<SortKeyRange> GetSortKeyRangeAsync(

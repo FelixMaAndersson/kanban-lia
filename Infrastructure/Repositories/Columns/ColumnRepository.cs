@@ -1,4 +1,5 @@
 ﻿using Dapper;
+
 using kanban_lia.Infrastructure.Database;
 using kanban_lia.Infrastructure.Schemas;
 using kanban_lia.Models.Domain.Boards;
@@ -6,10 +7,23 @@ using kanban_lia.Models.Domain.Columns;
 
 namespace kanban_lia.Infrastructure.Repositories.Columns
 {
+    /// <summary>
+    /// Provides data access for board columns using Dapper against SQL Server.
+    /// </summary>
+    /// <remarks>Each method opens its own connection from the factory. Deleting a column also removes the column
+    /// edges that reference it, in the same batch of statements.</remarks>
+    /// <param name="connectionFactory">Factory that creates the database connections used by this repository.</param>
     public class ColumnRepository(DbConnectionFactory connectionFactory) : IColumnRepository
     {
         private readonly DbConnectionFactory _connectionFactory = connectionFactory;
 
+        /// <summary>
+        /// Inserts a new column row and returns the same column instance.
+        /// </summary>
+        /// <param name="column">The column to persist; its identifier, board, title, position, and write-access flag
+        /// are written to the Columns table.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result contains the persisted column.
+        /// </returns>
         public async Task<Column> CreateAsync(Column column)
         {
             using var connection = _connectionFactory.CreateConnection();
@@ -35,6 +49,12 @@ namespace kanban_lia.Infrastructure.Repositories.Columns
             return column;
         }
 
+        /// <summary>
+        /// Retrieves all columns of a board ordered by their position.
+        /// </summary>
+        /// <param name="boardId">Identifier of the board whose columns are retrieved.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result contains the board's columns
+        /// in ascending position order.</returns>
         public async Task<IEnumerable<Column>> GetByBoardIdAsync(BoardId boardId)
         {
             using var connection = _connectionFactory.CreateConnection();
@@ -62,6 +82,12 @@ namespace kanban_lia.Infrastructure.Repositories.Columns
                 row.RequestWritable));
         }
 
+        /// <summary>
+        /// Retrieves a single column by its identifier.
+        /// </summary>
+        /// <param name="id">Identifier of the column to find.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result contains the column, or
+        /// <see langword="null"/> if no column with the given identifier exists.</returns>
         public async Task<Column?> GetByIdAsync(ColumnId id)
         {
             using var connection = _connectionFactory.CreateConnection();
@@ -94,6 +120,12 @@ namespace kanban_lia.Infrastructure.Repositories.Columns
                 row.RequestWritable);
         }
 
+        /// <summary>
+        /// Reads the write-access flag of a column without loading the whole column.
+        /// </summary>
+        /// <param name="id">Identifier of the column to check.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result contains the column's
+        /// request-writable flag, or <see langword="null"/> if the column does not exist.</returns>
         public async Task<bool?> CanBeWrittenAsync(ColumnId id)
         {
             using var connection = _connectionFactory.CreateConnection();
@@ -109,6 +141,13 @@ namespace kanban_lia.Infrastructure.Repositories.Columns
             return requestWritable;
         }
 
+        /// <summary>
+        /// Updates the write-access flag of a column.
+        /// </summary>
+        /// <param name="id">Identifier of the column to update.</param>
+        /// <param name="requestWritable">The new value of the column's request-writable flag.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result is <see langword="true"/> if a
+        /// row was updated; <see langword="false"/> if no column with the given identifier exists.</returns>
         public async Task<bool> SetRequestWritableAsync(
             ColumnId id,
             bool requestWritable)
@@ -128,6 +167,13 @@ namespace kanban_lia.Infrastructure.Repositories.Columns
             return rowsAffected > 0;
         }
 
+        /// <summary>
+        /// Updates the title of a column.
+        /// </summary>
+        /// <param name="id">Identifier of the column to rename.</param>
+        /// <param name="title">The column's new title.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result is <see langword="true"/> if a
+        /// row was updated; <see langword="false"/> if no column with the given identifier exists.</returns>
         public async Task<bool> RenameAsync(
             ColumnId id,
             string title)
@@ -148,6 +194,14 @@ namespace kanban_lia.Infrastructure.Repositories.Columns
             return rowsAffected > 0;
         }
 
+        /// <summary>
+        /// Deletes a column together with the edges that reference it.
+        /// </summary>
+        /// <remarks>Both the column-edge cleanup and the column deletion are issued as a single batch; the caller is
+        /// not given a separate indication of how many edges were removed.</remarks>
+        /// <param name="id">Identifier of the column to delete.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result is <see langword="true"/> if a
+        /// column row was deleted; <see langword="false"/> if no column with the given identifier exists.</returns>
         public async Task<bool> DeleteAsync(ColumnId id)
         {
             using var connection = _connectionFactory.CreateConnection();
@@ -169,6 +223,9 @@ namespace kanban_lia.Infrastructure.Repositories.Columns
         }
 
 #pragma warning disable S1144 // Setters are required for Dapper to map the results to the object
+        /// <summary>
+        /// Row type used by Dapper to materialize Columns table results.
+        /// </summary>
         private sealed class ColumnRow
         {
             public Guid Id { get; set; }

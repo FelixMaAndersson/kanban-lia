@@ -8,12 +8,11 @@ using kanban_lia.Infrastructure.Repositories.Columns;
 using kanban_lia.Integration.Tests.Fixture;
 using kanban_lia.Mappings;
 using kanban_lia.Models.Domain.Columns;
+using kanban_lia.Models.Domain.Exceptions;
 using kanban_lia.Services.Boards;
 using kanban_lia.Services.Columns;
 using kanban_lia.Services.Columns.DTOs;
-using kanban_lia.Models.Domain.Exceptions;
 using kanban_lia.Services.Columns.Exceptions;
-
 using Actor = kanban_lia.Services.IntegrationEvents.Models.Actor;
 
 namespace kanban_lia.Integration.Tests.Services
