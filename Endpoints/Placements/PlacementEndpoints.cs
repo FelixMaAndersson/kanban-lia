@@ -44,7 +44,7 @@ public static class PlacementEndpoints
         {
             var mappedRequest = await MapRequest(request, columnEdgeRepository);
 
-            var mappedPlacementResult = await BuildPlacementPlanAsync(
+            var mappedPlacementResult = await BuildPlacementContextAsync(
                 mappedRequest,
                 placementService,
                 columnRepository,
@@ -282,7 +282,7 @@ public static class PlacementEndpoints
         );
     }
 
-    private static async Task<MappedPlacementResult> BuildPlacementPlanAsync(
+    private static async Task<MappedPlacementResult> BuildPlacementContextAsync(
         PlacementMapped mappedRequest,
         IPlacementService placementService,
         IColumnRepository columnRepository,
@@ -459,4 +459,20 @@ public static class PlacementEndpoints
     private sealed record PlacementPlan(
     List<PlacementOperationDto> Operations,
     List<Guid> AffectedBoardIds);
+
+    public record ColumnPairSelection(
+    List<(ColumnId Target, List<ColumnId> Sources)> ColumnPairs,
+    List<Guid> AffectedBoardIds);
+
+    public record MappedPlacementResult(
+        List<Column> ConnectedTargetColumns,
+        List<Column> SourceColumns);
+
+    public record PlacementMapped(
+        List<EntityId> EntityIds,
+        Guid[] AfterEntityIds,
+        Guid[] BeforeEntityIds,
+        BoardId BoardId,
+        List<ColumnId> ConnectedTargetColumnIds
+    );
 }
