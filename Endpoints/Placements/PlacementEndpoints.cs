@@ -39,149 +39,23 @@ namespace kanban_lia.Endpoints.Placements
         public static void MapPlacementEndpoints(WebApplication app)
     #pragma warning restore S3776
         {
-            var group = app.MapGroup("/api/placements");
-            var logger = app.Services.GetRequiredService<ILoggerFactory>()
-                .CreateLogger("PlacementEndpoints");
+            var mappedRequest = await MapRequest(request, columnEdgeRepository);
 
-            group.MapPost("/create", async (
-                HttpRequest httpRequest,
-                [FromBody] CreatePlacementRequest request,
-                IPlacementService placementService,
-                CancellationToken cancellationToken,
-                IColumnRepository columnRepository,
-                IColumnEdgeRepository columnEdgeRepository,
-                IHubContext<BoardHub> hub) =>
-            {
-                var entityIds = (request.EntityIds ?? [])
-                    .Select(id => new EntityId(id))
-                    .ToList();
-                var afterEntityIds = request.AfterEntityIds ?? [];
-                var beforeEntityIds = request.BeforeEntityIds ?? [];
+            var mappedPlacementResult = await BuildPlacementContextAsync(
+                mappedRequest,
+                placementService,
+                columnRepository,
+                columnEdgeRepository);
 
-                var boardId = new BoardId(request.BoardId);
+            var (columnPairs, affectedBoardIds) = await SelectColumnPairsAsync(
+                mappedRequest,
+                mappedPlacementResult,
+                placementService);
 
-                var connectedTargetColumnIds = await GetConnectedColumns(
-                    new ColumnId(request.ColumnId),
-                    columnEdgeRepository);
-
-                var connectedTargetColumns = new List<Column>();
-
-                foreach (var columnId in connectedTargetColumnIds)
-                {
-                    var column =
-                        await columnRepository.GetByIdAsync(columnId) ?? throw new ColumnNotFoundException(columnId);
-                    connectedTargetColumns.Add(column);
-                }
-
-                var currentPlacements = await placementService.GetCurrentAsync(
-                    new GetPlacementDto(
-                        entityIds,
-                        boardId
-                    )
-                );
-
-                var sourceColumnIds = new List<ColumnId>();
-
-                foreach (var placement in currentPlacements)
-                {
-                    var connectedSourceColumns = await GetConnectedColumns(
-                        placement.ColumnId,
-                        columnEdgeRepository);
-
-                    sourceColumnIds.AddRange(connectedSourceColumns);
-                }
-
-                sourceColumnIds = [.. sourceColumnIds.Distinct()];
-
-                var sourceColumns = new List<Column>();
-
-                foreach (var sourceColumnId in sourceColumnIds)
-                {
-                    var column = await columnRepository.GetByIdAsync(sourceColumnId);
-                    if (column is not null)
-                    {
-                        sourceColumns.Add(column);
-                    }
-                }
-
-                var targetGroups = connectedTargetColumns.GroupBy(column => column.BoardId);
-
-                var affectedBoardIds = targetGroups.Select(group => group.Key.Id).ToList();
-
-                var columnPairs = new List<(ColumnId Target, List<ColumnId> Sources)>();
-
-                foreach (var targetGroup in targetGroups)
-                {
-                    var matchingSources = sourceColumns
-                        .Where(source => source.BoardId == targetGroup.Key)
-                        .ToList();
-
-                    var currentPlacementsOnTargetBoard =
-                        await placementService.GetCurrentAsync(
-                            new GetPlacementDto(
-                                entityIds,
-                                targetGroup.Key
-                            )
-                        );
-
-                    var currentSource = matchingSources
-                        .FirstOrDefault(source =>
-                            currentPlacementsOnTargetBoard.Any(placement =>
-                                placement.ColumnId == source.Id));
-
-                    var targetColumn = SelectTargetColumn(
-                        targetGroup,
-                        matchingSources,
-                        currentSource);
-
-                    columnPairs.Add((
-                        Target: targetColumn.Id,
-                        Sources: [.. matchingSources.Select(source => source.Id)]
-                            ));
-                }
-
-                var placementOperations =
-                    new List<PlacementOperationDto>();
-
-                foreach (var (Target, Sources) in columnPairs)
-                {
-                    var targetColumn =
-                        await columnRepository.GetByIdAsync(Target) ?? throw new ColumnNotFoundException(Target);
-                    var createDto = new CreatePlacementDto(
-                        entityIds,
-                        targetColumn.BoardId,
-                        Target,
-                        afterEntityIds.Select(id => new EntityId(id)),
-                        beforeEntityIds.Select(id => new EntityId(id))
-                    );
-
-                    var operationDto = new PlacementOperationDto(
-                        createDto,
-                        Sources
-                    );
-
-                    placementOperations.Add(operationDto);
-                }
-
-                var changes = CreatePlacementChanges(columnPairs);
-
-                var (correlationId, causationEventId, actor) = GetEventMetadata(httpRequest);
-
-                var result = await placementService.CreateAsync(
-                    placementOperations,
-                    correlationId,
-                    causationEventId,
-                    actor,
-                    cancellationToken,
-                    boardId);
-
-                foreach (var failure in result.Failures)
-                {
-                    logger.LogWarning(
-                        "Placement failed for entity {EntityId}: {Error}",
-                        failure.EntityId.Id,
-                        failure.Error);
-                }
+            var placementPlan = await BuildPlacementOperations(
+                mappedRequest,
+                new ColumnPairSelection(columnPairs, affectedBoardIds),
+                columnRepository);
 
                 if (result.SucceededEntityIds.Count == 0 && result.Failures.Count > 0)
                 {
@@ -195,41 +69,33 @@ namespace kanban_lia.Endpoints.Placements
                     .Select(entityId => entityId.Id)
                     .ToArray();
 
-                try
-                {
-                    foreach (var affectedBoardId in affectedBoardIds)
-                    {
-                        await hub.Clients.Group(BoardHub.GroupName(affectedBoardId)).SendAsync(
-                            "PlacementCreated",
-                            new PlacementCreatedEvent(
-                                succeededEntityIds,
-                                changes,
-                                actor),
-                            cancellationToken);
-                    }
-                }
-                catch (Exception ex) when (ex is not OperationCanceledException)
-                {
-                    logger.LogError(
-                        ex,
-                        "PlacementCreated broadcast failed after commit for {EntityCount} entities",
-                        succeededEntityIds.Length);
-                }
+            var result = await placementService.CreateAsync(
+                placementPlan.Operations,
+                correlationId,
+                causationEventId,
+                actor,
+                cancellationToken,
+                mappedRequest.BoardId);
 
-                return Results.Ok(result);
-            });
+            var failureResponse = LogPlacementFailures(result, logger);
 
-            group.MapGet("/get", async (
-                [FromQuery] Guid[] entityIds,
-                [FromQuery] Guid boardId,
-                IPlacementService placementService,
-                IMapper mapper) =>
+            if (failureResponse is not null)
             {
-                var request = new GetPlacementRequest(
-                    entityIds,
-                    boardId);
+                return failureResponse;
+            }
 
-                var dto = mapper.Map<GetPlacementDto>(request);
+            var succeededEntityIds = result.SucceededEntityIds
+                .Select(entityId => entityId.Id)
+                .ToArray();
+
+            await BroadcastPlacementCreatedAsync(
+                 hub,
+                 placementPlan.AffectedBoardIds,
+                 succeededEntityIds,
+                 changes,
+                 actor,
+                 logger,
+                 cancellationToken);
 
                 var placements = await placementService.GetCurrentAsync(dto);
 
@@ -277,8 +143,16 @@ namespace kanban_lia.Endpoints.Placements
             columnId
         };
 
-            connectedColumns.AddRange(
-                fromEdges.Select(edge => edge.ToColumnId));
+            return Results.Ok(placements);
+        });
+    }
+
+    private static async Task<List<ColumnId>> GetConnectedColumns(
+        ColumnId columnId,
+        IColumnEdgeRepository columnEdgeRepository)
+    {
+        var fromEdges =
+            await columnEdgeRepository.GetByFromColumnIdAsync(columnId);
 
             connectedColumns.AddRange(
                 toEdges.Select(edge => edge.FromColumnId));
@@ -308,12 +182,16 @@ namespace kanban_lia.Endpoints.Placements
                 return targets[0];
             }
 
-            var sourcePosition = currentSource is not null
-                ? currentSource.Position
-                : matchingSources
-                    .OrderBy(source => source.Position)
-                    .First()
-                    .Position;
+        return [.. connectedColumns.Distinct()];
+    }
+
+
+    private static Column SelectTargetColumn(
+    IEnumerable<Column> targetGroup,
+    List<Column> matchingSources,
+    Column? currentSource)
+    {
+        var targets = targetGroup.ToList();
 
             return targets
                 .OrderBy(target =>
@@ -394,4 +272,223 @@ namespace kanban_lia.Endpoints.Placements
             return (correlationId, causationEventId, actor);
         }
     }
+
+    private static async Task<PlacementMapped> MapRequest(
+        [FromBody] CreatePlacementRequest request,
+        IColumnEdgeRepository columnEdgeRepository)
+    {
+        var entityIds = (request.EntityIds ?? [])
+                .Select(id => new EntityId(id))
+                .ToList();
+        var afterEntityIds = request.AfterEntityIds ?? [];
+        var beforeEntityIds = request.BeforeEntityIds ?? [];
+
+        var boardId = new BoardId(request.BoardId);
+
+        var connectedTargetColumnIds = await GetConnectedColumns(
+            new ColumnId(request.ColumnId),
+            columnEdgeRepository);
+
+        return new PlacementMapped(
+            entityIds,
+            afterEntityIds,
+            beforeEntityIds,
+            boardId,
+            connectedTargetColumnIds
+        );
+    }
+
+    private static async Task<MappedPlacementResult> BuildPlacementContextAsync(
+        PlacementMapped mappedRequest,
+        IPlacementService placementService,
+        IColumnRepository columnRepository,
+        IColumnEdgeRepository columnEdgeRepository)
+    {
+        var connectedTargetColumns = new List<Column>();
+
+        foreach (var columnId in mappedRequest.ConnectedTargetColumnIds)
+        {
+            var column =
+                await columnRepository.GetByIdAsync(columnId) ?? throw new ColumnNotFoundException(columnId);
+            connectedTargetColumns.Add(column);
+        }
+
+        var currentPlacements = await placementService.GetCurrentAsync(
+            new GetPlacementDto(
+                mappedRequest.EntityIds,
+                mappedRequest.BoardId
+            )
+        );
+
+        var sourceColumnIds = new List<ColumnId>();
+
+        foreach (var placement in currentPlacements)
+        {
+            var connectedSourceColumns = await GetConnectedColumns(
+                placement.ColumnId,
+                columnEdgeRepository);
+
+            sourceColumnIds.AddRange(connectedSourceColumns);
+        }
+
+        sourceColumnIds = [.. sourceColumnIds.Distinct()];
+
+        var sourceColumns = new List<Column>();
+
+        foreach (var sourceColumnId in sourceColumnIds)
+        {
+            var column = await columnRepository.GetByIdAsync(sourceColumnId);
+            if (column is not null)
+            {
+                sourceColumns.Add(column);
+            }
+        }
+        return new MappedPlacementResult(connectedTargetColumns, sourceColumns);
+    }
+
+    private static async Task<ColumnPairSelection> SelectColumnPairsAsync(
+    PlacementMapped mappedRequest,
+    MappedPlacementResult mappedPlacementResult,
+    IPlacementService placementService)
+    {
+        var targetGroups = mappedPlacementResult.ConnectedTargetColumns
+            .GroupBy(column => column.BoardId);
+
+        var affectedBoardIds = targetGroups
+            .Select(group => group.Key.Id)
+            .ToList();
+
+        var columnPairs =
+            new List<(ColumnId Target, List<ColumnId> Sources)>();
+
+        foreach (var targetGroup in targetGroups)
+        {
+            var matchingSources = mappedPlacementResult.SourceColumns
+                .Where(source => source.BoardId == targetGroup.Key)
+                .ToList();
+
+            var currentPlacementsOnTargetBoard =
+                await placementService.GetCurrentAsync(
+                    new GetPlacementDto(
+                        mappedRequest.EntityIds,
+                        targetGroup.Key));
+
+            var currentSource = matchingSources.FirstOrDefault(source =>
+                currentPlacementsOnTargetBoard.Any(
+                    placement => placement.ColumnId == source.Id));
+
+            var targetColumn = SelectTargetColumn(
+                targetGroup,
+                matchingSources,
+                currentSource);
+
+            columnPairs.Add((
+                targetColumn.Id,
+                matchingSources.Select(source => source.Id).ToList()));
+        }
+
+        return new ColumnPairSelection(columnPairs, affectedBoardIds);
+    }
+
+    private static async Task<PlacementPlan> BuildPlacementOperations(
+        PlacementMapped mappedRequest,
+        ColumnPairSelection selection,
+        IColumnRepository columnRepository)
+    {
+        var operations =
+    new List<PlacementOperationDto>();
+
+        foreach (var (targetId, sourceIds) in selection.ColumnPairs)
+        {
+            var targetColumn = await columnRepository.GetByIdAsync(targetId)
+                ?? throw new ColumnNotFoundException(targetId);
+
+            var createDto = new CreatePlacementDto(
+               [.. mappedRequest.EntityIds],
+               targetColumn.BoardId,
+               targetId,
+               mappedRequest.AfterEntityIds.Select(id => new EntityId(id)),
+               mappedRequest.BeforeEntityIds.Select(id => new EntityId(id)));
+
+            operations.Add(new PlacementOperationDto(createDto, sourceIds));
+
+        }
+        return new PlacementPlan(operations, selection.AffectedBoardIds);
+    }
+   
+    private static IResult? LogPlacementFailures(PlacementCreateResult result, ILogger logger)
+    {
+
+        foreach (var failure in result.Failures)
+        {
+            logger.LogWarning(
+                "Placement failed for entity {EntityId}: {Error}",
+                failure.EntityId.Id,
+                failure.Error);
+        }
+
+        if (result.SucceededEntityIds.Count == 0 && result.Failures.Count > 0)
+        {
+            return Results.Problem(
+                statusCode: StatusCodes.Status400BadRequest,
+                title: "No placements were created",
+                detail: string.Join("; ", result.Failures.Select(failure => failure.Error)));
+        }
+        return null;
+    }
+
+    private static async Task BroadcastPlacementCreatedAsync(
+    IHubContext<BoardHub> hub,
+    IEnumerable<Guid> affectedBoardIds,
+    Guid[] succeededEntityIds,
+    List<PlacementChange> changes,
+    Actor actor,
+    ILogger logger,
+    CancellationToken cancellationToken)
+    {
+        try
+        {
+            var placementCreatedEvent = new PlacementCreatedEvent(
+                succeededEntityIds,
+                changes,
+                actor);
+
+            foreach (var boardId in affectedBoardIds)
+            {
+                await hub.Clients
+                    .Group(BoardHub.GroupName(boardId))
+                    .SendAsync(
+                        "PlacementCreated",
+                        placementCreatedEvent,
+                        cancellationToken);
+            }
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            logger.LogError(
+                ex,
+                "PlacementCreated broadcast failed after commit for {EntityCount} entities",
+                succeededEntityIds.Length);
+        }
+    }
+
+    private sealed record PlacementPlan(
+    List<PlacementOperationDto> Operations,
+    List<Guid> AffectedBoardIds);
+
+    public record ColumnPairSelection(
+    List<(ColumnId Target, List<ColumnId> Sources)> ColumnPairs,
+    List<Guid> AffectedBoardIds);
+
+    public record MappedPlacementResult(
+        List<Column> ConnectedTargetColumns,
+        List<Column> SourceColumns);
+
+    public record PlacementMapped(
+        List<EntityId> EntityIds,
+        Guid[] AfterEntityIds,
+        Guid[] BeforeEntityIds,
+        BoardId BoardId,
+        List<ColumnId> ConnectedTargetColumnIds
+    );
 }
