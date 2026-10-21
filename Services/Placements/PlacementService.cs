@@ -1,5 +1,10 @@
 ﻿using AutoMapper;
+
 using FractionalIndexing;
+
+using System.Data;
+using System.Text.Json;
+using System.Transactions;
 
 using kanban_lia.Infrastructure.Database;
 using kanban_lia.Infrastructure.Repositories.Boards;
@@ -16,12 +21,23 @@ using kanban_lia.Services.Columns.Exceptions;
 using kanban_lia.Services.IntegrationEvents;
 using kanban_lia.Services.IntegrationEvents.Models;
 using kanban_lia.Services.Placements.DTOs;
-using System.Data;
-using System.Text.Json;
-using System.Transactions;
 
 namespace kanban_lia.Services.Placements
 {
+    /// <summary>
+    /// Application service that creates placements and queries the current placement of entities.
+    /// </summary>
+    /// <remarks>Placements are created one entity at a time; each entity is processed in its own database transaction
+    /// that takes per-column sort-key locks, appends new placement rows, and writes a PlacementCreated integration
+    /// event to the outbox. A failure for one entity does not roll back the others: expected placement failures are
+    /// collected and reported in the result instead of being thrown.</remarks>
+    /// <param name="connectionFactory">Factory that creates the database connections used per entity transaction.
+    /// </param>
+    /// <param name="boardRepository">Repository used to look up boards for validation.</param>
+    /// <param name="columnRepository">Repository used to look up columns for validation.</param>
+    /// <param name="repository">Repository used for placement reads, sort-key locks, and inserts.</param>
+    /// <param name="outboxRepository">Repository used to store the integration events produced by placements.</param>
+    /// <param name="mapper">Mapper used to convert domain placements into DTOs.</param>
     public class PlacementService(
         DbConnectionFactory connectionFactory,
         IBoardRepository boardRepository,
@@ -37,6 +53,30 @@ namespace kanban_lia.Services.Placements
         private readonly IOutboxRepository _outboxRepository = outboxRepository;
         private readonly IMapper _mapper = mapper;
 
+        /// <summary>
+        /// Creates placements for the given operations, processing each entity independently and collecting failures
+        /// instead of failing the whole batch.
+        /// </summary>
+        /// <remarks>The operations are grouped per entity, and each entity group is applied in its own transaction:
+        /// sort-key locks are taken for all target columns in a stable order, the column and board are validated, a
+        /// sort-key range is resolved from the optional after/before anchors, the new placement rows are inserted, and
+        /// a PlacementCreated integration event is written to the outbox for every placement. Entities that fail with
+        /// an expected placement error are reported as failures while the remaining entities still succeed.</remarks>
+        /// <param name="dtos">The placement operations to perform; each operation names the target column and board,
+        /// the entities to place, optional after/before anchor entities, and the source columns the entities may move
+        /// from.</param>
+        /// <param name="correlationId">Identifier tying the resulting integration events back to the originating
+        /// request.</param>
+        /// <param name="causationEventId">Identifier of the event that caused this operation, if any.</param>
+        /// <param name="actor">The actor to attribute the placements and integration events to.</param>
+        /// <param name="cancellationToken">A token used to cancel the database operations.</param>
+        /// <param name="requestingBoardId">The board the request originates from, when known. The write-access check
+        /// for a non-writable column is only enforced for requests coming from the column's own board, so cross-board
+        /// moves may still target a read-only column.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result contains the identifiers of the
+        /// entities that were placed successfully together with a failure entry for each entity that was not.</returns>
+        /// <exception cref="OperationCanceledException">The operation is canceled through
+        /// <paramref name="cancellationToken"/>.</exception>
         public async Task<PlacementCreateResult> CreateAsync(
             IEnumerable<PlacementOperationDto> dtos,
             Guid correlationId,
@@ -58,8 +98,8 @@ namespace kanban_lia.Services.Placements
                         correlationId,
                         causationEventId,
                         actor,
-                        cancellationToken,
-                        requestingBoardId);
+                        requestingBoardId,
+                        cancellationToken);
 
                     succeededEntityIds.Add(entityGroup.EntityId);
                 }
@@ -83,7 +123,7 @@ namespace kanban_lia.Services.Placements
         /// <param name="dto">A DTO containing the entity identifiers and the board identifier 
         /// used to filter current placements.</param>
         /// <returns>A task that represents the asynchronous operation. 
-        /// The task result contains an IEnumerable<PlacementDto>
+        /// The task result contains an <see cref="IEnumerable{PlacementDto}"/>
         /// with the current placements matching the specified criteria.</returns>
         public async Task<IEnumerable<PlacementDto>> GetCurrentAsync(GetPlacementDto dto)
         {
@@ -146,15 +186,15 @@ namespace kanban_lia.Services.Placements
                 {
                     Dto = operation.Dto with
                     {
-                        EntityIds = operation.Dto.EntityIds.ToArray(),
-                        AfterEntityIds = operation.Dto.AfterEntityIds.ToArray(),
-                        BeforeEntityIds = operation.Dto.BeforeEntityIds.ToArray()
+                        EntityIds = [.. operation.Dto.EntityIds],
+                        AfterEntityIds = [.. operation.Dto.AfterEntityIds],
+                        BeforeEntityIds = [.. operation.Dto.BeforeEntityIds]
                     },
-                    SourceColumnIds = operation.SourceColumnIds.ToArray()
+                    SourceColumnIds = [.. operation.SourceColumnIds]
                 })
                 .ToArray();
 
-            return operations
+            return [.. operations
                 .SelectMany(operation =>
                     operation.Dto.EntityIds.Select(entityId => new
                     {
@@ -170,8 +210,7 @@ namespace kanban_lia.Services.Placements
                 .GroupBy(item => item.EntityId)
                 .Select(group => new EntityPlacementGroup(
                     group.Key,
-                    group.Select(item => item.Operation).ToArray()))
-                .ToArray();
+                    [.. group.Select(item => item.Operation)]))];
         }
 
         private async Task ProcessEntityGroupAsync(
@@ -179,8 +218,8 @@ namespace kanban_lia.Services.Placements
             Guid correlationId,
             Guid? causationEventId,
             Actor actor,
-            CancellationToken cancellationToken,
-            BoardId? requestingBoardId)
+            BoardId? requestingBoardId,
+            CancellationToken cancellationToken)
         {
             using var connection = _connectionFactory.CreateConnection();
             await connection.OpenAsync(cancellationToken);
@@ -203,8 +242,8 @@ namespace kanban_lia.Services.Placements
                         correlationId,
                         causationEventId,
                         actor,
-                        cancellationToken,
-                        requestingBoardId);
+                        requestingBoardId,
+                        cancellationToken);
                 }
 
                 await transaction.CommitAsync(cancellationToken);
@@ -242,8 +281,8 @@ namespace kanban_lia.Services.Placements
             Guid correlationId,
             Guid? causationEventId,
             Actor actor,
-            CancellationToken cancellationToken,
-            BoardId? requestingBoardId)
+            BoardId? requestingBoardId,
+            CancellationToken cancellationToken)
         {
             var (column, board) = await ValidateAsync(operation, requestingBoardId);
 

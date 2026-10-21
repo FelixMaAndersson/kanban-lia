@@ -1,4 +1,8 @@
 ﻿using AutoMapper;
+
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
+
 using kanban_lia.Endpoints.Placements.Requests;
 using kanban_lia.Hubs;
 using kanban_lia.Infrastructure.Repositories.Columns;
@@ -10,37 +14,30 @@ using kanban_lia.Services.Columns.Exceptions;
 using kanban_lia.Services.IntegrationEvents.Models;
 using kanban_lia.Services.Placements;
 using kanban_lia.Services.Placements.DTOs;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.SignalR;
 
-namespace kanban_lia.Endpoints.Placements;
-
-public static class PlacementEndpoints
+namespace kanban_lia.Endpoints.Placements
 {
     /// <summary>
-    /// Maps placement-related HTTP endpoints under /api/placements.
+    /// Defines the HTTP endpoints for creating and querying entity placements on boards.
     /// </summary>
-    /// <remarks>Registers endpoints for creating and retrieving placements: POST /create, GET /get, GET
-    /// /board/{boardId}, and GET /column/{columnId}. The POST endpoint validates column write access, resolves
-    /// connected source and target columns across boards, computes placement operations, invokes IPlacementService to
-    /// create placements, and broadcasts a PlacementCreated event via SignalR. Correlation-Id, Causation-Id, Actor-Id,
-    /// and Actor-Type headers are read when present and used for causation/correlation and actor information.</remarks>
-    /// <param name="app">The WebApplication on which placement endpoints are configured.</param>
-    /// <exception cref="ColumnNotFoundException">Thrown when a required column referenced during endpoint processing cannot be found in the repository.</exception>
-    public static void MapPlacementEndpoints(WebApplication app)
+    /// <remarks>The class is a composition root for placement handling: the endpoints translate requests into
+    /// service calls, resolve cross-board column connectivity, and broadcast the results over SignalR. See
+    /// <see cref="MapPlacementEndpoints"/> for the registered routes.</remarks>
+    public static class PlacementEndpoints
     {
-        var group = app.MapGroup("/api/placements");
-        var logger = app.Services.GetRequiredService<ILoggerFactory>()
-            .CreateLogger("PlacementEndpoints");
-
-        group.MapPost("/create", async (
-            HttpRequest httpRequest,
-            [FromBody] CreatePlacementRequest request,
-            IPlacementService placementService,
-            CancellationToken cancellationToken,
-            IColumnRepository columnRepository,
-            IColumnEdgeRepository columnEdgeRepository,
-            IHubContext<BoardHub> hub) =>
+        /// <summary>
+        /// Maps placement-related HTTP endpoints under /api/placements.
+        /// </summary>
+        /// <remarks>Registers endpoints for creating and retrieving placements: POST /create, GET /get, GET
+        /// /board/{boardId}, and GET /column/{columnId}. The POST endpoint validates column write access, resolves
+        /// connected source and target columns across boards, computes placement operations, invokes IPlacementService to
+        /// create placements, and broadcasts a PlacementCreated event via SignalR. Correlation-Id, Causation-Id, Actor-Id,
+        /// and Actor-Type headers are read when present and used for causation/correlation and actor information.</remarks>
+        /// <param name="app">The WebApplication on which placement endpoints are configured.</param>
+        /// <exception cref="ColumnNotFoundException">Thrown when a required column referenced during endpoint processing cannot be found in the repository.</exception>
+    #pragma warning disable S3776
+        public static void MapPlacementEndpoints(WebApplication app)
+    #pragma warning restore S3776
         {
             var mappedRequest = await MapRequest(request, columnEdgeRepository);
 
@@ -60,9 +57,17 @@ public static class PlacementEndpoints
                 new ColumnPairSelection(columnPairs, affectedBoardIds),
                 columnRepository);
 
-            var changes = CreatePlacementChanges(columnPairs);
+                if (result.SucceededEntityIds.Count == 0 && result.Failures.Count > 0)
+                {
+                    return Results.Problem(
+                        statusCode: StatusCodes.Status400BadRequest,
+                        title: "No placements were created",
+                        detail: string.Join("; ", result.Failures.Select(failure => failure.Error)));
+                }
 
-            var (correlationId, causationEventId, actor) = GetEventMetadata(httpRequest);
+                var succeededEntityIds = result.SucceededEntityIds
+                    .Select(entityId => entityId.Id)
+                    .ToArray();
 
             var result = await placementService.CreateAsync(
                 placementPlan.Operations,
@@ -92,44 +97,51 @@ public static class PlacementEndpoints
                  logger,
                  cancellationToken);
 
-            return Results.Ok(result);
-        });
+                var placements = await placementService.GetCurrentAsync(dto);
 
-        group.MapGet("/get", async (
-            [FromQuery] Guid[] entityIds,
-            [FromQuery] Guid boardId,
-            IPlacementService placementService,
-            IMapper mapper) =>
+                return Results.Ok(placements);
+            });
+
+            group.MapGet("/board/{boardId:guid}", async (
+                Guid boardId,
+                IPlacementService placementService) =>
+            {
+                var placements = await placementService.GetCurrentByBoardAsync(
+                    new BoardId(boardId));
+
+                return Results.Ok(placements);
+            });
+
+            group.MapGet("/column/{columnId:guid}", async (
+                Guid columnId,
+                Guid boardId,
+                IPlacementService placementService) =>
+            {
+                var placements = await placementService.GetCurrentByColumnAsync(
+                    new ColumnId(columnId),
+                    new BoardId(boardId));
+
+                return Results.Ok(placements);
+            });
+        }
+        /// <summary>
+        /// Returns the given column together with every column directly connected to it by an incoming or outgoing
+        /// edge, with duplicates removed.
+        /// </summary>
+        private static async Task<List<ColumnId>> GetConnectedColumns(
+            ColumnId columnId,
+            IColumnEdgeRepository columnEdgeRepository)
         {
-            var request = new GetPlacementRequest(
-                entityIds,
-                boardId);
+            var fromEdges =
+                await columnEdgeRepository.GetByFromColumnIdAsync(columnId);
 
-            var dto = mapper.Map<GetPlacementDto>(request);
+            var toEdges =
+                await columnEdgeRepository.GetByToColumnIdAsync(columnId);
 
-            var placements = await placementService.GetCurrentAsync(dto);
-
-            return Results.Ok(placements);
-        });
-
-        group.MapGet("/board/{boardId:guid}", async (
-            Guid boardId,
-            IPlacementService placementService) =>
+            var connectedColumns = new List<ColumnId>
         {
-            var placements = await placementService.GetCurrentByBoardAsync(
-                new BoardId(boardId));
-
-            return Results.Ok(placements);
-        });
-
-        group.MapGet("/column/{columnId:guid}", async (
-            Guid columnId,
-            Guid boardId,
-            IPlacementService placementService) =>
-        {
-            var placements = await placementService.GetCurrentByColumnAsync(
-                new ColumnId(columnId),
-                new BoardId(boardId));
+            columnId
+        };
 
             return Results.Ok(placements);
         });
@@ -142,19 +154,33 @@ public static class PlacementEndpoints
         var fromEdges =
             await columnEdgeRepository.GetByFromColumnIdAsync(columnId);
 
-        var toEdges =
-            await columnEdgeRepository.GetByToColumnIdAsync(columnId);
+            connectedColumns.AddRange(
+                toEdges.Select(edge => edge.FromColumnId));
 
-        var connectedColumns = new List<ColumnId>
-    {
-        columnId
-    };
+            return [.. connectedColumns.Distinct()];
+        }
+        /// <summary>
+        /// Picks the target column for a board: the only candidate, the one closest in position to the source
+        /// column, or the first by position when the entities have no source column on that board.
+        /// </summary>
+        private static Column SelectTargetColumn(
+        IEnumerable<Column> targetGroup,
+        List<Column> matchingSources,
+        Column? currentSource)
+        {
+            var targets = targetGroup.ToList();
 
-        connectedColumns.AddRange(
-            fromEdges.Select(edge => edge.ToColumnId));
+            if (matchingSources.Count == 0)
+            {
+                return targets
+                    .OrderBy(target => target.Position)
+                    .First();
+            }
 
-        connectedColumns.AddRange(
-            toEdges.Select(edge => edge.FromColumnId));
+            if (targets.Count == 1)
+            {
+                return targets[0];
+            }
 
         return [.. connectedColumns.Distinct()];
     }
@@ -167,94 +193,84 @@ public static class PlacementEndpoints
     {
         var targets = targetGroup.ToList();
 
-        if (matchingSources.Count == 0)
-        {
             return targets
-                .OrderBy(target => target.Position)
+                .OrderBy(target =>
+                    Math.Abs(target.Position - sourcePosition))
                 .First();
         }
 
-        if (targets.Count == 1)
+        /// <summary>
+        /// Expands target/source column pairs into placement changes, emitting one change per source column, or a
+        /// single change with a null source when the entities were not placed on that board before.
+        /// </summary>
+        private static List<PlacementChange> CreatePlacementChanges(
+            List<(ColumnId Target, List<ColumnId> Sources)> columnPairs)
         {
-            return targets[0];
+            var changes = new List<PlacementChange>();
+            foreach (var (Target, Sources) in columnPairs)
+            {
+                if (Sources.Count == 0)
+                {
+                    changes.Add(new PlacementChange(null, Target.Id));
+                    continue;
+                }
+
+                foreach (var source in Sources)
+                {
+                    changes.Add(new PlacementChange(
+                        source.Id,
+                        Target.Id
+                        ));
+                }
+            }
+            return changes;
         }
 
-        var sourcePosition = currentSource is not null
-            ? currentSource.Position
-            : matchingSources
-                .OrderBy(source => source.Position)
-                .First()
-                .Position;
-
-        return targets
-            .OrderBy(target =>
-                Math.Abs(target.Position - sourcePosition))
-            .First();
-    }
-
-    private static List<PlacementChange> CreatePlacementChanges(
-        List<(ColumnId Target, List<ColumnId> Sources)> columnPairs)
-    {
-        var changes = new List<PlacementChange>();
-        foreach (var (Target, Sources) in columnPairs)
+        /// <summary>
+        /// Reads the Correlation-Id, Causation-Id, Actor-Id and Actor-Type request headers, generating a new
+        /// correlation id when the header is absent or malformed.
+        /// </summary>
+        private static (
+            Guid CorrelationId,
+            Guid? CausationEventId,
+            Actor Actor)
+            GetEventMetadata(HttpRequest httpRequest)
         {
-            if (Sources.Count == 0)
+            Guid correlationId = Guid.NewGuid();
+            Guid? causationEventId = null;
+            var actorId = "-1";
+            var actorType = "";
+
+            if (httpRequest.Headers.TryGetValue(
+                    "Correlation-Id",
+                    out var correlationHeader) &&
+                Guid.TryParse(correlationHeader, out var parsedCorrelationId))
             {
-                changes.Add(new PlacementChange(null, Target.Id));
-                continue;
+                correlationId = parsedCorrelationId;
             }
 
-            foreach (var source in Sources)
+            if (httpRequest.Headers.TryGetValue(
+                    "Causation-Id",
+                    out var causationHeader) &&
+                Guid.TryParse(causationHeader, out var parsedCausationEventId))
             {
-                changes.Add(new PlacementChange(
-                    source.Id,
-                    Target.Id
-                    ));
+                causationEventId = parsedCausationEventId;
             }
+
+            if (httpRequest.Headers.TryGetValue("Actor-Id", out var actorIdHeader))
+            {
+                actorId = actorIdHeader.ToString();
+            }
+
+            if (httpRequest.Headers.TryGetValue("Actor-Type", out var actorTypeHeader))
+            {
+                actorType = actorTypeHeader.ToString();
+            }
+
+            var actor = new Actor(actorId, actorType);
+
+            return (correlationId, causationEventId, actor);
         }
-        return changes;
-    }
-
-    private static (
-        Guid CorrelationId,
-        Guid? CausationEventId,
-        Actor Actor)
-        GetEventMetadata(HttpRequest httpRequest)
-    {
-        Guid correlationId = Guid.NewGuid();
-        Guid? causationEventId = null;
-        var actorId = "-1";
-        var actorType = "";
-
-        if (httpRequest.Headers.TryGetValue(
-                "Correlation-Id",
-                out var correlationHeader) &&
-            Guid.TryParse(correlationHeader, out var parsedCorrelationId))
-        {
-            correlationId = parsedCorrelationId;
-        }
-
-        if (httpRequest.Headers.TryGetValue(
-                "Causation-Id",
-                out var causationHeader) &&
-            Guid.TryParse(causationHeader, out var parsedCausationEventId))
-        {
-            causationEventId = parsedCausationEventId;
-        }
-
-        if (httpRequest.Headers.TryGetValue("Actor-Id", out var actorIdHeader))
-        {
-            actorId = actorIdHeader.ToString();
-        }
-
-        if (httpRequest.Headers.TryGetValue("Actor-Type", out var actorTypeHeader))
-        {
-            actorType = actorTypeHeader.ToString();
-        }
-
-        var actor = new Actor(actorId, actorType);
-
-        return (correlationId, causationEventId, actor);
     }
 
     private static async Task<PlacementMapped> MapRequest(

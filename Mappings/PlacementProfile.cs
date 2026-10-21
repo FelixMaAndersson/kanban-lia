@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 
 using kanban_lia.Endpoints.Placements.Requests;
 using kanban_lia.Models.Domain.Boards;
@@ -13,12 +13,19 @@ namespace kanban_lia.Mappings
     /// AutoMapper Profile that configures mappings between placement-related requests, domain models, and their DTO
     /// representations.
     /// </summary>
-    /// <remarks>Configures CreateMap<CreatePlacementRequest, CreatePlacementDto> with constructor-parameter
-    /// mappings for ColumnId, BoardId, EntityIds, AfterEntityIds, and BeforeEntityIds; configures
-    /// CreateMap<GetPlacementRequest, GetPlacementDto> mapping EntityIds and BoardId; and configures
-    /// CreateMap<Placement, PlacementDto>.</remarks>
+    /// <remarks>Configures a map from <see cref="CreatePlacementRequest"/> to <see cref="CreatePlacementDto"/>
+    /// with constructor-parameter mappings for ColumnId, BoardId, EntityIds, AfterEntityIds, and BeforeEntityIds;
+    /// configures a map from <see cref="GetPlacementRequest"/> to <see cref="GetPlacementDto"/> mapping EntityIds
+    /// and BoardId; and configures a map from <see cref="Placement"/> to <see cref="PlacementDto"/>.</remarks>
     public class PlacementProfile : Profile
     {
+        /// <summary>
+        /// Configures the placement-related mappings registered by this profile.
+        /// </summary>
+        /// <remarks>Registers request-to-DTO mappings that wrap raw Guids in the domain identifier types
+        /// (<see cref="EntityId"/>, <see cref="BoardId"/>, <see cref="ColumnId"/>) through constructor-parameter
+        /// mappings, plus a straight projection from the <see cref="Placement"/> domain model to
+        /// <see cref="PlacementDto"/>.</remarks>
         public PlacementProfile()
         {
             CreateMap<CreatePlacementRequest, CreatePlacementDto>()
@@ -46,7 +53,6 @@ namespace kanban_lia.Mappings
                         src.BeforeEntityIds
                             .Select(id => new EntityId(id))
                             .ToArray()));
-
 
             CreateMap<GetPlacementRequest, GetPlacementDto>()
                 .ForCtorParam(
