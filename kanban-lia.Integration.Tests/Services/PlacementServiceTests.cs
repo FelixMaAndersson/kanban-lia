@@ -1240,6 +1240,12 @@ namespace kanban_lia.Integration.Tests.Services
                 new CreatePlacementDto(entityIds, boardId, columnId, [], []),
                 []);
 
+            await _columnService.CreateAsync(
+                new CreateColumnDto(columnId, "Column 1", 1, boardId, true),
+                Guid.NewGuid(),
+                new Actor("-1", "TestActor"),
+                cancellationToken);
+
             // Act
             var result = await _placementService.CreateAsync(
                 [operation],
