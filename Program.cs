@@ -1,3 +1,17 @@
+// Composition root of the kanban-lia web API: registers services, configures JSON and exception handling, and maps
+// the endpoint groups and the SignalR hub the front-end uses.
+//
+// This is a top-level-statements file, so it declares no types or members. Repositories and services are registered
+// scoped around a singleton DbConnectionFactory; an outbox worker publishes committed integration events to RabbitMQ,
+// and AutoMapper profiles map between requests, DTOs and domain objects. The HTTP JSON options register the strongly
+// typed identifier converters so ids travel over the API as GUID strings. A global exception handler maps known domain
+// exceptions and SQL Server constraint errors to problem responses (for example not-found to 404,
+// ColumnNotWritableException to 403 and duplicate-key errors to 409) and everything else to 500. Swagger is enabled in
+// development only; CORS allows the local front-end origin; the board hub is served at /hubs/board and the board,
+// column, placement and column-edge endpoint groups are mapped before the app runs.
+using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.Data.SqlClient;
+
 using kanban_lia.Endpoints.Boards;
 using kanban_lia.Endpoints.Columns;
 using kanban_lia.Endpoints.Placements;
@@ -16,8 +30,6 @@ using kanban_lia.Services.Columns;
 using kanban_lia.Services.Columns.Exceptions;
 using kanban_lia.Services.IntegrationEvents;
 using kanban_lia.Services.Placements;
-using Microsoft.AspNetCore.Diagnostics;
-using Microsoft.Data.SqlClient;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -83,6 +95,7 @@ app.UseExceptionHandler(errorApp =>
             RootAlreadyExistsException => StatusCodes.Status400BadRequest,
             ColumnNotFoundException => StatusCodes.Status404NotFound,
             ColumnNotWritableException => StatusCodes.Status403Forbidden,
+            ColumnEdgeAlreadyExistsException => StatusCodes.Status400BadRequest,
             InvalidDomainException => StatusCodes.Status400BadRequest,
             ArgumentException => StatusCodes.Status400BadRequest,
             SqlException { Number: 547 } => StatusCodes.Status409Conflict,
@@ -102,6 +115,7 @@ app.UseExceptionHandler(errorApp =>
                 RootAlreadyExistsException => "Root already exists on this board",
                 ColumnNotFoundException => "Column could not be found",
                 ColumnNotWritableException => "Column is not writable",
+                ColumnEdgeAlreadyExistsException => "Column edge already exists",
                 InvalidDomainException => "Invalid request",
                 ArgumentException => "Invalid request parameters",
                 SqlException { Number: 547 } => "Operation conflicts with related records",

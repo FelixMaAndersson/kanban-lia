@@ -1,4 +1,10 @@
 ﻿using AutoMapper;
+
+using Microsoft.Extensions.Logging.Abstractions;
+
+using System.Collections.Concurrent;
+using System.Diagnostics;
+
 using kanban_lia.Infrastructure.Repositories.Boards;
 using kanban_lia.Infrastructure.Repositories.Columns;
 using kanban_lia.Infrastructure.Repositories.Outbox;
@@ -15,10 +21,6 @@ using kanban_lia.Services.Columns.Exceptions;
 using kanban_lia.Services.IntegrationEvents.Models;
 using kanban_lia.Services.Placements;
 using kanban_lia.Services.Placements.DTOs;
-using Microsoft.Extensions.Logging.Abstractions;
-using System.Collections.Concurrent;
-using System.Diagnostics;
-using System.Text.Json;
 
 namespace kanban_lia.Integration.Tests.Services
 {
