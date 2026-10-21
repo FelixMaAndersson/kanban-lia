@@ -54,10 +54,6 @@ namespace kanban_lia.Services.Columns
 
             await _repository.CreateAsync(newColumn);
 
-            await _columnEdgeRepository.GetByFromColumnIdAsync(newColumn.Id);
-
-            await _columnEdgeRepository.GetByToColumnIdAsync(newColumn.Id);
-
             return newColumn.Id;
         }
 

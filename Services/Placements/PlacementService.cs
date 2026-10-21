@@ -98,8 +98,8 @@ namespace kanban_lia.Services.Placements
                         correlationId,
                         causationEventId,
                         actor,
-                        cancellationToken,
-                        requestingBoardId);
+                        requestingBoardId,
+                        cancellationToken);
 
                     succeededEntityIds.Add(entityGroup.EntityId);
                 }
@@ -123,7 +123,7 @@ namespace kanban_lia.Services.Placements
         /// <param name="dto">A DTO containing the entity identifiers and the board identifier 
         /// used to filter current placements.</param>
         /// <returns>A task that represents the asynchronous operation. 
-        /// The task result contains an IEnumerable<PlacementDto>
+        /// The task result contains an <see cref="IEnumerable{PlacementDto}"/>
         /// with the current placements matching the specified criteria.</returns>
         public async Task<IEnumerable<PlacementDto>> GetCurrentAsync(GetPlacementDto dto)
         {
@@ -186,15 +186,15 @@ namespace kanban_lia.Services.Placements
                 {
                     Dto = operation.Dto with
                     {
-                        EntityIds = operation.Dto.EntityIds.ToArray(),
-                        AfterEntityIds = operation.Dto.AfterEntityIds.ToArray(),
-                        BeforeEntityIds = operation.Dto.BeforeEntityIds.ToArray()
+                        EntityIds = [.. operation.Dto.EntityIds],
+                        AfterEntityIds = [.. operation.Dto.AfterEntityIds],
+                        BeforeEntityIds = [.. operation.Dto.BeforeEntityIds]
                     },
-                    SourceColumnIds = operation.SourceColumnIds.ToArray()
+                    SourceColumnIds = [.. operation.SourceColumnIds]
                 })
                 .ToArray();
 
-            return operations
+            return [.. operations
                 .SelectMany(operation =>
                     operation.Dto.EntityIds.Select(entityId => new
                     {
@@ -210,8 +210,7 @@ namespace kanban_lia.Services.Placements
                 .GroupBy(item => item.EntityId)
                 .Select(group => new EntityPlacementGroup(
                     group.Key,
-                    group.Select(item => item.Operation).ToArray()))
-                .ToArray();
+                    [.. group.Select(item => item.Operation)]))];
         }
 
         private async Task ProcessEntityGroupAsync(
@@ -219,8 +218,8 @@ namespace kanban_lia.Services.Placements
             Guid correlationId,
             Guid? causationEventId,
             Actor actor,
-            CancellationToken cancellationToken,
-            BoardId? requestingBoardId)
+            BoardId? requestingBoardId,
+            CancellationToken cancellationToken)
         {
             using var connection = _connectionFactory.CreateConnection();
             await connection.OpenAsync(cancellationToken);
@@ -243,8 +242,8 @@ namespace kanban_lia.Services.Placements
                         correlationId,
                         causationEventId,
                         actor,
-                        cancellationToken,
-                        requestingBoardId);
+                        requestingBoardId,
+                        cancellationToken);
                 }
 
                 await transaction.CommitAsync(cancellationToken);
@@ -282,8 +281,8 @@ namespace kanban_lia.Services.Placements
             Guid correlationId,
             Guid? causationEventId,
             Actor actor,
-            CancellationToken cancellationToken,
-            BoardId? requestingBoardId)
+            BoardId? requestingBoardId,
+            CancellationToken cancellationToken)
         {
             var (column, board) = await ValidateAsync(operation, requestingBoardId);
 

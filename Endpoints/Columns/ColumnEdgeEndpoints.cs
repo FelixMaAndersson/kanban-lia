@@ -27,7 +27,7 @@ namespace kanban_lia.Endpoints.Columns
         /// <remarks>Creates the "/api/columnedges" route group and wires up the create, board lookup and delete
         /// handlers described on the containing type.</remarks>
         /// <param name="app">The WebApplication to configure.</param>
-        /// <exception cref="ColumnEdgeAlreadyExistsException">
+        /// <exception cref="Services.Columns.Exceptions.ColumnEdgeAlreadyExistsException">
         /// Propagated from the service when POST /create targets an edge that already exists.
         /// </exception>
         public static void MapColumnEdgeEndpoints(WebApplication app)
