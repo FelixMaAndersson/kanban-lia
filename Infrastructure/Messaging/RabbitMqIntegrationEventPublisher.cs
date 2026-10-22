@@ -23,7 +23,6 @@ namespace kanban_lia.Infrastructure.Messaging
     {
         private readonly RabbitMqOptions _options = options.Value;
         private readonly SemaphoreSlim _channelLock = new(1, 1);
-
         private IConnection? _connection;
         private IChannel? _channel;
 
@@ -127,6 +126,19 @@ namespace kanban_lia.Infrastructure.Messaging
                 type: ExchangeType.Topic,
                 durable: true,
                 autoDelete: false);
+
+            const string consumerQueue = "automation.placement.events";
+
+            await _channel.QueueDeclareAsync(
+                queue: consumerQueue,
+                durable: true,
+                exclusive: false,
+                autoDelete: false);
+
+            await _channel.QueueBindAsync(
+                queue: consumerQueue,
+                exchange: _options.ExchangeName,
+                routingKey: "#");
         }
 
         /// <summary>

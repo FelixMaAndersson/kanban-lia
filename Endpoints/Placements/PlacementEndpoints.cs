@@ -1,4 +1,8 @@
 ﻿using AutoMapper;
+
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
+
 using kanban_lia.Endpoints.Placements.Requests;
 using kanban_lia.Hubs;
 using kanban_lia.Infrastructure.Repositories.Columns;
@@ -10,8 +14,6 @@ using kanban_lia.Services.Columns.Exceptions;
 using kanban_lia.Services.IntegrationEvents.Models;
 using kanban_lia.Services.Placements;
 using kanban_lia.Services.Placements.DTOs;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.SignalR;
 
 namespace kanban_lia.Endpoints.Placements
 {
