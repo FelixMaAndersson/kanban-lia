@@ -1,8 +1,4 @@
 ﻿using AutoMapper;
-
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.SignalR;
-
 using kanban_lia.Endpoints.Placements.Requests;
 using kanban_lia.Hubs;
 using kanban_lia.Infrastructure.Repositories.Columns;
@@ -14,6 +10,8 @@ using kanban_lia.Services.Columns.Exceptions;
 using kanban_lia.Services.IntegrationEvents.Models;
 using kanban_lia.Services.Placements;
 using kanban_lia.Services.Placements.DTOs;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 
 namespace kanban_lia.Endpoints.Placements
 {
@@ -95,7 +93,6 @@ namespace kanban_lia.Endpoints.Placements
                      succeededEntityIds,
                      changes,
                      actor,
-                     logger,
                      cancellationToken);
 
                 return Results.Ok(result);
@@ -170,7 +167,6 @@ namespace kanban_lia.Endpoints.Placements
 
             return [.. connectedColumns.Distinct()];
         }
-
 
         /// <summary>
         /// Picks the single target column a board's placements should go to.
@@ -529,17 +525,16 @@ namespace kanban_lia.Endpoints.Placements
         Guid[] succeededEntityIds,
         List<PlacementChange> changes,
         Actor actor,
-        ILogger logger,
         CancellationToken cancellationToken)
         {
-            try
-            {
-                var placementCreatedEvent = new PlacementCreatedEvent(
-                    succeededEntityIds,
-                    changes,
-                    actor);
+            var placementCreatedEvent = new PlacementCreatedEvent(
+                succeededEntityIds,
+                changes,
+                actor);
 
-                foreach (var boardId in affectedBoardIds)
+            foreach (var boardId in affectedBoardIds)
+            {
+                try
                 {
                     await hub.Clients
                         .Group(BoardHub.GroupName(boardId))
@@ -548,13 +543,12 @@ namespace kanban_lia.Endpoints.Placements
                             placementCreatedEvent,
                             cancellationToken);
                 }
-            }
-            catch (Exception ex) when (ex is not OperationCanceledException)
-            {
-                logger.LogError(
-                    ex,
-                    "PlacementCreated broadcast failed after commit for {EntityCount} entities",
-                    succeededEntityIds.Length);
+                catch (Exception ex) when (ex is not OperationCanceledException)
+                {
+                    throw new InvalidOperationException(
+                        $"Placements were saved, but the SignalR notification failed for board with ID: '{boardId}'.",
+                    ex);
+                }
             }
         }
 
